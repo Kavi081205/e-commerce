@@ -1,0 +1,114 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helper: verify the requesting user has role:'admin' in Firestore ──────
+    function isAdmin() {
+      return request.auth != null
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // ─── Helper: user is authenticated ─────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // ─── Helper: the document's userId field belongs to the current user ────────
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // ── users ─────────────────────────────────────────────────────────────────
+    // Customers can only read/write their own profile document.
+    // Admins can manage all user documents.
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isSignedIn() && request.auth.uid == userId
+                    && request.resource.data.role == 'customer';  // Never self-promote to admin
+      allow update: if (isOwner(userId)
+                        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']))
+                    || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── products ─────────────────────────────────────────────────────────────
+    // Anyone can browse products (no auth required).
+    // Only admins can create, edit, or delete products.
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+
+      // Product reviews sub-collection:
+      // Authenticated users can read all reviews.
+      // Any signed-in user can create a review (one per call, rate-limited by auth).
+      // Only admins can delete reviews.
+      match /reviews/{reviewId} {
+        allow read: if true;
+        allow create: if isSignedIn()
+                      && (request.resource.data.rating is int || request.resource.data.rating is float)
+                      && request.resource.data.rating >= 1
+                      && request.resource.data.rating <= 5
+                      && request.resource.data.userId == request.auth.uid;
+        allow update: if isSignedIn()
+                      && resource.data.userId == request.auth.uid
+                      && (request.resource.data.rating is int || request.resource.data.rating is float)
+                      && request.resource.data.rating >= 1
+                      && request.resource.data.rating <= 5;
+        allow delete: if isAdmin();
+      }
+    }
+
+    // ── orders ───────────────────────────────────────────────────────────────
+    // Customers can create and read only their own orders.
+    // Admins have full access.
+    match /orders/{orderId} {
+      allow read: if isAdmin() || isOwner(resource.data.userId);
+      allow create: if isSignedIn()
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.keys().hasAll(['userId', 'items', 'totalPrice', 'status'])
+                    && request.resource.data.status == 'ordered';
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── invoices ─────────────────────────────────────────────────────────────
+    // Customers can create and read their own invoices (created automatically at checkout).
+    // Admins have full access.
+    match /invoices/{invoiceId} {
+      allow read: if isAdmin() || isOwner(resource.data.userId);
+      allow create: if isSignedIn()
+                    && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // ── expenses ─────────────────────────────────────────────────────────────
+    // Restricted entirely to admins. Customers have no access.
+    match /expenses/{expenseId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ── promotions ───────────────────────────────────────────────────────────
+    // Anyone can read the active promotions document.
+    // Only admins can create or modify promotions.
+    match /promotions/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── offers ───────────────────────────────────────────────────────────────
+    // Anyone can read the offers collection.
+    // Only admins can create, modify, or delete offers.
+    match /offers/{offerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── errors ───────────────────────────────────────────────────────────────
+    // Authenticated users can log errors. Only admins can read them.
+    match /errors/{errorId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isAdmin();
+    }
+
+  }
+}

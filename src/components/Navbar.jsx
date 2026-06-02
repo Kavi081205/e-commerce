@@ -1,0 +1,410 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
+import {
+  ShoppingCart, Heart, Menu, X, User, Search
+} from 'lucide-react';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
+import { useWishlist } from '../context/WishlistContext';
+import { db } from '../firebase';
+import { collection, query, limit, getDocs, orderBy } from 'firebase/firestore';
+import logo from '../assets/logo.png';
+import { getOptimizedImage } from '../utils/cloudinary';
+
+/* ─── tiny debounce hook ──────────────────────────────────────────────────── */
+const useDebounce = (value, delay = 300) => {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+};
+
+/* ─── Search Input (shared between desktop + mobile) ─────────────────────── */
+const SearchInput = ({ id, value, onChange, onFocus, onBlur }) => (
+  <div className="relative w-full">
+    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+      <Search size={14} className="text-gray-600" />
+    </div>
+    <input
+      id={id}
+      type="search"
+      autoComplete="off"
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      onFocus={onFocus}
+      onBlur={onBlur}
+      placeholder="Search products..."
+      className="w-full bg-white/5 border border-yellow-900/20 rounded-full pl-10 pr-4 py-2.5 text-xs text-white placeholder-gray-600 outline-none focus:border-yellow-500/50 focus:bg-white/8 transition-all"
+    />
+  </div>
+);
+
+/* ─── Suggestion Dropdown ─────────────────────────────────────────────────── */
+const SuggestionDropdown = ({ suggestions, handleProductClick }) => (
+  <div className="absolute top-full left-0 right-0 mt-3 bg-gray-950 border border-yellow-900/40 rounded-2xl shadow-2xl overflow-hidden z-50 backdrop-blur-xl">
+    {suggestions.map((product) => (
+       <div
+          key={product.id}
+          onMouseDown={() => handleProductClick(product)}
+          onClick={() => {
+            console.log("Suggestion click fired for product ID:", product.id);
+            handleProductClick(product);
+          }}
+          className="search-suggestion-item flex items-center gap-4 p-4 hover:bg-yellow-500/10 transition-colors border-b border-yellow-900/20 last:border-0"
+       >
+          <img src={product.image} className="w-12 h-12 rounded-lg object-cover border border-yellow-900/20 flex-shrink-0" />
+          <span className="text-sm font-bold text-white">{product.name}</span>
+       </div>
+    ))}
+  </div>
+);
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* Customer-only Navbar — never shows admin links.                             */
+/* Admin users have their own sidebar in AdminLayout.jsx.                     */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+const Navbar = () => {
+  const { getCartCount, bump } = useCart();
+  const { currentUser, logout, isAdmin } = useAuth();
+  const { wishlistItems } = useWishlist();
+  const navigate = useNavigate();
+
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const debouncedSearch = useDebounce(search, 320);
+  const searchRef = useRef(null);
+
+  const cartCount = getCartCount();
+
+  /* ── fetch search suggestions from Firestore ── */
+  useEffect(() => {
+    if (!debouncedSearch.trim()) { setSuggestions([]); return; }
+    const term = debouncedSearch.toLowerCase();
+    (async () => {
+      try {
+        const snap = await getDocs(
+          query(collection(db, 'products'), orderBy('name'), limit(30))
+        );
+        const results = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(p =>
+            p.name?.toLowerCase().includes(term) ||
+            p.category?.toLowerCase().includes(term)
+          )
+          .slice(0, 6);
+        console.log("Search suggestions products array:", results);
+        setSuggestions(results);
+      } catch {
+        setSuggestions([]);
+      }
+    })();
+  }, [debouncedSearch]);
+
+  /* ── close dropdown on outside click ── */
+  useEffect(() => {
+    const handler = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleSuggestionClick = useCallback(() => {
+    setSearch('');
+    setSuggestions([]);
+    setShowDropdown(false);
+    setMobileOpen(false);
+  }, []);
+
+  const handleLogout = useCallback(async () => {
+    setMobileOpen(false);
+    try { await logout(); navigate('/'); } catch (err) { console.error(err); }
+  }, [logout, navigate]);
+
+  const handleProfileClick = useCallback(() => {
+    navigate('/profile');
+  }, [navigate]);
+
+  const handleProductClick = (product) => {
+     console.log("Selected product object:", product);
+     const productId = product.id || product.docId || product._id || product.uid;
+     console.log("Verified identifier used for details navigation:", productId);
+     navigate(`/product/${productId}`);
+     setSearch("");
+     setSuggestions([]);
+  };
+
+  /* ── nav link style helpers ── */
+  const navCls = ({ isActive }) =>
+    `text-xs font-black tracking-widest uppercase transition-all duration-300 relative group ${
+      isActive ? 'text-yellow-500' : 'text-gray-400 hover:text-white'
+    }`;
+  const mobileCls = ({ isActive }) =>
+    `block text-lg font-black tracking-widest uppercase py-4 transition-all ${
+      isActive ? 'text-yellow-500' : 'text-gray-400 hover:text-white'
+    }`;
+  const underline = (isActive) =>
+    `absolute -bottom-1 left-0 h-[1px] bg-yellow-500 transition-all duration-300 group-hover:w-full ${
+      isActive ? 'w-full' : 'w-0'
+    }`;
+
+  return (
+    <nav className="bg-black border-b border-yellow-900/30 sticky top-0 z-50 shadow-2xl shadow-black">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-20">
+
+          {/* ── Logo ── */}
+          <Link
+            to="/"
+            className="flex items-center flex-shrink-0 transition-transform hover:scale-105 active:scale-95"
+          >
+            <img
+              src={logo}
+              alt="SMKP Traders"
+              className="h-14 w-auto object-contain"
+            />
+          </Link>
+
+          {/* ── Desktop: Search bar ── */}
+          <div className="hidden md:flex flex-1 max-w-xs mx-8 relative" ref={searchRef}>
+            <SearchInput
+              id="nav-search-desktop"
+              value={search}
+              onChange={setSearch}
+              onFocus={() => setShowDropdown(true)}
+              onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+            />
+            {showDropdown && suggestions.length > 0 && (
+              <SuggestionDropdown
+                suggestions={suggestions}
+                handleProductClick={handleProductClick}
+              />
+            )}
+          </div>
+
+          {/* ── Desktop nav links (customer only) ── */}
+          <div className="hidden md:flex items-center space-x-10">
+
+            {/* Navigation links */}
+            <NavLink to="/" end className={navCls}>
+              {({ isActive }) => (
+                <> Home <span className={underline(isActive)} /> </>
+              )}
+            </NavLink>
+            <NavLink to="/products" end className={navCls}>
+              {({ isActive }) => (
+                <> Products <span className={underline(isActive)} /> </>
+              )}
+            </NavLink>
+
+            {/* ── Icon strip ── */}
+            <div className="flex items-center gap-6 pl-8 border-l border-yellow-900/30">
+
+              {/* Wishlist */}
+              <Link
+                to="/wishlist"
+                className="relative group text-gray-400 hover:text-yellow-500 transition-all"
+                aria-label="Wishlist"
+              >
+                <Heart
+                  size={20}
+                  className="group-hover:scale-110 transition-transform"
+                />
+                {wishlistItems.length > 0 && (
+                  <span className="absolute -top-2.5 -right-2.5 bg-yellow-500 text-black text-[10px] font-black rounded-full h-4 w-4 flex items-center justify-center shadow-lg shadow-yellow-500/20">
+                    {wishlistItems.length}
+                  </span>
+                )}
+              </Link>
+
+              {/* Cart */}
+              <Link
+                to="/cart"
+                className="relative group text-gray-400 hover:text-yellow-500 transition-all"
+                aria-label="Cart"
+              >
+                <ShoppingCart
+                  size={20}
+                  className={`group-hover:scale-110 transition-transform ${bump ? 'animate-bounce text-yellow-500' : ''}`}
+                />
+                {cartCount > 0 && (
+                  <span className="absolute -top-2.5 -right-2.5 bg-yellow-600 text-white text-[10px] font-black rounded-full h-4 w-4 flex items-center justify-center shadow-lg shadow-yellow-600/30">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+            </div>
+
+            {/* ── Auth section ── */}
+            <div className="flex items-center gap-6">
+              {currentUser ? (
+                <>
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      className="text-[10px] font-black uppercase tracking-widest text-yellow-500 hover:text-white transition-colors"
+                    >
+                      Dashboard
+                    </Link>
+                  )}
+                  <button
+                    onClick={handleProfileClick}
+                    className="flex items-center gap-2 group focus:outline-none"
+                    aria-label="Profile"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500 font-black text-xs border border-yellow-500/30 group-hover:bg-yellow-500 group-hover:text-black transition-all">
+                      {currentUser.displayName?.[0]?.toUpperCase() ?? 'U'}
+                    </div>
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-yellow-500 transition-colors"
+                  >
+                    Exit
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  className="text-[10px] font-black uppercase tracking-widest text-yellow-500 border border-yellow-500/40 hover:bg-yellow-500 hover:text-black px-6 py-2.5 rounded-full transition-all hover:shadow-[0_0_20px_rgba(250,204,21,0.2)]"
+                >
+                  Login
+                </Link>
+              )}
+            </div>
+          </div>
+
+          {/* ── Mobile action bar ── */}
+          <div className="flex md:hidden items-center gap-5">
+            <Link to="/wishlist" className="relative text-gray-400" aria-label="Wishlist">
+              <Heart size={20} />
+              {wishlistItems.length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                  {wishlistItems.length}
+                </span>
+              )}
+            </Link>
+            <Link to="/cart" className="relative text-gray-400" aria-label="Cart">
+              <ShoppingCart size={22} className={bump ? 'animate-bounce text-yellow-500' : ''} />
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-yellow-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+            <button
+              onClick={() => setMobileOpen(p => !p)}
+              className="text-gray-400 hover:text-yellow-500 focus:outline-none transition-colors"
+              aria-label="Toggle menu"
+              aria-expanded={mobileOpen}
+            >
+              {mobileOpen ? <X size={28} /> : <Menu size={28} />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Mobile menu ── */}
+      <div
+        className={`md:hidden bg-black border-t border-yellow-900/20 overflow-hidden transition-all duration-500 ease-in-out ${
+          mobileOpen ? 'max-h-[90vh] opacity-100' : 'max-h-0 opacity-0'
+        }`}
+      >
+        <div className="px-6 py-8 space-y-6">
+
+          {/* Mobile search */}
+          <div className="relative" ref={searchRef}>
+            <SearchInput
+              id="nav-search-mobile"
+              value={search}
+              onChange={setSearch}
+              onFocus={() => setShowDropdown(true)}
+              onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+            />
+            {showDropdown && suggestions.length > 0 && (
+              <SuggestionDropdown
+                suggestions={suggestions}
+                handleProductClick={handleProductClick}
+              />
+            )}
+          </div>
+
+          {/* Mobile nav links (customer only — no admin links ever) */}
+          <NavLink to="/" end onClick={() => setMobileOpen(false)} className={mobileCls}>
+            Home
+          </NavLink>
+          <NavLink to="/products" end onClick={() => setMobileOpen(false)} className={mobileCls}>
+            Products
+          </NavLink>
+          <NavLink to="/wishlist" end onClick={() => setMobileOpen(false)} className={mobileCls}>
+            <span className="flex items-center gap-3">
+              <Heart size={18} /> Wishlist
+              {wishlistItems.length > 0 && (
+                <span className="bg-yellow-500 text-black text-xs font-bold rounded-full px-2 py-0.5">
+                  {wishlistItems.length}
+                </span>
+              )}
+            </span>
+          </NavLink>
+          <NavLink to="/cart" end onClick={() => setMobileOpen(false)} className={mobileCls}>
+            <span className="flex items-center gap-3">
+              <ShoppingCart size={18} /> Cart
+              {cartCount > 0 && (
+                <span className="bg-yellow-600 text-white text-xs font-bold rounded-full px-2 py-0.5">
+                  {cartCount}
+                </span>
+              )}
+            </span>
+          </NavLink>
+
+          {/* Mobile auth */}
+          <div className="pt-6 border-t border-yellow-900/10 space-y-6">
+            {currentUser ? (
+              <>
+                {isAdmin && (
+                  <Link
+                    to="/admin"
+                    onClick={() => setMobileOpen(false)}
+                    className="block w-full py-4 bg-yellow-500 text-black text-center font-black uppercase tracking-widest rounded-xl mb-4"
+                  >
+                    Dashboard
+                  </Link>
+                )}
+                <Link
+                  to="/profile"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-4 text-gray-400 font-bold uppercase tracking-widest text-sm"
+                >
+                  <User size={20} /> Account
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-4 text-red-500 font-bold uppercase tracking-widest text-sm"
+                >
+                  <X size={20} /> Sign Out
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                onClick={() => setMobileOpen(false)}
+                className="block w-full py-4 bg-yellow-500 text-black text-center font-black uppercase tracking-widest rounded-xl"
+              >
+                Login
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+export default Navbar;

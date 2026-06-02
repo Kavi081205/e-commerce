@@ -1,0 +1,24 @@
+# https://www.robotstxt.org/robotstxt.html
+
+User-agent: *
+
+# Allow public-facing store pages
+Allow: /
+Allow: /products
+Allow: /product/
+Allow: /cart
+Allow: /login
+
+# Disallow private/admin pages
+Disallow: /admin
+Disallow: /admin/
+Disallow: /admin-login
+Disallow: /dashboard
+Disallow: /checkout
+Disallow: /my-orders
+Disallow: /profile
+Disallow: /wishlist
+Disallow: /thank-you
+Disallow: /order-confirmation
+
+Sitemap: https://smkptraders.com/sitemap.xml
