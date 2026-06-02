@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, Suspense, lazy } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 
 // UX Screens
@@ -55,6 +55,29 @@ const CustomerRoute = ({ children }) => {
   if (loading) return null;
   if (!currentUser) return <Navigate to="/login" replace />;
   if (isAdmin) return <Navigate to="/admin" replace />;
+  return children;
+};
+
+// AdminRoute: requires a logged-in admin user.
+// — Unauthenticated or non-admin → /admin-login
+const AdminRoute = ({ children }) => {
+  const { currentUser, loading, isAdmin } = useAuth();
+  const location = useLocation();
+
+  console.log("=== Admin Route Protection Check ===");
+  console.log("Current Route:", location.pathname);
+  console.log("Auth Loading Status:", loading);
+  console.log("Current User Authenticated:", currentUser ? `${currentUser.email} (UID: ${currentUser.uid})` : "No");
+  console.log("Is Admin Privilege Granted:", isAdmin);
+  console.log("====================================");
+
+  if (loading) return null;
+  if (!currentUser || !isAdmin) {
+    console.log("[Route Guard] Access Denied. Redirecting to /admin-login");
+    return <Navigate to="/admin-login" replace state={{ from: location }} />;
+  }
+
+  console.log("[Route Guard] Access Granted. Rendering Protected Page.");
   return children;
 };
 
@@ -143,11 +166,9 @@ function App() {
                   <Route
                     path="/admin/*"
                     element={
-                      loading ? null : (isAdmin ? (
+                      <AdminRoute>
                         <AdminLayout />
-                      ) : (
-                        <Navigate to="/admin-login" replace />
-                      ))
+                      </AdminRoute>
                     }
                   />
 

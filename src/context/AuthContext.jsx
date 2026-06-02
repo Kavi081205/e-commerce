@@ -50,7 +50,8 @@ export const AuthProvider = ({ children }) => {
         async (docSnap) => {
           let userData = docSnap.data();
 
-          if (user.email?.toLowerCase() === 'kaviyarasanmurugan78@gmail.com') {
+          const adminEmail = (import.meta.env.VITE_ADMIN_EMAIL || 'kaviyarasanmurugan78@gmail.com').toLowerCase();
+          if (user.email?.toLowerCase() === adminEmail) {
             if (!docSnap.exists() || userData?.role !== 'admin' || !userData?.isAdmin) {
               const adminData = {
                 uid: user.uid,

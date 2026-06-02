@@ -33,9 +33,10 @@ const AdminLogin = () => {
 
       const userRef = doc(db, 'users', user.uid);
 
-      // Verify admin email: kaviyarasanmurugan78@gmail.com
+      // Verify admin email: VITE_ADMIN_EMAIL with fallback
       // If admin document does not exist, automatically create it.
-      if (user.email?.toLowerCase() === 'kaviyarasanmurugan78@gmail.com') {
+      const adminEmail = (import.meta.env.VITE_ADMIN_EMAIL || 'kaviyarasanmurugan78@gmail.com').toLowerCase();
+      if (user.email?.toLowerCase() === adminEmail) {
         const checkDoc = await getDoc(userRef);
         const checkData = checkDoc.data();
         if (!checkDoc.exists() || checkData?.role !== 'admin' || !checkData?.isAdmin) {
