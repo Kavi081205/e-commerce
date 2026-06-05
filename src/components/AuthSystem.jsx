@@ -118,10 +118,9 @@ export default function AuthSystem() {
       })
       .catch((err) => {
         if (err.code && err.code !== 'auth/no-current-user') {
-          console.error('Google redirect result error:', err.code);
-          const hostname = window.location.hostname;
+          console.error('Google redirect result error:', err.code, window.location.hostname);
           if (err.code === 'auth/unauthorized-domain') {
-            setError(`Domain "${hostname}" is not authorized in Firebase. Add it under Authentication → Settings → Authorized Domains.`);
+            setError('Google Sign-In is not enabled for this domain. Please try email login or contact support.');
           } else {
             setError(err.message.replace('Firebase: ', '').replace(/\s*\(auth\/[^)]+\)\.?/, ''));
           }
@@ -154,15 +153,11 @@ export default function AuthSystem() {
       // Success: AuthContext onSnapshot will resolve the user role and App.jsx will auto-redirect.
     } catch (err) {
       // Always clear loading to prevent infinite spinner
-      console.error('Google Sign-In error:', err.code, err.message);
-      const hostname = window.location.hostname;
+      console.error('Google Sign-In error:', err.code, window.location.hostname, err.message);
 
       // Map Firebase error codes to user-friendly messages
       if (err.code === 'auth/unauthorized-domain') {
-        setError(
-          `Domain "${hostname}" is not authorized for Google Sign-In. ` +
-          'Add it in Firebase Console → Authentication → Settings → Authorized Domains.'
-        );
+        setError('Google Sign-In is not enabled for this domain. Please try email login or contact support.');
       } else if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
         setError('Sign-in was cancelled. Please try again.');
       } else if (err.code === 'auth/popup-blocked') {
