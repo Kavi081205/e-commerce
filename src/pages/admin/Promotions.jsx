@@ -104,6 +104,7 @@ const Promotions = () => {
       const offerRef = doc(collection(db, 'offers'));
       await setDoc(offerRef, {
         ...newOffer,
+        expiryDateTime: newOffer.offerEndDate,
         discount: Number(newOffer.discount || 0),
         createdAt: new Date().toISOString()
       });
@@ -301,6 +302,7 @@ const Promotions = () => {
                 </label>
                 <input
                   id="offer-title"
+                  name="offerTitle"
                   type="text"
                   placeholder="e.g. Pink Saree Flash Deal"
                   value={newOffer.title}
@@ -316,6 +318,7 @@ const Promotions = () => {
                 </label>
                 <select
                   id="offer-product"
+                  name="offerProductId"
                   value={newOffer.productId}
                   onChange={(e) => setNewOffer(prev => ({ ...prev, productId: e.target.value }))}
                   className="w-full bg-gray-900 border border-white/10 rounded-2xl py-4 px-4 text-sm font-bold text-white focus:ring-2 focus:ring-yellow-500/50"
@@ -337,6 +340,7 @@ const Promotions = () => {
                   </label>
                   <input
                     id="offer-discount"
+                    name="offerDiscount"
                     type="number"
                     min={1}
                     max={99}
@@ -367,6 +371,7 @@ const Promotions = () => {
                 </label>
                 <input
                   id="offer-end"
+                  name="offerEndDate"
                   type="datetime-local"
                   value={newOffer.offerEndDate}
                   onChange={(e) => setNewOffer(prev => ({ ...prev, offerEndDate: e.target.value }))}

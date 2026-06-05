@@ -33,8 +33,166 @@ const perks = [
 ];
 
 /* ─────────────────────────────────────────────────────────────────
-   COUNTDOWN TIMER
-───────────────────────────────────────────────────────────────── */
+   BANNER COUNTDOWN TIMER (compact pill for banner overlay)
+─────────────────────────────────────────────────────────────────  */
+
+/** Safely parse any date string including datetime-local (no timezone).
+ *  Falls back to space→T replacement for "YYYY-MM-DD HH:MM" format.
+ */
+const parseOfferDate = (raw) => {
+  if (!raw) return NaN;
+  let ts = new Date(raw).getTime();
+  if (!isNaN(ts)) return ts;
+  // Handle "2026-06-05 18:30" stored with a space instead of T
+  ts = new Date(String(raw).replace(' ', 'T')).getTime();
+  return ts;
+};
+
+const calcTimeLeft = (expiryMs) => {
+  const distance = expiryMs - Date.now();
+  if (distance <= 0) return { expired: true, days: 0, hours: 0, mins: 0, secs: 0 };
+  return {
+    expired: false,
+    days:  Math.floor(distance / 86_400_000),
+    hours: Math.floor((distance % 86_400_000) / 3_600_000),
+    mins:  Math.floor((distance % 3_600_000)  / 60_000),
+    secs:  Math.floor((distance % 60_000)     / 1_000),
+  };
+};
+
+const BannerCountdown = ({ offer, compact = false }) => {
+  // 2. Create proper timer state
+  const [timeLeft, setTimeLeft] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0
+  });
+
+  const [expired, setExpired] = useState(false);
+
+  // 4. Add working countdown useEffect
+  useEffect(() => {
+    // 1. Verify offer expiryDateTime exists
+    if (offer) {
+      console.log("Offer Expiry:", offer.expiryDateTime);
+    }
+
+    if (!offer?.expiryDateTime) return;
+
+    const tick = () => {
+      const now = new Date().getTime();
+      // 6. Handle timezone and normalization safely
+      const rawDate = String(offer.expiryDateTime).replace(' ', 'T');
+      const expiryTime = new Date(rawDate).getTime();
+      const distance = expiryTime - now;
+
+      if (isNaN(expiryTime) || distance <= 0) {
+        setExpired(true);
+        return;
+      }
+
+      setExpired(false);
+      setTimeLeft({
+        days: Math.floor(distance / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((distance / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((distance / (1000 * 60)) % 60),
+        seconds: Math.floor((distance / 1000) % 60),
+      });
+    };
+
+    // Run immediately on mount
+    tick();
+
+    const timer = setInterval(tick, 1000);
+
+    return () => clearInterval(timer);
+  }, [offer?.expiryDateTime]);
+
+  // 4. Check conditional rendering issue
+  if (!offer?.expiryDateTime) {
+    return (
+      <div className="offer-timer text-xs text-yellow-400 font-bold uppercase tracking-widest animate-pulse">
+        Loading timer...
+      </div>
+    );
+  }
+
+  if (expired) {
+    return (
+      <div className={`
+        inline-flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full border border-red-500/30 bg-red-900/20 text-red-400 text-[10px] sm:text-xs font-black uppercase tracking-wider select-none shadow-[0_0_15px_rgba(239,68,68,0.15)]
+      `}>
+        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+        OFFER EXPIRED
+      </div>
+    );
+  }
+
+  const d = timeLeft.days.toString().padStart(2, '0');
+  const h = timeLeft.hours.toString().padStart(2, '0');
+  const m = timeLeft.minutes.toString().padStart(2, '0');
+  const s = timeLeft.seconds.toString().padStart(2, '0');
+
+  return (
+    <div className={`
+      inline-flex flex-wrap items-center select-none font-mono tracking-wide
+      ${compact 
+        ? 'gap-1.5 sm:gap-2 text-[10px] py-1.5 px-3 sm:px-4 rounded-full bg-black/60 border border-yellow-500/20 shadow-[0_0_12px_rgba(250,204,21,0.08)]' 
+        : 'gap-3 sm:gap-4 text-xs sm:text-sm md:text-base py-3.5 px-6 rounded-full bg-black/80 border border-yellow-500/35 shadow-[0_0_24px_rgba(250,204,21,0.18)]'
+      }
+    `}>
+      <span className={`
+        font-black uppercase tracking-widest text-yellow-400 flex items-center gap-1.5
+        ${compact ? 'text-[8px] mr-0.5' : 'text-[10px] sm:text-xs mr-1'}
+      `}>
+        <Zap size={compact ? 10 : 13} className="text-yellow-500 fill-yellow-500 animate-pulse" />
+        Ends In:
+      </span>
+
+      <div className={`flex items-center ${compact ? 'gap-1' : 'gap-2'}`}>
+        {/* Days Box */}
+        <div className={`
+          flex items-center justify-center font-black rounded-lg border border-yellow-500/30 bg-neutral-950/90 text-white
+          ${compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-3 py-1.5 text-xs sm:text-sm min-w-[34px] sm:min-w-[42px] shadow-[0_0_8px_rgba(250,204,21,0.05)]'}
+        `}>
+          {d}<span className="text-yellow-500 font-bold ml-0.5">D</span>
+        </div>
+
+        <span className="text-yellow-500/30 font-bold animate-pulse">:</span>
+
+        {/* Hours Box */}
+        <div className={`
+          flex items-center justify-center font-black rounded-lg border border-yellow-500/30 bg-neutral-950/90 text-white
+          ${compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-3 py-1.5 text-xs sm:text-sm min-w-[34px] sm:min-w-[42px] shadow-[0_0_8px_rgba(250,204,21,0.05)]'}
+        `}>
+          {h}<span className="text-yellow-500 font-bold ml-0.5">H</span>
+        </div>
+
+        <span className="text-yellow-500/30 font-bold animate-pulse">:</span>
+
+        {/* Minutes Box */}
+        <div className={`
+          flex items-center justify-center font-black rounded-lg border border-yellow-500/30 bg-neutral-950/90 text-white
+          ${compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-3 py-1.5 text-xs sm:text-sm min-w-[34px] sm:min-w-[42px] shadow-[0_0_8px_rgba(250,204,21,0.05)]'}
+        `}>
+          {m}<span className="text-yellow-500 font-bold ml-0.5">M</span>
+        </div>
+
+        <span className="text-yellow-500/30 font-bold animate-pulse">:</span>
+
+        {/* Seconds Box */}
+        <div className={`
+          flex items-center justify-center font-black rounded-lg border border-yellow-500/30 bg-neutral-950/90 text-white
+          ${compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-3 py-1.5 text-xs sm:text-sm min-w-[34px] sm:min-w-[42px] shadow-[0_0_8px_rgba(250,204,21,0.05)]'}
+        `}>
+          {s}<span className="text-yellow-500 font-bold ml-0.5">S</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 /* ─────────────────────────────────────────────────────────────────
    COUNTDOWN TIMER
@@ -99,83 +257,73 @@ const ProductCard = ({ product, delay = 0, promoSettings }) => {
     toggleWishlist(product);
   }, [product, toggleWishlist]);
 
-  const offerActive =
-    promoSettings?.offerActive &&
-    promoSettings.offerProductId === product.id &&
-    (!promoSettings.offerEnd || Date.now() < new Date(promoSettings.offerEnd).getTime());
+  const effPrice = getEffectivePrice(product, promoSettings);
+  const origPrice = Number(product.price || 0);
+  const discountPercent = origPrice > effPrice ? Math.round(((origPrice - effPrice) / origPrice) * 100) : 0;
 
   return (
     <div
       ref={ref}
-      className={`luxury-card p-4 rounded-3xl transition-all duration-700 ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-        } relative group h-full`}
+      className={`bg-gray-900/40 rounded-2xl border border-yellow-900/10 overflow-hidden hover:border-yellow-500/30 transition-all flex flex-col h-full relative group ${
+        inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+      }`}
       style={{ transitionDelay: inView ? `${delay}ms` : '0ms' }}
     >
       <button
         onClick={handleWishlist}
-        className={`absolute top-6 right-6 z-10 w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ${isInWishlist(product.id)
+        className={`absolute top-2.5 right-2.5 z-10 w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-colors ${
+          isInWishlist(product.id)
             ? 'bg-yellow-500 text-black'
-            : 'bg-black/50 backdrop-blur-sm text-gray-400 hover:text-yellow-500 border border-white/10'
-          }`}
+            : 'bg-black/50 backdrop-blur-sm text-gray-400 hover:text-yellow-500 border border-white/5'
+        }`}
+        aria-label="Toggle wishlist"
       >
-        <Heart size={16} fill={isInWishlist(product.id) ? 'currentColor' : 'none'} />
+        <Heart size={14} fill={isInWishlist(product.id) ? 'currentColor' : 'none'} />
       </button>
 
-      <Link 
-        to={`/product/${product.id}`} 
-        onClick={() => {
-          console.log("Product Card ID:", product.id);
-          console.log("Navigating To:", `/product/${product.id}`);
-        }}
-        className="flex flex-col h-full"
-      >
-        <div className="overflow-hidden rounded-2xl aspect-square mb-6 relative">
+      <Link to={`/product/${product.id}`} className="flex flex-col h-full">
+        <div className="overflow-hidden aspect-square relative bg-black">
           <LazyImage
-            src={getHDImage(product.image)}
+            src={getOptimizedImage(product.image, 'card')}
             alt={product.name}
-            className="product-image group-hover:scale-110 transition-transform duration-700 object-cover"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             wrapperClass="w-full h-full"
           />
           {Number(product.soldCount || 0) >= 50 && (
-            <div className="absolute top-3 left-3 z-10 flex items-center gap-1 bg-yellow-500 text-black text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-lg shadow-yellow-500/30">
+            <div className="absolute top-2 left-2 z-10 bg-yellow-500 text-black text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow">
               🏆 Best Seller
             </div>
           )}
           {Number(product.stock || 0) <= 0 ? (
-            <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none bg-black/40">
-              <span className="bg-red-600 text-white text-[9px] font-black px-4 py-2 rounded-full uppercase tracking-[0.2em] shadow-xl rotate-[-12deg]">
+            <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/50">
+              <span className="bg-red-600 text-white text-[8px] font-black px-2.5 py-1 rounded uppercase tracking-wider rotate-[-10deg]">
                 OUT OF STOCK
               </span>
             </div>
           ) : Number(product.stock || 0) <= 5 ? (
-            <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1 bg-red-600 text-white text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-lg">
+            <div className="absolute bottom-2 left-2 z-10 bg-red-600 text-white text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow">
               ⚠ LOW STOCK ({product.stock})
             </div>
-          ) : (
-            <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1 bg-green-600 text-white text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-lg">
-              IN STOCK
-            </div>
-          )}
+          ) : null}
         </div>
-        <div className="flex-1 flex flex-col gap-2">
-          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-tight">
+
+        <div className="p-3 flex-grow flex flex-col gap-1 bg-black/10">
+          <span className="text-[8px] font-bold text-yellow-500/60 uppercase tracking-widest">{product.category}</span>
+          <h3 className="text-xs font-black text-white uppercase tracking-wide truncate group-hover:text-yellow-500 transition-colors">
             {product.name}
           </h3>
-          <div className="mb-2">
-            <ProductRating productId={product.id} />
+          
+          <div className="flex items-center gap-1.5 my-1">
+            <ProductRating productId={product.id} compact={true} />
           </div>
-          <div className="mt-auto">
-            {getEffectivePrice(product, promoSettings) < Number(product.price) ? (
-              <div className="flex items-center gap-3">
-                <span className="text-xl font-black text-yellow-500">
-                  ₹{getEffectivePrice(product, promoSettings).toLocaleString()}
-                </span>
-                <span className="text-xs text-gray-600 line-through font-bold">
-                  ₹{Number(product.price).toLocaleString()}
-                </span>
-              </div>
-            ) : (
-              <p className="text-xl font-black text-white">₹{Number(product.price).toLocaleString()}</p>
+
+          <div className="mt-auto pt-2 border-t border-white/5 flex flex-wrap items-baseline gap-1.5">
+            <span className="text-sm font-black text-white">₹{effPrice.toLocaleString()}</span>
+            {discountPercent > 0 && (
+              <>
+                <span className="text-[10px] text-gray-500 line-through font-medium">₹{origPrice.toLocaleString()}</span>
+                <span className="text-[10px] text-green-500 font-black">{discountPercent}% off</span>
+              </>
             )}
           </div>
         </div>
@@ -200,6 +348,18 @@ const Home = () => {
   // Local state for featured products (New Arrivals)
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [featuredLoading, setFeaturedLoading] = useState(true);
+
+  // Local recently viewed state
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
+
+  useEffect(() => {
+    try {
+      const list = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
+      setRecentlyViewed(list);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   // Real-time listener for banner products
   useEffect(() => {
@@ -260,7 +420,7 @@ const Home = () => {
     };
   }, [promoSettings?.bannerProductIds]);
 
-  // Real-time listener for featured products (New Arrivals) with fallback
+  // Real-time listener for featured products (New Arrivals)
   useEffect(() => {
     setFeaturedLoading(true);
     let fallbackUnsub = null;
@@ -268,52 +428,25 @@ const Home = () => {
     const q = query(
       collection(db, 'products'),
       orderBy('createdAt', 'desc'),
-      limit(4)
+      limit(8)
     );
 
     const unsub = onSnapshot(q, (snapshot) => {
       if (snapshot.empty) {
-        console.warn("Featured products query (ordered by createdAt) is empty. Trying fallback query.");
-        if (fallbackUnsub) return;
-
-        const fallbackQ = query(
-          collection(db, 'products'),
-          limit(4)
-        );
-
+        const fallbackQ = query(collection(db, 'products'), limit(8));
         fallbackUnsub = onSnapshot(fallbackQ, (fallbackSnapshot) => {
           const productsList = fallbackSnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
           setFeaturedProducts(productsList);
           setFeaturedLoading(false);
-        }, (error) => {
-          console.error("Error with fallback featured products subscription:", error);
-          setFeaturedLoading(false);
         });
       } else {
-        if (fallbackUnsub) {
-          fallbackUnsub();
-          fallbackUnsub = null;
-        }
         const productsList = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
         setFeaturedProducts(productsList);
         setFeaturedLoading(false);
       }
     }, (error) => {
       console.error("Error with primary featured products subscription:", error);
-      if (!fallbackUnsub) {
-        const fallbackQ = query(
-          collection(db, 'products'),
-          limit(4)
-        );
-        fallbackUnsub = onSnapshot(fallbackQ, (fallbackSnapshot) => {
-          const productsList = fallbackSnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
-          setFeaturedProducts(productsList);
-          setFeaturedLoading(false);
-        }, (err) => {
-          console.error("Error with fallback featured products subscription after primary error:", err);
-          setFeaturedLoading(false);
-        });
-      }
+      setFeaturedLoading(false);
     });
 
     return () => {
@@ -327,33 +460,38 @@ const Home = () => {
   const products = featuredProducts;
   const loading = featuredLoading;
 
-  console.log("New Arrivals Products:", products);
-  console.log("Loading State:", loading);
-  console.log("Products Count:", products?.length);
-
-  // Local state for fetching the active offer product details in real-time
-  const [offerProduct, setOfferProduct] = useState(null);
+  // Fetch product details for ALL active offers in real-time
+  const [offerProductsMap, setOfferProductsMap] = useState({});
 
   useEffect(() => {
-    if (!promoSettings?.offerActive || !promoSettings?.offerProductId) {
-      setOfferProduct(null);
+    const activeOffers = promoSettings?.activeOffers || [];
+    if (activeOffers.length === 0) {
+      setOfferProductsMap({});
       return;
     }
-    const productRef = doc(db, 'products', promoSettings.offerProductId);
-    const unsub = onSnapshot(productRef, (docSnap) => {
-      if (docSnap.exists()) {
-        setOfferProduct({ id: docSnap.id, ...docSnap.data() });
-      } else {
-        setOfferProduct(null);
-      }
-    }, (error) => {
-      console.error("Error subscribing to offer product details:", error);
-      setOfferProduct(null);
-    });
-    return () => unsub();
-  }, [promoSettings?.offerActive, promoSettings?.offerProductId]);
 
-  /* ── FIX 7: Auto-advance slider — reset index when list changes ── */
+    const unsubscribes = [];
+    const map = {};
+
+    activeOffers.forEach((offer) => {
+      if (!offer.productId) return;
+      const ref = doc(db, 'products', offer.productId);
+      const unsub = onSnapshot(ref, (snap) => {
+        if (snap.exists()) {
+          map[offer.id] = { id: snap.id, ...snap.data() };
+        } else {
+          delete map[offer.id];
+        }
+        setOfferProductsMap({ ...map });
+      }, (err) => {
+        console.error('Error fetching offer product:', offer.productId, err);
+      });
+      unsubscribes.push(unsub);
+    });
+
+    return () => unsubscribes.forEach(u => u());
+  }, [promoSettings?.activeOffers]);
+
   useEffect(() => {
     setCurrentIndex(0);
   }, [bannerProducts.length]);
@@ -366,283 +504,335 @@ const Home = () => {
     return () => clearInterval(id);
   }, [bannerProducts.length]);
 
-  // FIX 7: clamp index so it never goes out of bounds
   const safeIndex = Math.min(currentIndex, Math.max(0, bannerProducts.length - 1));
-  const normalHero = bannerProducts[safeIndex] ?? null;
-  const featuredHero = (promoSettings?.offerActive && offerProduct) ? offerProduct : normalHero;
+
+  // Find the offer associated with the current banner product
+  const currentProduct = bannerProducts[safeIndex];
+  const productOffers = promoSettings?.allOffers?.filter(o => o.productId === currentProduct?.id) || [];
+  const offer = productOffers.find(o => o.isActive) || productOffers[0] || promoSettings?.activeOffer || (promoSettings?.offerEnd ? {
+    expiryDateTime: promoSettings.offerEnd,
+    offerEndDate: promoSettings.offerEnd,
+    isActive: true,
+    title: promoSettings.offerTitle || 'Promo Offer'
+  } : null);
+
+  // Hero banner dual-price computation (never overwrites DB price)
+  const bannerOrigPrice  = Number(currentProduct?.price || 0);
+  const bannerDiscountPct = Number(offer?.discount || promoSettings?.discount || 0);
+  const bannerSalePrice  = bannerDiscountPct > 0
+    ? Math.round(bannerOrigPrice * (1 - bannerDiscountPct / 100))
+    : bannerOrigPrice;
+  const bannerHasDiscount = bannerDiscountPct > 0 && bannerSalePrice < bannerOrigPrice;
 
   const handleFeaturedClick = () => {
-    console.log(featuredHero);
-    if (featuredHero?.id) {
-      console.log("Product Card ID:", featuredHero.id);
-      console.log("Navigating To:", `/product/${featuredHero.id}`);
-      navigate(`/product/${featuredHero.id}`);
+    const target = bannerProducts[safeIndex];
+    if (target?.id) {
+      navigate(`/product/${target.id}`);
     }
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-black overflow-x-hidden">
+    <div className="flex flex-col min-h-screen bg-black overflow-x-hidden pb-12">
       <Helmet>
         <title>SMKP TRADERS | Premium Online E-Commerce Store</title>
         <meta name="description" content="Shop luxury sarees, kids dresses, wheat grains, premium toys, gadgets, and luxury gifts at SMKP Traders. Exceptional quality guaranteed." />
-        <meta property="og:title" content="SMKP TRADERS | Premium Online E-Commerce Store" />
-        <meta property="og:description" content="Shop luxury sarees, kids dresses, wheat grains, premium toys, gadgets, and luxury gifts at SMKP Traders. Exceptional quality guaranteed." />
-        <meta property="og:type" content="website" />
       </Helmet>
 
-      {/* ── HERO SLIDER ─────────────────────────────────────────── */}
-      <section className="hero-section">
-        <div className="absolute inset-0 z-0">
-          <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-yellow-500/5 rounded-full blur-[120px] animate-pulse" />
-          <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-yellow-600/5 rounded-full blur-[120px] animate-pulse" />
-        </div>
-
-        <AnimatePresence mode="wait">
-          {bannerLoading ? (
-            <div key="loader" className="w-full flex items-center justify-center h-full">
-              <Loader2 size={48} className="animate-spin text-yellow-500/50" />
+      {/* ── 1. Flipkart-style Top Categories Bar ── */}
+      <div className="w-full max-w-full bg-slate-950/60 border-b border-yellow-900/10 py-4 px-4 overflow-x-auto scrollbar-none flex flex-nowrap gap-6 sm:gap-8 items-center justify-start md:justify-center select-none touch-pan-x">
+        {categories.map((cat) => (
+          <Link
+            key={cat.id}
+            to={cat.comingSoon ? '#' : `/products?category=${cat.name.toLowerCase()}`}
+            className={`flex flex-col items-center gap-1.5 flex-shrink-0 transition-transform hover:scale-105 active:scale-95 ${cat.comingSoon ? 'cursor-not-allowed opacity-55' : ''}`}
+          >
+            <div className="w-14 h-14 rounded-full border-2 border-yellow-900/20 overflow-hidden bg-black p-0.5 group-hover:border-yellow-500 transition-colors">
+              <img src={cat.image} alt={cat.name} className="w-full h-full object-cover rounded-full" />
             </div>
-          ) : featuredHero ? (
-            <motion.div
-              key={featuredHero.id}
-              initial={{ opacity: 0, x: 100 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -100 }}
-              transition={{ duration: 0.8, ease: 'easeInOut' }}
-              className="w-full h-full"
-            >
-              <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-16 w-full h-full flex flex-col lg:flex-row items-center justify-between gap-12 pt-20">
-                {/* Copy */}
-                <div className="hero-content text-center lg:text-left">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="inline-flex items-center gap-3 bg-yellow-500/10 border border-yellow-500/20 px-6 py-2 rounded-full text-yellow-500 text-[10px] font-black tracking-[0.4em] uppercase mb-10"
-                  >
-                    <Sparkles size={14} className="animate-pulse" />
-                    Premium Collection
-                  </motion.div>
+            <span className="text-[9px] font-black uppercase text-gray-400 tracking-wider">{cat.name}</span>
+          </Link>
+        ))}
+      </div>
 
-                  <motion.h1
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                    className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-[1.1] mb-6 tracking-tighter"
-                  >
-                    From Daily Needs to <br />
-                    <span className="gold-shine font-black">Dream Living</span> — <br />
-                    We Deliver Excellence
-                  </motion.h1>
-
-                  <motion.p
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.7 }}
-                    className="text-gray-400 text-base md:text-lg max-w-lg mb-12 leading-relaxed font-medium mx-auto lg:mx-0"
-                  >
-                    Discover premium products crafted to elevate your everyday lifestyle with quality, comfort, and trust.
-                  </motion.p>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.9 }}
-                    className="flex flex-wrap gap-6 items-center justify-center lg:justify-start mt-8"
-                  >
-                    <Link
-                      to="/products"
-                      className="btn-glow px-12 py-5 bg-yellow-500 text-black font-black uppercase tracking-[0.2em] text-xs rounded-full hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-yellow-500/20"
-                    >
-                      Explore the collection
-                    </Link>
-
-                      {promoSettings?.offerActive &&
-                        promoSettings.offerProductId === featuredHero.id &&
-                        promoSettings.offerEnd ? (
-                          <div className="offer-timer">
-                            <span className="text-yellow-500 text-[9px] font-black uppercase tracking-[0.3em] mb-1">Offer Ends In</span>
-                            <CountdownTimer expiryDate={promoSettings.offerEnd} />
-                          </div>
-                        ) : null}
-                  </motion.div>
+      {/* ── 2. Hero Banner Carousel ── */}
+      <div className="w-full px-3 sm:px-8 lg:px-8 xl:px-12 mt-4 sm:mt-6">
+        <div className="relative w-full lg:max-w-[1400px] lg:mx-auto rounded-2xl sm:rounded-[1.75rem] overflow-hidden border border-yellow-900/15 bg-gray-950 shadow-[0_8px_40px_rgba(0,0,0,0.6)] group h-[190px] sm:h-[280px] md:h-[360px] lg:h-[440px]">
+          <AnimatePresence mode="wait">
+            {bannerLoading ? (
+              <div key="loader" className="absolute inset-0 flex items-center justify-center">
+                <Loader2 size={32} className="animate-spin text-yellow-500" />
+              </div>
+            ) : bannerProducts.length > 0 ? (
+              <motion.div
+                key={safeIndex}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.6 }}
+                className="absolute inset-0 cursor-pointer"
+                onClick={handleFeaturedClick}
+              >
+                {/* ── Mobile/Tablet: full background image with overlay ── */}
+                <div className="lg:hidden absolute inset-0">
+                  <img
+                    src={getHDImage(bannerProducts[safeIndex]?.image)}
+                    alt={bannerProducts[safeIndex]?.name}
+                    className="w-full h-full object-cover object-center"
+                    style={{ opacity: 0.55 }}
+                  />
+                  <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.15) 100%)' }} />
                 </div>
 
-                {/* Hero image */}
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9, x: 50 }}
-                  animate={{ opacity: 1, scale: 1, x: 0 }}
-                  transition={{ duration: 1.2, ease: 'easeOut' }}
-                  className="hero-image"
-                >
-                  <div className="hero-product-wrapper">
-                    {/* Luxury glowing background */}
-                    <div className="hero-glow" />
+                {/* ── Desktop: split layout ── */}
+                <div className="hidden lg:flex absolute inset-0">
+                  {/* Left: text content */}
+                  <div className="w-[45%] flex-shrink-0 flex flex-col justify-center px-12 xl:px-16 relative z-10 bg-gradient-to-r from-gray-950 via-gray-950/95 to-transparent">
+                    <span className="bg-yellow-500 text-black text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-lg w-fit mb-4 shadow-lg shadow-yellow-500/20">
+                      ✦ Featured Offer
+                    </span>
+                    <h2 className="text-3xl xl:text-4xl 2xl:text-5xl font-black text-white tracking-tight uppercase leading-[1.05] mb-3 max-w-sm line-clamp-3">
+                      {bannerProducts[safeIndex]?.name}
+                    </h2>
 
-                    {/* Subtle rotating glow particles behind product */}
-                    <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
-                      <div className="w-[450px] h-[450px] rounded-full border border-yellow-500/10 animate-[spin_20s_linear_infinite]" />
-                      <div className="w-[300px] h-[300px] absolute rounded-full border border-dashed border-yellow-500/5 animate-[spin_30s_linear_infinite_reverse]" />
-                    </div>
-
-                    <LazyImage
-                       src={getHDImage(featuredHero.image)}
-                       alt={featuredHero.name}
-                       className="hero-product-image object-contain"
-                       wrapperClass="w-full h-full flex items-center justify-center"
-                     />
-
-                    {/* Rating badge */}
-                    <div className="absolute top-10 -left-6 bg-black border border-yellow-500/30 text-yellow-500 px-4 py-2 rounded-full flex items-center gap-2 shadow-2xl shadow-yellow-500/20 z-20">
-                      <ProductRating productId={featuredHero.id} compact={true} />
-                    </div>
-
-                    {/* Offer / Best Seller badge */}
-                    {promoSettings?.offerActive && promoSettings.offerProductId === featuredHero.id ? (
-                      <div className="offer-badge bg-yellow-500 text-black px-4 py-2 rounded-full flex items-center gap-2 shadow-2xl shadow-yellow-500/40">
-                        <Zap size={14} className="fill-black" />
-                        <span className="text-xs font-black uppercase tracking-widest">
-                          {promoSettings.discount}% OFF Flash Deal
+                    {/* ── Desktop: Dual price + discount badge ── */}
+                    <div className="flex flex-col gap-1.5 mb-5">
+                      {bannerHasDiscount && (
+                        <span className="text-[8px] font-black uppercase tracking-widest text-green-400 bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full w-fit shadow-[0_0_10px_rgba(34,197,94,0.12)]">
+                          ✦ {bannerDiscountPct}% OFF
                         </span>
-                      </div>
-                    ) : (
-                      <div className="offer-badge bg-gray-900 border border-white/10 text-white px-4 py-2 rounded-full flex items-center gap-2 shadow-2xl">
-                        <span className="text-xs font-black uppercase tracking-widest text-yellow-500">Best Seller</span>
-                      </div>
-                    )}
-
-                    {/* Price overlay ── uses helper */}
-                    {promoSettings?.offerActive && promoSettings.offerProductId === featuredHero.id && (
-                      <div
-                        className="featured-offer-card featured-asset-card px-6 py-4 rounded-2xl z-20"
-                        onClick={handleFeaturedClick}
-                      >
-                        <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1 font-black">Featured Offer</p>
-                        <p className="text-sm text-white font-black uppercase tracking-widest mb-1">{featuredHero.name}</p>
-                        {getEffectivePrice(featuredHero, promoSettings) < Number(featuredHero.price) ? (
-                          <div className="flex items-center gap-3">
-                            <span className="text-yellow-500 font-black text-xl">
-                              ₹{getEffectivePrice(featuredHero, promoSettings).toLocaleString()}
-                            </span>
-                            <span className="text-xs text-gray-500 line-through font-bold">
-                              ₹{Number(featuredHero.price).toLocaleString()}
-                            </span>
-                          </div>
+                      )}
+                      <div className="flex items-baseline gap-3 flex-wrap">
+                        <span className="text-2xl xl:text-3xl font-black text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.35)]">
+                          ₹{bannerSalePrice.toLocaleString()}
+                        </span>
+                        {bannerHasDiscount ? (
+                          <span className="text-sm text-gray-500 line-through font-semibold">
+                            ₹{bannerOrigPrice.toLocaleString()}
+                          </span>
                         ) : (
-                          <p className="text-yellow-500 font-black text-lg">
-                            ₹{Number(featuredHero.price || 0).toLocaleString()}
-                          </p>
+                          <span className="text-gray-600 font-normal text-xs">special price</span>
                         )}
                       </div>
+                    </div>
+                    {/* Desktop countdown timer */}
+                    {offer && (
+                      <div className="mb-6">
+                        <BannerCountdown offer={offer} compact={false} />
+                      </div>
                     )}
+                    <button className="bg-yellow-500 text-black px-7 py-3 rounded-full text-[10px] font-black uppercase tracking-widest w-fit hover:bg-white transition-all duration-300 shadow-[0_0_20px_rgba(234,179,8,0.35)] hover:shadow-[0_0_28px_rgba(255,255,255,0.2)] active:scale-95">
+                      Shop Now →
+                    </button>
                   </div>
-                </motion.div>
-              </div>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-      </section>
 
-      {/* ── PERKS ───────────────────────────────────────────────── */}
-      <section className="bg-black py-20 border-y border-yellow-900/10">
-        <div className="max-w-7xl mx-auto px-6 lg:px-16">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
-            {perks.map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="text-center group">
-                <div className="inline-flex p-5 rounded-2xl bg-yellow-500/5 border border-yellow-500/10 text-yellow-500 mb-6 group-hover:scale-110 transition-transform duration-500">
-                  <Icon size={32} strokeWidth={1.5} />
+                  {/* Right: product image */}
+                  <div className="flex-1 relative overflow-hidden">
+                    <img
+                      src={getHDImage(bannerProducts[safeIndex]?.image)}
+                      alt={bannerProducts[safeIndex]?.name}
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-[5000ms] ease-out"
+                    />
+                    {/* Fade edge from left */}
+                    <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-gray-950 to-transparent" />
+                  </div>
                 </div>
-                <h3 className="text-white font-black text-xs uppercase tracking-[0.3em] mb-3">{title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed max-w-[250px] mx-auto">{desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-16 py-32 space-y-40">
+                {/* Mobile text overlay */}
+                <div className="lg:hidden absolute inset-0 flex flex-col justify-center px-4 sm:px-10">
+                  <span className="bg-yellow-500 text-black text-[6px] sm:text-[7px] font-black uppercase tracking-widest px-2 py-0.5 sm:px-2.5 sm:py-1 rounded w-fit mb-1.5 sm:mb-2.5">
+                    Featured Offer
+                  </span>
+                  <h2 className="text-sm sm:text-2xl font-black text-white tracking-tight uppercase max-w-[65%] mb-1 leading-tight line-clamp-2">
+                    {bannerProducts[safeIndex]?.name}
+                  </h2>
 
-        {/* ── CATEGORIES ──────────────────────────────────────────── */}
-        <section>
-          <div className="flex flex-col items-center text-center mb-20">
-            <p className="text-yellow-500 text-[10px] font-black uppercase tracking-[0.5em] mb-4">Curated Selections</p>
-            <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter">
-              Shop the <span className="gold-shine">collection</span>
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-6 h-[800px] md:h-[600px]">
-            {categories.map((cat, idx) => (
-              <Link
-                key={cat.id}
-                to={cat.comingSoon ? '#' : `/products?category=${cat.name.toLowerCase()}`}
-                className={`group relative rounded-3xl overflow-hidden border border-white/5 transition-all duration-700
-                  ${idx === 0 ? 'md:col-span-3 md:row-span-2' : ''}
-                  ${idx === 1 ? 'md:col-span-3' : ''}
-                  ${idx === 2 ? 'md:col-span-1 md:row-span-1' : ''}
-                  ${idx === 3 ? 'md:col-span-2' : ''}
-                  ${cat.comingSoon ? 'cursor-not-allowed grayscale' : 'hover:border-yellow-500/40'}
-                `}
-              >
-                <img
-                  src={getOptimizedImage(cat.image, 'thumbnail')}
-                  alt={cat.name}
-                  loading="lazy"
-                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                <div className="absolute inset-0 p-8 flex flex-col justify-end">
-                  <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-2">{cat.name}</h3>
-                  {cat.comingSoon ? (
-                    <span className="text-yellow-500/60 text-[8px] font-black uppercase tracking-widest">Coming Soon</span>
-                  ) : (
-                    <span className="text-yellow-500 text-[8px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
-                      Discover
-                    </span>
+                  {/* ── Mobile: Dual price + discount badge ── */}
+                  <div className="flex flex-col gap-0.5 sm:gap-1 mb-2 sm:mb-3">
+                    {bannerHasDiscount && (
+                      <span className="text-[6px] sm:text-[7px] font-black uppercase tracking-widest text-green-400 bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 rounded-full w-fit">
+                        {bannerDiscountPct}% OFF
+                      </span>
+                    )}
+                    <div className="flex items-baseline gap-1.5 flex-wrap">
+                      <span className="text-[10px] sm:text-sm font-black text-yellow-400 uppercase tracking-wider">
+                        ₹{bannerSalePrice.toLocaleString()}
+                      </span>
+                      {bannerHasDiscount && (
+                        <span className="text-[8px] sm:text-[10px] text-gray-400 line-through font-semibold">
+                          ₹{bannerOrigPrice.toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="bg-white text-black px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-[7px] sm:text-[8px] font-black uppercase tracking-widest w-fit hover:bg-yellow-500 transition-colors shadow-lg active:scale-95">
+                    Shop Now
+                  </span>
+                  {/* Mobile compact countdown — hidden when banner is very small */}
+                  {offer && (
+                    <div className="mt-1.5 sm:mt-3">
+                      <BannerCountdown offer={offer} compact={true} />
+                    </div>
                   )}
                 </div>
-              </Link>
-            ))}
-          </div>
-        </section>
+              </motion.div>
+            ) : (
+              <div key="no-banner" className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                <div className="text-yellow-500/20 text-5xl font-black tracking-widest">SMKP</div>
+                <p className="text-gray-700 uppercase tracking-[0.5em] text-[10px] font-black">Curated Deals Coming Soon</p>
+              </div>
+            )}
+          </AnimatePresence>
 
-        {/* ── FEATURED PRODUCTS ───────────────────────────────────── */}
-        <section>
-          <div className="flex justify-between items-end mb-16">
-            <div className="space-y-2">
-              <p className="text-yellow-500 text-[10px] font-black uppercase tracking-[0.5em]">The Elite List</p>
-              <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter">
-                New <span className="gold-shine">Arrivals</span>
-              </h2>
+          {/* Slide dots */}
+          {bannerProducts.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+              {bannerProducts.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentIndex(idx)}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${safeIndex === idx ? 'w-7 bg-yellow-500' : 'w-1.5 bg-gray-700'}`}
+                  aria-label={`Slide ${idx + 1}`}
+                />
+              ))}
             </div>
-            <Link
-              to="/products"
-              className="text-gray-400 hover:text-white font-black text-[10px] uppercase tracking-[0.2em] transition-colors border-b border-white/10 pb-1"
-            >
+          )}
+        </div>
+      </div>
+
+      {/* ── 3. Flash Deals Section — all active offers ── */}
+      {promoSettings?.offerActive && promoSettings?.activeOffers?.length > 0 && (
+        <section className="mx-3 sm:mx-8 lg:mx-auto max-w-7xl mt-5 sm:mt-8">
+          {/* Section header */}
+          <div className="flex justify-between items-center mb-3 sm:mb-5">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-red-500 animate-pulse" />
+              <h2 className="text-base sm:text-xl font-black text-white tracking-tight uppercase">Flash Deals</h2>
+              <span className="bg-red-500/10 text-red-400 border border-red-500/20 text-[7px] sm:text-[8px] font-black uppercase tracking-widest px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full">
+                {promoSettings.activeOffers.length} Live
+              </span>
+            </div>
+            <Link to="/products" className="text-yellow-500 hover:text-white font-black text-[8px] sm:text-[9px] uppercase tracking-widest transition-colors border-b border-yellow-500/30 pb-0.5">
               View All
             </Link>
           </div>
 
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="animate-pulse bg-gray-900/50 h-[380px] rounded-3xl border border-white/5" />
-              ))}
-            </div>
-          ) : products && products.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {products.map((p, i) => (
-                <ProductCard key={p.id} product={p} delay={i * 100} promoSettings={promoSettings} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-16 bg-gray-900/30 rounded-3xl border border-yellow-900/10">
-              <p className="text-gray-500 font-black uppercase tracking-[0.2em] text-xs">No New Arrivals Available</p>
-            </div>
-          )}
-        </section>
+          {/* Offer cards grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-5">
+            {promoSettings.activeOffers.map((activeOffer) => {
+              const prod = offerProductsMap[activeOffer.id];
+              if (!prod) {
+                // Skeleton while product loads
+                return (
+                  <div key={activeOffer.id} className="animate-pulse bg-gray-900/50 rounded-xl sm:rounded-[1.5rem] border border-white/5 h-[180px] sm:h-[220px]" />
+                );
+              }
 
-      </div>
+              const originalPrice = Number(prod.price || 0);
+              const discountPct = Number(activeOffer.discount || 0);
+              const salePrice = Math.round(originalPrice * (1 - discountPct / 100));
+
+              return (
+                <div
+                  key={activeOffer.id}
+                  className="group bg-gray-900/40 backdrop-blur-xl rounded-xl sm:rounded-[1.5rem] border border-yellow-900/15 overflow-hidden shadow-xl hover:border-yellow-500/30 transition-all duration-300 flex flex-col"
+                >
+                  {/* Product image */}
+                  <div className="relative h-[100px] sm:h-[140px] lg:h-[160px] overflow-hidden bg-black flex-shrink-0">
+                    <img
+                      src={getHDImage(prod.image)}
+                      alt={prod.name}
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                    />
+                    {/* Discount badge */}
+                    <div className="absolute top-1.5 left-1.5 sm:top-3 sm:left-3 bg-yellow-500 text-black text-[6px] sm:text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-lg">
+                      {discountPct}% OFF
+                    </div>
+                    {/* Live pulse indicator */}
+                    <div className="absolute top-1.5 right-1.5 sm:top-3 sm:right-3 flex items-center gap-1 bg-black/60 backdrop-blur-sm border border-red-500/20 rounded-full px-1.5 py-0.5 sm:px-2.5 sm:py-1">
+                      <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-red-500 animate-pulse" />
+                      <span className="text-[6px] sm:text-[7px] font-black text-red-400 uppercase tracking-widest hidden xs:inline">Live</span>
+                    </div>
+                  </div>
+
+                  {/* Card body */}
+                  <div className="p-2.5 sm:p-4 flex flex-col gap-1 sm:gap-2 flex-1">
+                    <h3 className="text-[9px] sm:text-xs font-black text-white uppercase tracking-wide line-clamp-2 leading-tight">
+                      {prod.name}
+                    </h3>
+
+                    {/* Prices */}
+                    <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
+                      <span className="text-sm sm:text-base font-black text-yellow-400">₹{salePrice.toLocaleString()}</span>
+                      <span className="text-[8px] sm:text-[10px] text-gray-500 line-through font-semibold">₹{originalPrice.toLocaleString()}</span>
+                    </div>
+
+                    {/* Individual countdown timer */}
+                    <div className="mt-0.5 sm:mt-1">
+                      <BannerCountdown offer={activeOffer} compact={true} />
+                    </div>
+
+                    {/* CTA */}
+                    <Link
+                      to={`/product/${prod.id}`}
+                      className="mt-auto inline-flex items-center justify-center gap-1 sm:gap-1.5 bg-yellow-500 text-black px-2.5 py-1.5 sm:px-4 sm:py-2.5 rounded-full text-[7px] sm:text-[9px] font-black uppercase tracking-widest hover:bg-white transition-all duration-300 shadow-[0_0_12px_rgba(234,179,8,0.2)] hover:shadow-[0_0_20px_rgba(255,255,255,0.15)] active:scale-95"
+                    >
+                      View Deal <ArrowRight size={9} className="hidden sm:inline" />
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ── 4. New Arrivals / Featured Products ── */}
+      <section className="mx-3 sm:mx-8 lg:mx-auto max-w-7xl mt-5 sm:mt-8">
+        <div className="flex justify-between items-end mb-4 sm:mb-6">
+          <div className="space-y-1">
+            <p className="text-yellow-500 text-[8px] font-black uppercase tracking-[0.4em]">The Elite List</p>
+            <h2 className="text-xl font-black text-white tracking-tight uppercase">New Arrivals</h2>
+          </div>
+          <Link to="/products" className="text-gray-400 hover:text-white font-black text-[9px] uppercase tracking-widest transition-colors border-b border-white/10 pb-0.5">
+            View All
+          </Link>
+        </div>
+
+        {loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="animate-pulse bg-gray-900/50 h-[260px] rounded-2xl border border-white/5" />
+            ))}
+          </div>
+        ) : products && products.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {products.map((p, i) => (
+              <ProductCard key={p.id} product={p} delay={i * 50} promoSettings={promoSettings} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-16 bg-gray-900/30 rounded-2xl border border-yellow-900/10">
+            <p className="text-gray-500 font-black uppercase tracking-[0.2em] text-xs">No New Arrivals Available</p>
+          </div>
+        )}
+      </section>
+
+      {/* ── 5. Recently Viewed Section ── */}
+      {recentlyViewed && recentlyViewed.length > 0 && (
+        <section className="mx-4 sm:mx-8 lg:mx-auto max-w-7xl mt-8">
+          <div className="mb-6">
+            <p className="text-yellow-500 text-[8px] font-black uppercase tracking-[0.4em]">Based on your activity</p>
+            <h2 className="text-xl font-black text-white tracking-tight uppercase">Recently Viewed</h2>
+          </div>
+          <div className="flex flex-nowrap gap-4 overflow-x-auto scrollbar-none pb-2 select-none touch-pan-x">
+            {recentlyViewed.map((p, i) => (
+              <div key={`recent-${p.id}-${i}`} className="w-[150px] flex-shrink-0">
+                <ProductCard product={p} delay={i * 50} promoSettings={promoSettings} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── FOOTER ──────────────────────────────────────────────── */}
       <footer className="bg-black py-32 border-t border-yellow-900/10">

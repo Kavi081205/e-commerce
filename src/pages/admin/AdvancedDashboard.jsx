@@ -127,62 +127,58 @@ const AdvancedDashboard = () => {
       <div className="flex">
         {/* ── Sidebar ─────────────────────────────────────────────── */}
         {/* FIX 3: mobile sidebar slides in/out via AnimatePresence */}
-        <AnimatePresence>
-          {(mobileSidebarOpen || true /* always visible on lg */) && (
-            <aside
-              className={`
-                ${mobileSidebarOpen ? 'flex' : 'hidden'} lg:flex
-                w-72 h-screen flex-col border-r border-white/5 bg-[#0d0d0d]
-                sticky top-0 z-50 lg:z-auto
-              `}
+        <aside
+          className={`
+            ${mobileSidebarOpen ? 'flex' : 'hidden'} lg:flex
+            w-72 h-screen flex-col border-r border-white/5 bg-[#0d0d0d]
+            sticky top-0 z-50 lg:z-auto
+          `}
+        >
+          <div className="p-8 flex items-center justify-between">
+            <Link to="/" className="flex items-center">
+              <img src={logo} alt="Logo" className="h-14 w-auto object-contain" />
+            </Link>
+            {/* Close button only visible on mobile */}
+            <button
+              onClick={() => setMobileSidebarOpen(false)}
+              className="lg:hidden text-gray-500 hover:text-white transition-colors"
+              aria-label="Close sidebar"
             >
-              <div className="p-8 flex items-center justify-between">
-                <Link to="/" className="flex items-center">
-                  <img src={logo} alt="Logo" className="h-14 w-auto object-contain" />
-                </Link>
-                {/* Close button only visible on mobile */}
-                <button
-                  onClick={() => setMobileSidebarOpen(false)}
-                  className="lg:hidden text-gray-500 hover:text-white transition-colors"
-                  aria-label="Close sidebar"
-                >
-                  <X size={20} />
-                </button>
-              </div>
+              <X size={20} />
+            </button>
+          </div>
 
-              {/* FIX 4: real nav links */}
-              <nav className="flex-1 px-4 space-y-2">
-                {NAV_ITEMS.map(({ label, to }) => (
-                  <Link
-                    key={label}
-                    to={to}
-                    onClick={() => setMobileSidebarOpen(false)}
-                    className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all ${label === 'Dashboard'
-                        ? 'bg-yellow-500/10 text-yellow-400'
-                        : 'text-gray-500 hover:text-gray-200 hover:bg-white/5'
-                      }`}
-                  >
-                    <div className="w-5 h-5 opacity-80" />
-                    {label}
-                  </Link>
-                ))}
-              </nav>
+          {/* FIX 4: real nav links */}
+          <nav className="flex-1 px-4 space-y-2">
+            {NAV_ITEMS.map(({ label, to }) => (
+              <Link
+                key={label}
+                to={to}
+                onClick={() => setMobileSidebarOpen(false)}
+                className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all ${label === 'Dashboard'
+                    ? 'bg-yellow-500/10 text-yellow-400'
+                    : 'text-gray-500 hover:text-gray-200 hover:bg-white/5'
+                  }`}
+              >
+                <div className="w-5 h-5 opacity-80" />
+                {label}
+              </Link>
+            ))}
+          </nav>
 
-              <div className="p-8 border-t border-white/5">
-                <div className="bg-gradient-to-br from-yellow-500/20 to-blue-500/20 p-6 rounded-3xl border border-white/5 text-center">
-                  <p className="text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-2">Pro Plan</p>
-                  <p className="text-xs text-gray-400 font-medium mb-4">
-                    Unlock advanced analytics and fleet tracking.
-                  </p>
-                  {/* FIX 5: was text-black on bg-gray-900 — completely invisible */}
-                  <button className="w-full bg-yellow-500 text-black py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-transform">
-                    Upgrade Now
-                  </button>
-                </div>
-              </div>
-            </aside>
-          )}
-        </AnimatePresence>
+          <div className="p-8 border-t border-white/5">
+            <div className="bg-gradient-to-br from-yellow-500/20 to-blue-500/20 p-6 rounded-3xl border border-white/5 text-center">
+              <p className="text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-2">Pro Plan</p>
+              <p className="text-xs text-gray-400 font-medium mb-4">
+                Unlock advanced analytics and fleet tracking.
+              </p>
+              {/* FIX 5: was text-black on bg-gray-900 — completely invisible */}
+              <button className="w-full bg-yellow-500 text-black py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-transform">
+                Upgrade Now
+              </button>
+            </div>
+          </div>
+        </aside>
 
         {/* ── Main Content ─────────────────────────────────────────── */}
         <main className="flex-1 p-6 md:p-10 overflow-x-hidden">

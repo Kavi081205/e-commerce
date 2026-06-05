@@ -45,10 +45,16 @@ export const PromoProvider = ({ children }) => {
   useEffect(() => {
     const offersRef = collection(db, 'offers');
     const unsubscribe = onSnapshot(offersRef, (snapshot) => {
-      const list = snapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...docSnap.data()
-      }));
+      const list = snapshot.docs.map(docSnap => {
+        const data = docSnap.data();
+        const expiry = data.expiryDateTime || data.offerEndDate || '';
+        return {
+          id: docSnap.id,
+          ...data,
+          expiryDateTime: expiry,
+          offerEndDate: expiry
+        };
+      });
       setOffers(list);
       setLoading(false);
     }, (error) => {
@@ -62,7 +68,8 @@ export const PromoProvider = ({ children }) => {
   useEffect(() => {
     const now = Date.now();
     offers.forEach(async (offer) => {
-      if (offer.isActive && offer.offerEndDate && new Date(offer.offerEndDate).getTime() <= now) {
+      const expiry = offer.expiryDateTime || offer.offerEndDate;
+      if (offer.isActive && expiry && new Date(expiry).getTime() <= now) {
         try {
           const offerDocRef = doc(db, 'offers', offer.id);
           await updateDoc(offerDocRef, { isActive: false });
@@ -80,21 +87,27 @@ export const PromoProvider = ({ children }) => {
 
     // Client-side filtering to get valid active offers (treating expired ones as inactive automatically)
     const activeOffers = offers.filter(o => {
-      if (!o.isActive || !o.offerEndDate) return false;
-      const end = new Date(o.offerEndDate).getTime();
+      const expiry = o.expiryDateTime || o.offerEndDate;
+      if (!o.isActive || !expiry) return false;
+      const end = new Date(expiry).getTime();
       return end > now;
     });
 
-    // Sort by offerEndDate ascending (prioritize the one that expires first)
-    activeOffers.sort((a, b) => new Date(a.offerEndDate).getTime() - new Date(b.offerEndDate).getTime());
+    // Sort by expiryDateTime ascending (prioritize the one that expires first)
+    activeOffers.sort((a, b) => {
+      const endA = new Date(a.expiryDateTime || a.offerEndDate).getTime();
+      const endB = new Date(b.expiryDateTime || b.offerEndDate).getTime();
+      return endA - endB;
+    });
 
     const currentOffer = activeOffers[0] || null;
 
     return {
       bannerProductIds: mainPromo.bannerProductIds || [],
-      offerActive: !!currentOffer,
+      offerActive: activeOffers.length > 0,
+      activeOffers: activeOffers,
       offerProductId: currentOffer?.productId || '',
-      offerEnd: currentOffer?.offerEndDate || '',
+      offerEnd: currentOffer?.expiryDateTime || currentOffer?.offerEndDate || '',
       discount: Number(currentOffer?.discount || 0),
       offerTitle: currentOffer?.title || '',
       activeOffer: currentOffer,

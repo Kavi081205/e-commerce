@@ -29,6 +29,7 @@ const SearchInput = ({ id, value, onChange, onFocus, onBlur }) => (
     </div>
     <input
       id={id}
+      name={id || 'search'}
       type="search"
       autoComplete="off"
       value={value}
@@ -45,18 +46,18 @@ const SearchInput = ({ id, value, onChange, onFocus, onBlur }) => (
 const SuggestionDropdown = ({ suggestions, handleProductClick }) => (
   <div className="absolute top-full left-0 right-0 mt-3 bg-gray-950 border border-yellow-900/40 rounded-2xl shadow-2xl overflow-hidden z-50 backdrop-blur-xl">
     {suggestions.map((product) => (
-       <div
-          key={product.id}
-          onMouseDown={() => handleProductClick(product)}
-          onClick={() => {
-            console.log("Suggestion click fired for product ID:", product.id);
-            handleProductClick(product);
-          }}
-          className="search-suggestion-item flex items-center gap-4 p-4 hover:bg-yellow-500/10 transition-colors border-b border-yellow-900/20 last:border-0"
-       >
-          <img src={product.image} className="w-12 h-12 rounded-lg object-cover border border-yellow-900/20 flex-shrink-0" />
-          <span className="text-sm font-bold text-white">{product.name}</span>
-       </div>
+      <div
+        key={product.id}
+        onMouseDown={() => handleProductClick(product)}
+        onClick={() => {
+          console.log("Suggestion click fired for product ID:", product.id);
+          handleProductClick(product);
+        }}
+        className="search-suggestion-item flex items-center gap-4 p-4 hover:bg-yellow-500/10 transition-colors border-b border-yellow-900/20 last:border-0"
+      >
+        <img src={product.image} className="w-12 h-12 rounded-lg object-cover border border-yellow-900/20 flex-shrink-0" />
+        <span className="text-sm font-bold text-white">{product.name}</span>
+      </div>
     ))}
   </div>
 );
@@ -133,34 +134,30 @@ const Navbar = () => {
   }, [navigate]);
 
   const handleProductClick = (product) => {
-     console.log("Selected product object:", product);
-     const productId = product.id || product.docId || product._id || product.uid;
-     console.log("Verified identifier used for details navigation:", productId);
-     navigate(`/product/${productId}`);
-     setSearch("");
-     setSuggestions([]);
+    console.log("Selected product object:", product);
+    const productId = product.id || product.docId || product._id || product.uid;
+    console.log("Verified identifier used for details navigation:", productId);
+    navigate(`/product/${productId}`);
+    setSearch("");
+    setSuggestions([]);
   };
 
   /* ── nav link style helpers ── */
   const navCls = ({ isActive }) =>
-    `text-xs font-black tracking-widest uppercase transition-all duration-300 relative group ${
-      isActive ? 'text-yellow-500' : 'text-gray-400 hover:text-white'
+    `text-xs font-black tracking-widest uppercase transition-all duration-300 relative group ${isActive ? 'text-yellow-500' : 'text-gray-400 hover:text-white'
     }`;
   const mobileCls = ({ isActive }) =>
-    `block text-lg font-black tracking-widest uppercase py-4 transition-all ${
-      isActive ? 'text-yellow-500' : 'text-gray-400 hover:text-white'
+    `block text-lg font-black tracking-widest uppercase py-4 transition-all ${isActive ? 'text-yellow-500' : 'text-gray-400 hover:text-white'
     }`;
   const underline = (isActive) =>
-    `absolute -bottom-1 left-0 h-[1px] bg-yellow-500 transition-all duration-300 group-hover:w-full ${
-      isActive ? 'w-full' : 'w-0'
+    `absolute -bottom-1 left-0 h-[1px] bg-yellow-500 transition-all duration-300 group-hover:w-full ${isActive ? 'w-full' : 'w-0'
     }`;
 
   return (
     <nav className="bg-black border-b border-yellow-900/30 sticky top-0 z-50 shadow-2xl shadow-black">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
-
-          {/* ── Logo ── */}
+        {/* ── Desktop Layout ── */}
+        <div className="hidden md:flex justify-between items-center h-20">
           <Link
             to="/"
             className="flex items-center flex-shrink-0 transition-transform hover:scale-105 active:scale-95"
@@ -172,8 +169,7 @@ const Navbar = () => {
             />
           </Link>
 
-          {/* ── Desktop: Search bar ── */}
-          <div className="hidden md:flex flex-1 max-w-xs mx-8 relative" ref={searchRef}>
+          <div className="flex-1 max-w-xs mx-8 relative" ref={searchRef}>
             <SearchInput
               id="nav-search-desktop"
               value={search}
@@ -189,10 +185,7 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* ── Desktop nav links (customer only) ── */}
           <div className="hidden md:flex items-center space-x-10">
-
-            {/* Navigation links */}
             <NavLink to="/" end className={navCls}>
               {({ isActive }) => (
                 <> Home <span className={underline(isActive)} /> </>
@@ -204,10 +197,7 @@ const Navbar = () => {
               )}
             </NavLink>
 
-            {/* ── Icon strip ── */}
             <div className="flex items-center gap-6 pl-8 border-l border-yellow-900/30">
-
-              {/* Wishlist */}
               <Link
                 to="/wishlist"
                 className="relative group text-gray-400 hover:text-yellow-500 transition-all"
@@ -224,7 +214,6 @@ const Navbar = () => {
                 )}
               </Link>
 
-              {/* Cart */}
               <Link
                 to="/cart"
                 className="relative group text-gray-400 hover:text-yellow-500 transition-all"
@@ -242,7 +231,6 @@ const Navbar = () => {
               </Link>
             </div>
 
-            {/* ── Auth section ── */}
             <div className="flex items-center gap-6">
               {currentUser ? (
                 <>
@@ -280,47 +268,71 @@ const Navbar = () => {
               )}
             </div>
           </div>
-
-          {/* ── Mobile action bar ── */}
-          <div className="flex md:hidden items-center gap-5">
-            <Link to="/wishlist" className="relative text-gray-400" aria-label="Wishlist">
-              <Heart size={20} />
-              {wishlistItems.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
-                  {wishlistItems.length}
-                </span>
-              )}
-            </Link>
-            <Link to="/cart" className="relative text-gray-400" aria-label="Cart">
-              <ShoppingCart size={22} className={bump ? 'animate-bounce text-yellow-500' : ''} />
-              {cartCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-yellow-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
-                  {cartCount}
-                </span>
-              )}
-            </Link>
-            <button
-              onClick={() => setMobileOpen(p => !p)}
-              className="text-gray-400 hover:text-yellow-500 focus:outline-none transition-colors"
-              aria-label="Toggle menu"
-              aria-expanded={mobileOpen}
-            >
-              {mobileOpen ? <X size={28} /> : <Menu size={28} />}
-            </button>
-          </div>
         </div>
-      </div>
 
-      {/* ── Mobile menu ── */}
-      <div
-        className={`md:hidden bg-black border-t border-yellow-900/20 overflow-hidden transition-all duration-500 ease-in-out ${
-          mobileOpen ? 'max-h-[90vh] opacity-100' : 'max-h-0 opacity-0'
-        }`}
-      >
-        <div className="px-6 py-8 space-y-6">
+        {/* ── Flipkart-Style Mobile Header (Dual Row) ── */}
+        <div className="md:hidden flex flex-col pt-3 pb-3.5 gap-3">
+          {/* Row 1: Menu + Brand Logo + Actions */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setMobileOpen(p => !p)}
+                className="text-gray-400 hover:text-yellow-500 focus:outline-none transition-colors"
+                aria-label="Toggle menu"
+                aria-expanded={mobileOpen}
+              >
+                {mobileOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+              <Link
+                to="/"
+                className="flex items-center transition-transform hover:scale-105 active:scale-95"
+              >
+                <img
+                  src={logo}
+                  alt="SMKP Traders"
+                  className="h-10 w-auto object-contain"
+                />
+              </Link>
+            </div>
 
-          {/* Mobile search */}
-          <div className="relative" ref={searchRef}>
+            <div className="flex items-center gap-4">
+              <Link to="/wishlist" className="relative text-gray-400 hover:text-yellow-500 transition-colors" aria-label="Wishlist">
+                <Heart size={20} />
+                {wishlistItems.length > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-yellow-500 text-black text-[9px] font-black rounded-full h-3.5 w-3.5 flex items-center justify-center shadow-md">
+                    {wishlistItems.length}
+                  </span>
+                )}
+              </Link>
+              <Link to="/cart" className="relative text-gray-400 hover:text-yellow-500 transition-colors" aria-label="Cart">
+                <ShoppingCart size={20} className={bump ? 'animate-bounce text-yellow-500' : ''} />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-yellow-600 text-white text-[9px] font-black rounded-full h-3.5 w-3.5 flex items-center justify-center shadow-md">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+              {currentUser ? (
+                <button
+                  onClick={handleProfileClick}
+                  className="w-8 h-8 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500 font-black text-xs border border-yellow-500/30"
+                  aria-label="Profile"
+                >
+                  {currentUser.displayName?.[0]?.toUpperCase() ?? 'U'}
+                </button>
+              ) : (
+                <Link
+                  to="/login"
+                  className="text-[9px] font-black uppercase tracking-widest text-yellow-500 border border-yellow-500/30 px-3 py-1.5 rounded-full"
+                >
+                  Login
+                </Link>
+              )}
+            </div>
+          </div>
+
+          {/* Row 2: Search input centred below top bar */}
+          <div className="relative w-full" ref={searchRef}>
             <SearchInput
               id="nav-search-mobile"
               value={search}
@@ -335,44 +347,29 @@ const Navbar = () => {
               />
             )}
           </div>
+        </div>
+      </div>
 
-          {/* Mobile nav links (customer only — no admin links ever) */}
+      {/* ── Mobile menu drawer ── */}
+      <div
+        className={`md:hidden bg-black border-t border-yellow-900/20 overflow-hidden transition-all duration-500 ease-in-out ${mobileOpen ? 'max-h-[90vh] opacity-100' : 'max-h-0 opacity-0'
+          }`}
+      >
+        <div className="px-6 py-6 space-y-4">
           <NavLink to="/" end onClick={() => setMobileOpen(false)} className={mobileCls}>
             Home
           </NavLink>
           <NavLink to="/products" end onClick={() => setMobileOpen(false)} className={mobileCls}>
             Products
           </NavLink>
-          <NavLink to="/wishlist" end onClick={() => setMobileOpen(false)} className={mobileCls}>
-            <span className="flex items-center gap-3">
-              <Heart size={18} /> Wishlist
-              {wishlistItems.length > 0 && (
-                <span className="bg-yellow-500 text-black text-xs font-bold rounded-full px-2 py-0.5">
-                  {wishlistItems.length}
-                </span>
-              )}
-            </span>
-          </NavLink>
-          <NavLink to="/cart" end onClick={() => setMobileOpen(false)} className={mobileCls}>
-            <span className="flex items-center gap-3">
-              <ShoppingCart size={18} /> Cart
-              {cartCount > 0 && (
-                <span className="bg-yellow-600 text-white text-xs font-bold rounded-full px-2 py-0.5">
-                  {cartCount}
-                </span>
-              )}
-            </span>
-          </NavLink>
-
-          {/* Mobile auth */}
-          <div className="pt-6 border-t border-yellow-900/10 space-y-6">
+          <div className="pt-4 border-t border-yellow-900/10 space-y-4">
             {currentUser ? (
               <>
                 {isAdmin && (
                   <Link
                     to="/admin"
                     onClick={() => setMobileOpen(false)}
-                    className="block w-full py-4 bg-yellow-500 text-black text-center font-black uppercase tracking-widest rounded-xl mb-4"
+                    className="block w-full py-3 bg-yellow-500 text-black text-center font-black uppercase tracking-widest rounded-xl text-xs"
                   >
                     Dashboard
                   </Link>
@@ -380,22 +377,22 @@ const Navbar = () => {
                 <Link
                   to="/profile"
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-4 text-gray-400 font-bold uppercase tracking-widest text-sm"
+                  className="flex items-center gap-3 text-gray-400 font-bold uppercase tracking-widest text-xs py-2"
                 >
-                  <User size={20} /> Account
+                  <User size={16} /> Account
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-4 text-red-500 font-bold uppercase tracking-widest text-sm"
+                  className="flex items-center gap-3 text-red-500 font-bold uppercase tracking-widest text-xs py-2 w-full text-left"
                 >
-                  <X size={20} /> Sign Out
+                  <X size={16} /> Sign Out
                 </button>
               </>
             ) : (
               <Link
                 to="/login"
                 onClick={() => setMobileOpen(false)}
-                className="block w-full py-4 bg-yellow-500 text-black text-center font-black uppercase tracking-widest rounded-xl"
+                className="block w-full py-3 bg-yellow-500 text-black text-center font-black uppercase tracking-widest rounded-xl text-xs"
               >
                 Login
               </Link>

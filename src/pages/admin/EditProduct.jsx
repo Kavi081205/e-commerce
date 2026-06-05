@@ -364,7 +364,7 @@ const EditProduct = () => {
         try {
           imageUrl = await uploadImage(file);
         } catch (uploadErr) {
-          throw new Error(`Image upload failed: ${uploadErr.message}`);
+          throw new Error(`Image upload failed: ${uploadErr.message}`, { cause: uploadErr });
         }
       }
 
@@ -644,8 +644,8 @@ const EditProduct = () => {
                       id="prod-image" type="url" name="image" autoComplete="url"
                       value={formData.image} onChange={handleChange}
                       placeholder="https://images.unsplash.com/..."
-                      disabled={!!file}
-                      className={`w-full bg-slate-950 border rounded-xl py-4 pl-12 pr-5 text-white font-medium focus:ring-4 outline-none transition-all ${!!file ? 'opacity-50 cursor-not-allowed' : ''
+                      disabled={file}
+                      className={`w-full bg-slate-950 border rounded-xl py-4 pl-12 pr-5 text-white font-medium focus:ring-4 outline-none transition-all ${file ? 'opacity-50 cursor-not-allowed' : ''
                         } ${errors.image ? 'border-red-500 focus:ring-red-500/10' : 'border-yellow-900/20 focus:ring-yellow-500/10 focus:border-yellow-500'}`}
                     />
                   </div>
@@ -732,6 +732,7 @@ const EditProduct = () => {
                             <div className="flex gap-3 items-center">
                               <input
                                 id={`variant-color-name-${colorIdx}`}
+                                name={`variantColorName-${colorIdx}`}
                                 type="text"
                                 value={v.colorName}
                                 onChange={(e) => handleUpdateVariantColorField(colorIdx, 'colorName', e.target.value)}
@@ -764,6 +765,7 @@ const EditProduct = () => {
                             >
                               <input
                                 id={`variant-file-upload-${colorIdx}`}
+                                name={`variantFileUpload-${colorIdx}`}
                                 type="file"
                                 accept="image/*"
                                 onChange={(e) => handleVariantColorFileUpload(e, colorIdx)}
@@ -804,6 +806,7 @@ const EditProduct = () => {
                                 </label>
                                 <input
                                   id={`variant-stock-${colorIdx}`}
+                                  name={`variantStock-${colorIdx}`}
                                   type="number"
                                   min="0"
                                   value={v.stock}
@@ -820,6 +823,7 @@ const EditProduct = () => {
                                   <label htmlFor={`variant-enable-sizes-${colorIdx}`} className="relative inline-flex items-center cursor-pointer">
                                     <input 
                                       id={`variant-enable-sizes-${colorIdx}`}
+                                      name={`variantEnableSizes-${colorIdx}`}
                                       type="checkbox" 
                                       checked={v.enableSizes} 
                                       onChange={(e) => handleUpdateVariantColorField(colorIdx, 'enableSizes', e.target.checked)} 
@@ -833,8 +837,10 @@ const EditProduct = () => {
                                   <div className="space-y-3 bg-slate-950/40 p-4 rounded-xl border border-white/5">
                                     <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Add Sizes & Stock</p>
                                     <div className="flex gap-2">
+                                      <label htmlFor={`variant-size-${colorIdx}`} className="sr-only">Variant Size</label>
                                       <input
                                         id={`variant-size-${colorIdx}`}
+                                        name={`variantSize-${colorIdx}`}
                                         type="text"
                                         value={tempSize}
                                         onChange={(e) => setTempSizes(prev => ({
@@ -844,8 +850,10 @@ const EditProduct = () => {
                                         placeholder="Size (e.g. S, M, L)"
                                         className="flex-1 bg-slate-950 border border-yellow-900/20 rounded-lg p-2 text-xs text-white outline-none focus:border-yellow-500"
                                       />
+                                      <label htmlFor={`variant-stock-input-${colorIdx}`} className="sr-only">Variant Stock Qty</label>
                                       <input
-                                        id={`variant-stock-${colorIdx}`}
+                                        id={`variant-stock-input-${colorIdx}`}
+                                        name={`variantStockInput-${colorIdx}`}
                                         type="number"
                                         value={tempStock}
                                         onChange={(e) => setTempSizes(prev => ({
@@ -895,6 +903,7 @@ const EditProduct = () => {
                                     </label>
                                     <input
                                       id={`variant-stock-${colorIdx}`}
+                                      name={`variantStock-${colorIdx}`}
                                       type="number"
                                       min="0"
                                       value={v.stock}
@@ -925,6 +934,8 @@ const EditProduct = () => {
                                   <label htmlFor={`variant-color-code-${colorIdx}`} className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Color Code (Hex Override)</label>
                                   <div className="flex gap-2">
                                     <input
+                                      id={`variant-color-picker-${colorIdx}`}
+                                      name={`variantColorPicker-${colorIdx}`}
                                       type="color"
                                       value={v.colorCode || getColorCode(v.colorName)}
                                       onChange={(e) => handleUpdateVariantColorField(colorIdx, 'colorCode', e.target.value)}
@@ -933,6 +944,7 @@ const EditProduct = () => {
                                     />
                                     <input
                                       id={`variant-color-code-${colorIdx}`}
+                                      name={`variantColorCode-${colorIdx}`}
                                       type="text"
                                       value={v.colorCode || ''}
                                       onChange={(e) => handleUpdateVariantColorField(colorIdx, 'colorCode', e.target.value)}
@@ -947,6 +959,7 @@ const EditProduct = () => {
                                   <label htmlFor={`variant-price-diff-${colorIdx}`} className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Price Difference (Optional)</label>
                                   <input
                                     id={`variant-price-diff-${colorIdx}`}
+                                    name={`variantPriceDiff-${colorIdx}`}
                                     type="number"
                                     value={v.priceDifference || ''}
                                     onChange={(e) => handleUpdateVariantColorField(colorIdx, 'priceDifference', Number(e.target.value))}
@@ -961,6 +974,7 @@ const EditProduct = () => {
                                   <div className="flex gap-2">
                                     <input
                                       id={`variant-image-url-${colorIdx}`}
+                                      name={`variantImageUrl-${colorIdx}`}
                                       type="url"
                                       value={tempUrl}
                                       onChange={(e) => setTempUrls(prev => ({ ...prev, [colorIdx]: e.target.value }))}

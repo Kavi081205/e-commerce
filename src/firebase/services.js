@@ -269,7 +269,6 @@ export const createOrder = async (orderData) => {
         const prodId = item.productId || item.id;
         const productData = productDatas[prodId];
         
-        let stock = 0;
         let stockKey = prodId;
 
         if (productData.variants && productData.variants.length > 0) {
@@ -298,7 +297,7 @@ export const createOrder = async (orderData) => {
           }
         }
 
-        stock = tempStockTracker[stockKey];
+        const stock = tempStockTracker[stockKey];
         console.log("Stock available:", stock);
 
         const quantity = item.quantity || 1;
@@ -313,6 +312,28 @@ export const createOrder = async (orderData) => {
 
       // 3. Create the order document (Write 1)
       const orderRef = doc(collection(db, 'orders'));
+
+      const cityVal = orderData.city || orderData.customerDetails?.city || '';
+      const parts = cityVal.split(',').map(s => s.trim());
+      const parsedDistrict = parts[0] || '';
+      const parsedState = parts[1] || '';
+
+      const itemsList = orderData.items || orderData.orderedItems || [];
+      const orderedItems = itemsList.map(item => {
+        const price = Number(item.effectivePrice || item.price || 0);
+        const qty = Number(item.quantity || 1);
+        return {
+          productId: item.productId || item.id || '',
+          productName: item.name || item.productName || 'Unknown Product',
+          image: item.image || '',
+          color: typeof item.color === 'object' ? item.color.name : (item.selectedColor || item.color || ''),
+          size: item.size || '',
+          quantity: qty,
+          price: price,
+          total: Number(item.total || (price * qty))
+        };
+      });
+
       const formattedOrder = {
         userId: orderData.userId,
         customerName: orderData.name,
@@ -323,6 +344,8 @@ export const createOrder = async (orderData) => {
         items: orderData.items,
         totalPrice: orderData.totalPrice,
         subtotal: orderData.subtotal,
+        couponCode: orderData.couponCode || null,
+        couponDiscount: Number(orderData.couponDiscount || 0),
         deliveryCharge: orderData.deliveryCharge,
         deliveryZone: orderData.deliveryZone || '',
         estimatedDeliveryDays: orderData.estimatedDeliveryDays || '',
@@ -339,7 +362,18 @@ export const createOrder = async (orderData) => {
             message: 'Order placed successfully'
           }
         ],
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        customerDetails: {
+          name: orderData.name,
+          phone: orderData.phone,
+          email: orderData.userEmail || '',
+          address: orderData.address,
+          district: orderData.district || parsedDistrict,
+          state: orderData.state || parsedState,
+          pincode: orderData.pincode,
+          landmark: orderData.landmark || ''
+        },
+        orderedItems: orderedItems
       };
       transaction.set(orderRef, formattedOrder);
 
@@ -552,6 +586,7 @@ export const saveInvoice = async (orderId, orderData) => {
       pricing: {
         subtotal: subtotalExclGST,
         discount: items.reduce((acc, item) => acc + (Number(item.price || 0) > Number(item.effectivePrice || 0) ? (Number(item.price) - Number(item.effectivePrice)) * Number(item.quantity || 1) : 0), 0),
+        couponDiscount: Number(orderData.couponDiscount || 0),
         shipping: deliveryCharge,
         gst: gstAmount,
         grandTotal: totalPrice

@@ -161,7 +161,8 @@ export const generateInvoice = async (order, options = { action: 'download' }) =
     // Pricing structure
     const subtotal = items.reduce((acc, item) => acc + (Number(item.effectivePrice || item.price || 0) * Number(item.quantity || 1)), 0);
     const deliveryCharge = order.deliveryCharge || 0;
-    const grandTotal = order.totalPrice || (subtotal + deliveryCharge);
+    const couponDiscount = Number(order.couponDiscount || invoiceData?.pricing?.couponDiscount || 0);
+    const grandTotal = order.totalPrice !== undefined ? order.totalPrice : Math.max(0, subtotal + deliveryCharge - couponDiscount);
 
     // Load item images to Base64 in parallel
     const itemsWithBase64 = await Promise.all(items.map(async (item) => {
@@ -264,6 +265,13 @@ export const generateInvoice = async (order, options = { action: 'download' }) =
     doc.text(`INR ${subtotal.toFixed(2)}`, rightAlignX, finalY, { align: 'right' });
 
     let currentY = finalY;
+
+    // Coupon Discount
+    if (couponDiscount > 0) {
+      currentY += 6;
+      doc.text('Coupon Discount:', labelX, currentY);
+      doc.text(`- INR ${couponDiscount.toFixed(2)}`, rightAlignX, currentY, { align: 'right' });
+    }
 
     // Shipping Charge
     currentY += 6;

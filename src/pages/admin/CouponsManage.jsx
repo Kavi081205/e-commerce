@@ -116,8 +116,9 @@ const CouponsManage = () => {
           </h2>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Coupon Code *</label>
+              <label htmlFor="coupon-code" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Coupon Code *</label>
               <input
+                id="coupon-code"
                 name="code"
                 value={form.code}
                 onChange={handleChange}
@@ -127,8 +128,9 @@ const CouponsManage = () => {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Discount Type *</label>
+              <label htmlFor="coupon-discount-type" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Discount Type *</label>
               <select
+                id="coupon-discount-type"
                 name="discountType"
                 value={form.discountType}
                 onChange={handleChange}
@@ -139,10 +141,11 @@ const CouponsManage = () => {
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              <label htmlFor="coupon-discount-value" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
                 Discount Value * {form.discountType === 'percentage' ? '(%)' : '(₹)'}
               </label>
               <input
+                id="coupon-discount-value"
                 name="discountValue"
                 type="number"
                 min="1"
@@ -155,8 +158,9 @@ const CouponsManage = () => {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Min. Order Amount (₹)</label>
+              <label htmlFor="coupon-min-order" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Min. Order Amount (₹)</label>
               <input
+                id="coupon-min-order"
                 name="minOrderAmount"
                 type="number"
                 min="0"
@@ -167,8 +171,9 @@ const CouponsManage = () => {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Expiry Date *</label>
+              <label htmlFor="coupon-expiry" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Expiry Date *</label>
               <input
+                id="coupon-expiry"
                 name="expiryDate"
                 type="date"
                 value={form.expiryDate}
@@ -179,9 +184,10 @@ const CouponsManage = () => {
               />
             </div>
             <div className="space-y-2 flex flex-col justify-end">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</label>
-              <label className="flex items-center gap-3 cursor-pointer bg-black/30 border border-yellow-900/20 rounded-xl px-4 py-3">
+              <label htmlFor="coupon-active" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</label>
+              <label htmlFor="coupon-active" className="flex items-center gap-3 cursor-pointer bg-black/30 border border-yellow-900/20 rounded-xl px-4 py-3">
                 <input
+                  id="coupon-active"
                   type="checkbox"
                   name="isActive"
                   checked={form.isActive}

@@ -58,7 +58,10 @@ const InvoicesManage = () => {
       {/* Search Bar */}
       <div className="bg-gray-900/50 backdrop-blur-xl p-6 rounded-[2rem] border border-yellow-900/20 mb-8 flex items-center gap-4">
         <Search size={20} className="text-gray-500 flex-shrink-0" />
+        <label htmlFor="invoice-search" className="sr-only">Search Invoices</label>
         <input
+          id="invoice-search"
+          name="invoiceSearch"
           type="text"
           placeholder="Search by Invoice #, Order ID, Customer Name..."
           value={searchTerm}

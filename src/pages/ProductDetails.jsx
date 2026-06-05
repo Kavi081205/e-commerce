@@ -158,14 +158,40 @@ const ProductDetails = () => {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('details');
 
+
+
+  // Recently Viewed tracking
+  useEffect(() => {
+    if (product) {
+      try {
+        const list = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
+        const filtered = list.filter(p => p.id !== product.id);
+        const itemToSave = {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          image: product.image,
+          category: product.category,
+          stock: product.stock,
+          soldCount: product.soldCount
+        };
+        const nextList = [itemToSave, ...filtered].slice(0, 10);
+        localStorage.setItem('recentlyViewed', JSON.stringify(nextList));
+      } catch (e) {
+        console.error("Error updating recently viewed:", e);
+      }
+    }
+  }, [product]);
+
   // Swipe support states
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
 
   // Initialize selected variant options when product changes
+  // Auto-select if there is exactly 1 variant; otherwise set to null for user selection
   useEffect(() => {
     if (product) {
-      if (product.variants && product.variants.length > 0) {
+      if (product.variants && product.variants.length === 1) {
         const firstVariant = product.variants[0];
         setSelectedColor(firstVariant);
         const sizesMap = firstVariant.sizes || {};
@@ -185,18 +211,28 @@ const ProductDetails = () => {
   }, [product]);
 
   const handleColorChange = (variant) => {
-    setSelectedColor(variant);
-    setActiveMedia(0);
-    const sizesMap = variant.sizes || {};
-    const sizeKeys = Object.keys(sizesMap);
-    if (sizeKeys.length > 0) {
-      const inStockSizes = sizeKeys.filter(s => Number(sizesMap[s]) > 0);
-      const nextSize = inStockSizes.includes(selectedSize)
-        ? selectedSize
-        : (inStockSizes[0] || sizeKeys[0] || '');
-      setSelectedSize(nextSize);
+    const vName = variant.colorName || variant.color || '';
+    if (selectedColorName === vName) {
+      // Toggle back to default (no selection) if multiple variants exist
+      if (product.variants && product.variants.length > 1) {
+        setSelectedColor(null);
+        setSelectedSize('');
+        setActiveMedia(0);
+      }
     } else {
-      setSelectedSize('');
+      setSelectedColor(variant);
+      setActiveMedia(0);
+      const sizesMap = variant.sizes || {};
+      const sizeKeys = Object.keys(sizesMap);
+      if (sizeKeys.length > 0) {
+        const inStockSizes = sizeKeys.filter(s => Number(sizesMap[s]) > 0);
+        const nextSize = inStockSizes.includes(selectedSize)
+          ? selectedSize
+          : (inStockSizes[0] || sizeKeys[0] || '');
+        setSelectedSize(nextSize);
+      } else {
+        setSelectedSize('');
+      }
     }
     setQuantity(1);
   };
@@ -351,8 +387,39 @@ const ProductDetails = () => {
     }
   }, [product?.id]);
 
+  const isButtonDisabled = () => {
+    if (added) return true;
+    const hasVars = product?.variants && product.variants.length > 0;
+    if (hasVars) {
+      if (selectedColor) {
+        return selectedVariantStock === 0;
+      }
+      return false; // Keep active to trigger select variant toast
+    }
+    return Number(product?.stock || 0) === 0;
+  };
+
+  const isBuyNowDisabled = () => {
+    const hasVars = product?.variants && product.variants.length > 0;
+    if (hasVars) {
+      if (selectedColor) {
+        return selectedVariantStock === 0;
+      }
+      return false; // Keep active to trigger select variant toast
+    }
+    return Number(product?.stock || 0) === 0;
+  };
+
   const handleAddToCart = () => {
-    if (!product || selectedVariantStock === 0 || added) return;
+    if (!product || added) return;
+    if (product.variants && product.variants.length > 0 && !selectedColor) {
+      toast.error("Please select a color first!");
+      return;
+    }
+    if (selectedVariantStock === 0) {
+      toast.error("Selected variant is out of stock!");
+      return;
+    }
     addToCart(product, selectedColorName, selectedSize, quantity);
     setAdded(true);
     setTimeout(() => {
@@ -361,7 +428,15 @@ const ProductDetails = () => {
   };
 
   const handleBuyNow = () => {
-    if (!product || selectedVariantStock === 0) return;
+    if (!product) return;
+    if (product.variants && product.variants.length > 0 && !selectedColor) {
+      toast.error("Please select a color first!");
+      return;
+    }
+    if (selectedVariantStock === 0) {
+      toast.error("Selected variant is out of stock!");
+      return;
+    }
     const variantId = `${product.id}_${selectedColorName || ''}_${selectedSize || ''}`;
     const buyNowItem = {
       ...product,
@@ -741,10 +816,22 @@ const ProductDetails = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* Mobile pagination dots */}
+              {mediaItems.length > 1 && (
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-10 lg:hidden">
+                  {mediaItems.map((_, idx) => (
+                    <div
+                      key={idx}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${activeMedia === idx ? 'w-4 bg-yellow-500' : 'w-1.5 bg-gray-600'}`}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
             {mediaItems.length > 1 && (
-              <div className="flex gap-4 mt-8 px-2 overflow-x-auto custom-scrollbar pb-4">
+              <div className="flex flex-nowrap gap-4 mt-8 px-2 overflow-x-auto custom-scrollbar pb-4 select-none touch-pan-x">
                 {mediaItems.map((item, idx) => {
                   const isVideo = item.type === 'video';
                   const thumbSrc = isVideo
@@ -855,7 +942,9 @@ const ProductDetails = () => {
               </div>
 
               {(() => {
-                const stockVal = Number(product.stock ?? 0);
+                const stockVal = (product.variants && product.variants.length > 0 && selectedColor)
+                  ? selectedVariantStock
+                  : Number(product.stock ?? 0);
                 if (stockVal <= 0) {
                   return (
                     <div className="flex items-center gap-3 mt-2">
@@ -886,6 +975,7 @@ const ProductDetails = () => {
                 }
               })()}
             </div>
+
 
             {/* Color Switcher */}
             {product.variants && product.variants.length > 0 && (
@@ -997,36 +1087,40 @@ const ProductDetails = () => {
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  disabled={added || selectedVariantStock === 0}
+                  disabled={isButtonDisabled()}
                   className={`flex-1 flex justify-center items-center py-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-500 ${
                     added
                       ? 'bg-white text-black font-black'
-                      : selectedVariantStock === 0
-                        ? 'bg-gray-900 text-gray-700 cursor-not-allowed'
-                        : 'bg-transparent border border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/5 hover:border-yellow-500'
+                      : (product.variants && product.variants.length > 0 && !selectedColor)
+                        ? 'bg-transparent border border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/5 hover:border-yellow-500'
+                        : selectedVariantStock === 0
+                          ? 'bg-gray-900 text-gray-700 cursor-not-allowed'
+                          : 'bg-transparent border border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/5 hover:border-yellow-500'
                   }`}
                 >
-                  {added ? 'Secured in Cart' : 'ADD TO CART'}
+                  {added ? 'Secured in Cart' : (product.variants && product.variants.length > 0 && !selectedColor) ? 'SELECT COLOR' : 'ADD TO CART'}
                 </button>
 
                 <button
                   type="button"
                   onClick={handleBuyNow}
-                  disabled={selectedVariantStock === 0}
+                  disabled={isBuyNowDisabled()}
                   className={`flex-1 flex justify-center items-center py-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-500 ${
-                    selectedVariantStock === 0
-                      ? 'bg-gray-900 text-gray-700 cursor-not-allowed'
-                      : 'bg-yellow-500 text-black shadow-2xl shadow-yellow-500/10 hover:scale-105 active:scale-95'
+                    (product.variants && product.variants.length > 0 && !selectedColor)
+                      ? 'bg-yellow-500 text-black shadow-2xl shadow-yellow-500/10 hover:scale-105 active:scale-95'
+                      : selectedVariantStock === 0
+                        ? 'bg-gray-900 text-gray-700 cursor-not-allowed'
+                        : 'bg-yellow-500 text-black shadow-2xl shadow-yellow-500/10 hover:scale-105 active:scale-95'
                   }`}
                 >
-                  BUY NOW
+                  {(product.variants && product.variants.length > 0 && !selectedColor) ? 'SELECT COLOR' : 'BUY NOW'}
                 </button>
               </div>
             </div>
 
             {/* Product Information Tabs */}
             <div className="mt-16 border-t border-white/5 pt-12">
-              <div className="flex border-b border-white/5 mb-8 overflow-x-auto">
+              <div className="flex flex-nowrap border-b border-white/5 mb-8 overflow-x-auto scrollbar-none select-none touch-pan-x">
                 {[
                   { id: 'details', label: 'Details' },
                   { id: 'sizeguide', label: 'Size Guide' },
@@ -1374,6 +1468,41 @@ const ProductDetails = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Mobile Sticky CTA Footer */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-gray-950 border-t border-yellow-900/20 p-3 flex gap-3 shadow-2xl">
+        <button
+          type="button"
+          onClick={handleAddToCart}
+          disabled={isButtonDisabled()}
+          className={`flex-1 flex justify-center items-center py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
+            added
+              ? 'bg-white text-black border border-white'
+              : (product.variants && product.variants.length > 0 && !selectedColor)
+                ? 'bg-black border border-yellow-500/30 text-yellow-500 active:bg-yellow-500/5'
+                : selectedVariantStock === 0
+                  ? 'bg-gray-900 text-gray-700 border border-gray-900 cursor-not-allowed'
+                  : 'bg-black border border-yellow-500/30 text-yellow-500 active:bg-yellow-500/5'
+          }`}
+        >
+          {added ? 'In Cart' : (product.variants && product.variants.length > 0 && !selectedColor) ? 'SELECT COLOR' : 'ADD TO CART'}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleBuyNow}
+          disabled={isBuyNowDisabled()}
+          className={`flex-1 flex justify-center items-center py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
+            (product.variants && product.variants.length > 0 && !selectedColor)
+              ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/10 active:bg-yellow-400'
+              : selectedVariantStock === 0
+                ? 'bg-gray-900 text-gray-700 cursor-not-allowed'
+                : 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/10 active:bg-yellow-400'
+          }`}
+        >
+          {(product.variants && product.variants.length > 0 && !selectedColor) ? 'SELECT COLOR' : 'BUY NOW'}
+        </button>
       </div>
 
       {/* ── Video Modal ─────────────────────────────────────────────────────── */}
