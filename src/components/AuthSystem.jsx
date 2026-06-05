@@ -111,14 +111,32 @@ export default function AuthSystem() {
     setLoading(true);
     try {
       const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
       const result = await signInWithPopup(auth, provider);
       // Google sign-in: treat as returning user — never overwrite existing role
       await saveCustomerDoc(result.user, false);
 
       // Success: AuthContext onSnapshot will resolve the user role and App.jsx will auto-redirect.
     } catch (err) {
-      const cleanMessage = err.message.replace('Firebase: ', '');
-      setError(cleanMessage);
+      // Always clear loading to prevent infinite spinner
+      console.error('Google Sign-In error:', err.code, err.message);
+
+      // Map Firebase error codes to user-friendly messages
+      if (err.code === 'auth/unauthorized-domain') {
+        setError(
+          'This domain is not authorized for Google Sign-In. ' +
+          'Please contact support or try email login instead.'
+        );
+      } else if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+        setError('Sign-in was cancelled. Please try again.');
+      } else if (err.code === 'auth/popup-blocked') {
+        setError('Pop-up was blocked by your browser. Please allow pop-ups for this site and try again.');
+      } else if (err.code === 'auth/network-request-failed') {
+        setError('Network error. Please check your connection and try again.');
+      } else {
+        const cleanMessage = err.message.replace('Firebase: ', '').replace(/\s*\(auth\/[^)]+\)\.?/, '');
+        setError(cleanMessage || 'Google Sign-In failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
