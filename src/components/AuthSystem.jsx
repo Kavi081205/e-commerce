@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult
 } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -105,32 +107,73 @@ export default function AuthSystem() {
     }
   };
 
+  // Handle redirect result on page load (for mobile / popup-blocked fallback)
+  useEffect(() => {
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result?.user) {
+          await saveCustomerDoc(result.user, false);
+          // AuthContext onSnapshot will handle role resolution and redirect
+        }
+      })
+      .catch((err) => {
+        if (err.code && err.code !== 'auth/no-current-user') {
+          console.error('Google redirect result error:', err.code);
+          const hostname = window.location.hostname;
+          if (err.code === 'auth/unauthorized-domain') {
+            setError(`Domain "${hostname}" is not authorized in Firebase. Add it under Authentication → Settings → Authorized Domains.`);
+          } else {
+            setError(err.message.replace('Firebase: ', '').replace(/\s*\(auth\/[^)]+\)\.?/, ''));
+          }
+        }
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleGoogleSignIn = async () => {
     setError(null);
     setSuccess(null);
     setLoading(true);
+
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+
+    // Detect mobile — use redirect flow to avoid popup issues on mobile browsers
+    const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent);
+
     try {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: 'select_account' });
+      if (isMobile) {
+        // Redirect flow: page will reload and getRedirectResult() above handles the result
+        await signInWithRedirect(auth, provider);
+        return; // page navigates away — no finally needed
+      }
+
       const result = await signInWithPopup(auth, provider);
       // Google sign-in: treat as returning user — never overwrite existing role
       await saveCustomerDoc(result.user, false);
-
       // Success: AuthContext onSnapshot will resolve the user role and App.jsx will auto-redirect.
     } catch (err) {
       // Always clear loading to prevent infinite spinner
       console.error('Google Sign-In error:', err.code, err.message);
+      const hostname = window.location.hostname;
 
       // Map Firebase error codes to user-friendly messages
       if (err.code === 'auth/unauthorized-domain') {
         setError(
-          'This domain is not authorized for Google Sign-In. ' +
-          'Please contact support or try email login instead.'
+          `Domain "${hostname}" is not authorized for Google Sign-In. ` +
+          'Add it in Firebase Console → Authentication → Settings → Authorized Domains.'
         );
       } else if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
         setError('Sign-in was cancelled. Please try again.');
       } else if (err.code === 'auth/popup-blocked') {
-        setError('Pop-up was blocked by your browser. Please allow pop-ups for this site and try again.');
+        // Auto-fallback to redirect when popup is blocked
+        try {
+          await signInWithRedirect(auth, provider);
+          return;
+        } catch (redirectErr) {
+          console.error('Redirect fallback error:', redirectErr);
+          setError('Pop-up was blocked. Please allow pop-ups for this site and try again.');
+        }
       } else if (err.code === 'auth/network-request-failed') {
         setError('Network error. Please check your connection and try again.');
       } else {
