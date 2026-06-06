@@ -62,11 +62,16 @@ const Products = () => {
     setIsError(false);
     setError(null);
 
-    const constraints = [orderBy('createdAt', 'desc')];
+    // IMPORTANT: where() must come before orderBy() for Firestore compound queries.
+    // Putting orderBy first on a different field than where() requires a composite
+    // index and causes a transport error if that index doesn't exist.
+    const constraints = [];
 
     if (filter && filter !== 'all') {
       constraints.push(where('category', '==', filter));
     }
+
+    constraints.push(orderBy('createdAt', 'desc'));
 
     if (cursor) {
       constraints.push(startAfter(cursor));
@@ -83,7 +88,7 @@ const Products = () => {
       setProductsData({ products: productsList, lastDoc });
       setIsLoading(false);
     }, (err) => {
-      console.error("Error subscribing to products catalog:", err);
+      console.error('Firestore products query error:', err.code, err.message);
       setIsError(true);
       setError(err);
       setIsLoading(false);
@@ -347,7 +352,7 @@ const Products = () => {
                 <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
                   {sortedProducts.map((product, idx) => {
                     const effPrice = getEffectivePrice(product, promoSettings);
-                    const origPrice = Number(product.price || 0);
+                    const origPrice = Number(product.originalPrice ?? product.price ?? 0);
                     const discountPercent = origPrice > effPrice ? Math.round(((origPrice - effPrice) / origPrice) * 100) : 0;
                     return (
                       <div

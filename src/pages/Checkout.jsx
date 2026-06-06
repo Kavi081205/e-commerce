@@ -26,6 +26,7 @@ const Checkout = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [placedOrder, setPlacedOrder] = useState(null);
   const [checkoutStep, setCheckoutStep] = useState(1);
+  const [paymentMethod, setPaymentMethod] = useState('online'); // 'online' or 'cod'
 
   const [addresses, setAddresses] = useState(currentUser?.addresses || []);
   const [selectedAddressId, setSelectedAddressId] = useState(currentUser?.defaultAddressId || null);
@@ -97,7 +98,7 @@ const Checkout = () => {
       const hasBuyNow = localStorage.getItem('buyNow');
       let itemsToValidate = [];
       let isBuyNow = false;
-      
+
       if (hasBuyNow) {
         try {
           itemsToValidate = [JSON.parse(hasBuyNow)];
@@ -112,19 +113,19 @@ const Checkout = () => {
       if (itemsToValidate.length === 0) return;
 
       const invalidProductIds = [];
-      
+
       for (const item of itemsToValidate) {
         let productId = item.productId || item.id || item.docId || item._id || item.uid;
         if (productId && typeof productId === 'string' && productId.includes('_')) {
           productId = productId.split('_')[0];
         }
         if (!productId) continue;
-        
+
         console.log("Product ID:", productId);
         console.log("Checkout ID:", productId);
         const firestorePath = `products/${productId}`;
         console.log("Firestore Path:", firestorePath);
-        
+
         try {
           const productDoc = await getDoc(
             doc(db, "products", productId)
@@ -142,7 +143,7 @@ const Checkout = () => {
       if (invalidProductIds.length > 0) {
         console.error(`Invalid product IDs found on mount: ${invalidProductIds.join(", ")}`);
         showToast("One or more products in your cart are no longer available. Please review your cart.", "error");
-        
+
         if (isBuyNow) {
           localStorage.removeItem('buyNow');
           setBuyNowItem(null);
@@ -211,13 +212,13 @@ const Checkout = () => {
         ? (updatedAddresses[0]?.id || null)
         : currentUser?.defaultAddressId;
 
-      await updateProfile({ 
+      await updateProfile({
         addresses: updatedAddresses,
         defaultAddressId: nextDefaultId || null
       });
-      
+
       setAddresses(updatedAddresses);
-      
+
       if (selectedAddressId === id) {
         if (updatedAddresses.length > 0) {
           setSelectedAddressId(updatedAddresses[0].id);
@@ -354,12 +355,12 @@ const Checkout = () => {
           productId = productId.split('_')[0];
         }
         if (!productId) continue;
-        
+
         console.log("Product ID:", productId);
         console.log("Checkout ID:", productId);
         const firestorePath = `products/${productId}`;
         console.log("Firestore Path:", firestorePath);
-        
+
         try {
           const productDoc = await getDoc(
             doc(db, "products", productId)
@@ -379,7 +380,7 @@ const Checkout = () => {
       if (invalidProductIds.length > 0) {
         console.error(`Invalid product IDs found during checkout: ${invalidProductIds.join(", ")}`);
         showToast("One or more products in your cart are no longer available. We have removed them for you.", "error");
-        
+
         if (buyNowItem) {
           localStorage.removeItem('buyNow');
           setBuyNowItem(null);
@@ -409,14 +410,14 @@ const Checkout = () => {
         totalProfit += itemProfit;
         let itemId = item.id || item.docId || item._id || item.uid;
         let baseProductId = item.productId || itemId.split('_')[0];
-        return { 
+        return {
           id: itemId,
           productId: baseProductId,
           name: item.name,
           image: item.image || '',
-          price: Number(item.price), // Store original price
+          price: Number(item.originalPrice ?? item.price ?? 0), // Store original price
           effectivePrice: sellingPrice, // Store the price it was sold at
-          profit: itemProfit, 
+          profit: itemProfit,
           quantity: item.quantity || 1,
           color: item.color || '',
           selectedColor: item.selectedColor || item.color || '',
@@ -451,8 +452,8 @@ const Checkout = () => {
         userEmail: currentUser?.email || 'unknown',
         createdAt: new Date(),
         status: 'ordered',
-        paymentMethod: 'COD',
-        paymentStatus: 'Pending',
+        paymentMethod: paymentMethod === 'online' ? 'Razorpay' : 'COD',
+        paymentStatus: paymentMethod === 'online' ? 'Paid' : 'Pending',
         orderStatus: 'ordered',
         customerDetails: {
           name: activeAddress.name,
@@ -480,60 +481,109 @@ const Checkout = () => {
         })
       };
 
-      const cartItems = cart;
-      const payload = orderData;
-      console.log("Cart Items:", cartItems);
-      console.log("Checkout Payload:", payload);
+      const executeOrderCreation = async (payloadData) => {
+        const finalOrderId = await createOrder(payloadData);
 
-      let finalOrderId = null;
+        // Save invoice to Firestore
+        try {
+          await saveInvoice(finalOrderId, payloadData);
+        } catch (invErr) {
+          console.error("Failed to save invoice to Firestore:", invErr);
+        }
 
-      // Create order using local Firebase service
-      finalOrderId = await createOrder(orderData);
+        // Track purchase event in Firebase Analytics
+        await logPurchase(finalOrderId, payloadData.totalPrice, enrichedItems);
 
-      // Save invoice to Firestore
-      try {
-        await saveInvoice(finalOrderId, orderData);
-      } catch (invErr) {
-        console.error("Failed to save invoice to Firestore:", invErr);
-      }
+        // Auto generate and download the invoice PDF
+        try {
+          await generateInvoice({ ...payloadData, id: finalOrderId });
+        } catch (pdfErr) {
+          console.error("Failed to auto-generate PDF invoice:", pdfErr);
+        }
 
-      // Track purchase event in Firebase Analytics
-      await logPurchase(finalOrderId, orderData.totalPrice, enrichedItems);
+        if (buyNowItem) {
+          localStorage.removeItem('buyNow');
+        } else {
+          clearCart();
+        }
 
-      // Auto generate and download the invoice PDF
-      try {
-        await generateInvoice({ ...orderData, id: finalOrderId });
-      } catch (pdfErr) {
-        console.error("Failed to auto-generate PDF invoice:", pdfErr);
-      }
+        const itemsList = payloadData.items.map(item => `- ${item.name} (x${item.quantity})`).join('\n');
+        const message = `NEW ORDER RECEIVED!\n\n` +
+          `Customer: ${payloadData.name}\n` +
+          `Contact: ${payloadData.phone}\n\n` +
+          `Products:\n${itemsList}\n\n` +
+          `Total Amount: Rs.${payloadData.totalPrice}\n` +
+          `Delivery Address: ${payloadData.address}, ${payloadData.city} - ${payloadData.pincode}\n\n` +
+          `Payment Mode: ${payloadData.paymentMethod} (${payloadData.paymentStatus})\n\n` +
+          `Please process this order. Thank you!`;
 
-      if (buyNowItem) {
-        localStorage.removeItem('buyNow');
+        const adminPhone = "919677417185";
+        const whatsappUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`;
+
+        setPlacedOrder({ id: finalOrderId, total: payloadData.totalPrice });
+        setShowSuccess(true);
+
+        setTimeout(() => {
+          window.open(whatsappUrl, "_blank");
+        }, 500);
+
+        showToast("Order placed successfully!", "success");
+      };
+
+      if (paymentMethod === 'online') {
+        if (!window.Razorpay) {
+          showToast("Razorpay SDK failed to load. Please refresh the page.", "error");
+          setLoading(false);
+          return;
+        }
+
+        const options = {
+          key: import.meta.env.VITE_RAZORPAY_KEY,
+          amount: Math.round(orderData.totalPrice * 100),
+          currency: "INR",
+          name: "SMKP TRADERS",
+          description: "Secure Payment",
+          image: "https://e-commerce-smkp-traders.vercel.app/logo.png",
+          handler: async function (response) {
+            console.log(response);
+            showToast("Payment Successful", "success");
+            setLoading(true);
+            try {
+              const onlineOrderData = {
+                ...orderData,
+                paymentId: response.razorpay_payment_id,
+                paymentStatus: "Paid",
+                paymentMethod: "Razorpay"
+              };
+              await executeOrderCreation(onlineOrderData);
+            } catch (err) {
+              console.error("Checkout order creation error:", err);
+              showToast("Payment was successful, but we failed to record your order. Please contact support.", "error");
+            } finally {
+              setLoading(false);
+            }
+          },
+          prefill: {
+            name: activeAddress.name,
+            email: currentUser?.email || 'unknown',
+            contact: activeAddress.phone,
+          },
+          theme: {
+            color: "#eab308",
+          },
+          modal: {
+            ondismiss: function () {
+              setLoading(false);
+            }
+          }
+        };
+
+        const razor = new window.Razorpay(options);
+        razor.open();
       } else {
-        clearCart();
+        // Cash on Delivery
+        await executeOrderCreation(orderData);
       }
-
-      const itemsList = orderData.items.map(item => `- ${item.name} (x${item.quantity})`).join('\n');
-      const message = `NEW ORDER RECEIVED!\n\n` +
-        `Customer: ${orderData.name}\n` +
-        `Contact: ${orderData.phone}\n\n` +
-        `Products:\n${itemsList}\n\n` +
-        `Total Amount: Rs.${orderData.totalPrice}\n` +
-        `Delivery Address: ${orderData.address}, ${orderData.city} - ${orderData.pincode}\n\n` +
-        `Payment Mode: ${orderData.paymentMethod} (${orderData.paymentStatus})\n\n` +
-        `Please process this order. Thank you!`;
-
-      const adminPhone = "919677417185";
-      const whatsappUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`;
-
-      setPlacedOrder({ id: finalOrderId, total: orderData.totalPrice });
-      setShowSuccess(true);
-
-      setTimeout(() => {
-        window.open(whatsappUrl, "_blank");
-      }, 500);
-
-      showToast("Order placed successfully!", "success");
     } catch (error) {
       console.error("Checkout error:", error);
       if (error.message === "This product is no longer available") {
@@ -541,8 +591,11 @@ const Checkout = () => {
       } else {
         showToast(error.message || "Failed to place order", "error");
       }
-    } finally {
       setLoading(false);
+    } finally {
+      if (paymentMethod === 'cod') {
+        setLoading(false);
+      }
     }
   };
 
@@ -553,11 +606,11 @@ const Checkout = () => {
   const total = Math.max(0, subtotal + deliveryCharge - couponDiscount);
   const getSubtotalMRP = () => {
     if (buyNowItem) {
-      const origUnit = Number(buyNowItem.price || 0) + (buyNowItem.priceDifference || 0);
+      const origUnit = Number(buyNowItem.originalPrice ?? buyNowItem.price ?? 0) + (buyNowItem.priceDifference || 0);
       return origUnit * (buyNowItem.quantity || 1);
     }
     return cart.reduce((acc, item) => {
-      const origUnit = Number(item.price || 0) + (item.priceDifference || 0);
+      const origUnit = Number(item.originalPrice ?? item.price ?? 0) + (item.priceDifference || 0);
       return acc + (origUnit * item.quantity);
     }, 0);
   };
@@ -595,26 +648,23 @@ const Checkout = () => {
                     onClick={() => isDone && setCheckoutStep(step.id)}
                     className={`flex flex-col items-center gap-1.5 transition-all ${isDone ? 'cursor-pointer' : 'cursor-default'}`}
                   >
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
-                      isDone
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${isDone
                         ? 'bg-yellow-500 border-yellow-500 shadow-[0_0_12px_rgba(234,179,8,0.4)]'
                         : isActive
                           ? 'bg-yellow-500/10 border-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.3)]'
                           : 'bg-transparent border-gray-800'
-                    }`}>
+                      }`}>
                       {isDone
                         ? <CheckCircle2 size={16} className="text-black" />
                         : <Icon size={15} className={isActive ? 'text-yellow-500' : 'text-gray-700'} />
                       }
                     </div>
-                    <span className={`text-[9px] font-black uppercase tracking-[0.15em] transition-colors ${
-                      isActive ? 'text-yellow-500' : isDone ? 'text-yellow-600' : 'text-gray-700'
-                    }`}>{step.label}</span>
+                    <span className={`text-[9px] font-black uppercase tracking-[0.15em] transition-colors ${isActive ? 'text-yellow-500' : isDone ? 'text-yellow-600' : 'text-gray-700'
+                      }`}>{step.label}</span>
                   </button>
                   {idx < steps.length - 1 && (
-                    <div className={`flex-1 h-px mx-2 transition-all duration-500 ${
-                      checkoutStep > step.id ? 'bg-yellow-500/60' : 'bg-gray-800'
-                    }`} />
+                    <div className={`flex-1 h-px mx-2 transition-all duration-500 ${checkoutStep > step.id ? 'bg-yellow-500/60' : 'bg-gray-800'
+                      }`} />
                   )}
                 </React.Fragment>
               );
@@ -652,9 +702,8 @@ const Checkout = () => {
                           {['Home', 'Office', 'Other'].map(type => (
                             <button key={type} type="button" aria-pressed={formData.type === type}
                               onClick={() => setFormData(prev => ({ ...prev, type }))}
-                              className={`flex-1 py-2.5 rounded-xl border text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
-                                formData.type === type ? 'border-yellow-500 bg-yellow-500/8 text-yellow-500' : 'border-white/5 text-gray-600'
-                              }`}
+                              className={`flex-1 py-2.5 rounded-xl border text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${formData.type === type ? 'border-yellow-500 bg-yellow-500/8 text-yellow-500' : 'border-white/5 text-gray-600'
+                                }`}
                             >
                               {type === 'Home' && <Home size={12} />}{type === 'Office' && <Briefcase size={12} />}{type}
                             </button>
@@ -701,16 +750,14 @@ const Checkout = () => {
                     <div className="space-y-3">
                       {addresses.map(addr => (
                         <div key={addr.id} onClick={() => setSelectedAddressId(addr.id)}
-                          className={`relative p-4 rounded-2xl border transition-all cursor-pointer ${
-                            selectedAddressId === addr.id
+                          className={`relative p-4 rounded-2xl border transition-all cursor-pointer ${selectedAddressId === addr.id
                               ? 'border-yellow-500 bg-yellow-500/5 shadow-[0_0_16px_rgba(234,179,8,0.08)]'
                               : 'border-white/5 bg-black/20 hover:border-white/10'
-                          }`}
+                            }`}
                         >
                           <div className="flex items-start gap-3">
-                            <div className={`mt-1 w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                              selectedAddressId === addr.id ? 'border-yellow-500' : 'border-gray-700'
-                            }`}>
+                            <div className={`mt-1 w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedAddressId === addr.id ? 'border-yellow-500' : 'border-gray-700'
+                              }`}>
                               {selectedAddressId === addr.id && <div className="w-2 h-2 bg-yellow-500 rounded-full" />}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -770,7 +817,7 @@ const Checkout = () => {
                   {/* Product list */}
                   <div>
                     <h2 className="text-[10px] font-black text-white uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
-                      <Package size={13} className="text-yellow-500" /> Order Items ({activeItems.reduce((a,i) => a + (i.quantity||1), 0)})
+                      <Package size={13} className="text-yellow-500" /> Order Items ({activeItems.reduce((a, i) => a + (i.quantity || 1), 0)})
                     </h2>
                     <div className="space-y-3">
                       {activeItems.map(item => (
@@ -783,7 +830,7 @@ const Checkout = () => {
                             <div className="flex flex-wrap gap-2 mt-1.5 text-[9px] font-bold text-gray-600 uppercase tracking-wider">
                               <span>Qty: {item.quantity || 1}</span>
                               {(item.selectedColor || item.color) && (
-                                <span>• {typeof (item.selectedColor || item.color) === 'object' ? (item.selectedColor||item.color).name : (item.selectedColor||item.color)}</span>
+                                <span>• {typeof (item.selectedColor || item.color) === 'object' ? (item.selectedColor || item.color).name : (item.selectedColor || item.color)}</span>
                               )}
                               {item.size && <span>• {item.size}</span>}
                             </div>
@@ -834,7 +881,7 @@ const Checkout = () => {
                   <div className="bg-gray-900/40 border border-white/5 rounded-2xl p-4 space-y-3">
                     <h3 className="text-[9px] font-black text-white uppercase tracking-[0.3em] border-b border-white/5 pb-2 mb-3">Price Details</h3>
                     <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                      <span className="text-gray-500">MRP ({activeItems.reduce((a,i) => a+(i.quantity||1), 0)} items)</span>
+                      <span className="text-gray-500">MRP ({activeItems.reduce((a, i) => a + (i.quantity || 1), 0)} items)</span>
                       <span className="text-white">₹{subtotalMRP.toLocaleString()}</span>
                     </div>
                     {totalSavings > couponDiscount && (
@@ -887,21 +934,61 @@ const Checkout = () => {
                     </div>
                   )}
 
-                  {/* Payment method card */}
+                  {/* Payment method selection */}
                   <div className="bg-gray-900/40 border border-yellow-900/15 rounded-2xl p-5">
                     <p className="text-[9px] font-black text-yellow-500/80 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
                       <CreditCard size={12} /> Payment Method
                     </p>
-                    <div className="bg-black/40 border-2 border-yellow-500 rounded-2xl p-5 flex items-start gap-4">
-                      <div className="w-11 h-11 rounded-xl bg-yellow-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-yellow-500/20">
-                        <ShieldCheck size={22} className="text-black" />
+                    <div className="space-y-3">
+                      {/* Online Payment */}
+                      <div
+                        onClick={() => setPaymentMethod('online')}
+                        className={`bg-black/40 border-2 rounded-2xl p-4 flex items-start gap-4 cursor-pointer transition-all ${paymentMethod === 'online'
+                            ? 'border-yellow-500 shadow-[0_0_16px_rgba(234,179,8,0.1)]'
+                            : 'border-white/5 hover:border-white/10'
+                          }`}
+                      >
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${paymentMethod === 'online'
+                            ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/20'
+                            : 'bg-gray-800 text-gray-400'
+                          }`}>
+                          <CreditCard size={18} />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-black text-white uppercase tracking-widest text-xs">Pay Online</p>
+                          <p className="text-[9px] text-gray-500 mt-1 leading-relaxed">UPI, Cards, GPay, PhonePe, Netbanking, etc.</p>
+                          {paymentMethod === 'online' && (
+                            <div className="mt-2.5 flex items-center gap-1.5">
+                              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                              <span className="text-[9px] font-black text-green-500 uppercase tracking-widest">Selected</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-black text-white uppercase tracking-widest text-xs">Cash on Delivery</p>
-                        <p className="text-[9px] text-gray-500 mt-1 leading-relaxed">Pay securely when your order arrives at your doorstep.</p>
-                        <div className="mt-2.5 flex items-center gap-1.5">
-                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                          <span className="text-[9px] font-black text-green-500 uppercase tracking-widest">Selected</span>
+
+                      {/* Cash on Delivery */}
+                      <div
+                        onClick={() => setPaymentMethod('cod')}
+                        className={`bg-black/40 border-2 rounded-2xl p-4 flex items-start gap-4 cursor-pointer transition-all ${paymentMethod === 'cod'
+                            ? 'border-yellow-500 shadow-[0_0_16px_rgba(234,179,8,0.1)]'
+                            : 'border-white/5 hover:border-white/10'
+                          }`}
+                      >
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${paymentMethod === 'cod'
+                            ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/20'
+                            : 'bg-gray-800 text-gray-400'
+                          }`}>
+                          <ShieldCheck size={18} />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-black text-white uppercase tracking-widest text-xs">Cash on Delivery</p>
+                          <p className="text-[9px] text-gray-500 mt-1 leading-relaxed">Pay securely when your order arrives at your doorstep.</p>
+                          {paymentMethod === 'cod' && (
+                            <div className="mt-2.5 flex items-center gap-1.5">
+                              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                              <span className="text-[9px] font-black text-green-500 uppercase tracking-widest">Selected</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -938,17 +1025,22 @@ const Checkout = () => {
                     </p>
                   </div>
 
-                  {/* Desktop Place Order */}
+                  {/* Desktop Place Order / Pay Online */}
                   <button
                     onClick={placeOrder}
                     disabled={loading || (!selectedAddressId && !showNewAddressForm)}
-                    className={`hidden md:flex w-full h-[56px] rounded-[14px] font-bold text-base uppercase tracking-wider transition-all duration-300 mt-2 items-center justify-center gap-3 active:scale-95 ${
-                      loading || (!selectedAddressId && !showNewAddressForm)
+                    className={`hidden md:flex w-full h-[56px] rounded-[14px] font-bold text-base uppercase tracking-wider transition-all duration-300 mt-2 items-center justify-center gap-3 active:scale-95 ${loading || (!selectedAddressId && !showNewAddressForm)
                         ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
                         : 'bg-yellow-500 text-black shadow-[0_0_24px_rgba(255,196,0,0.3)] hover:shadow-[0_0_30px_rgba(255,196,0,0.45)] hover:scale-[1.02] hover:brightness-110'
-                    }`}
+                      }`}
                   >
-                    {loading ? <Loader2 size={18} className="animate-spin" /> : <><ShieldCheck size={18} /> Place Order</>}
+                    {loading ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : paymentMethod === 'online' ? (
+                      <><CreditCard size={18} /> Pay Online</>
+                    ) : (
+                      <><ShieldCheck size={18} /> Place Order</>
+                    )}
                   </button>
                 </div>
               </motion.div>
@@ -990,15 +1082,17 @@ const Checkout = () => {
               <button
                 onClick={placeOrder}
                 disabled={loading || (!selectedAddressId && !showNewAddressForm)}
-                className={`w-full h-[54px] rounded-[14px] font-bold text-sm uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 active:scale-[0.97] ${
-                  loading || (!selectedAddressId && !showNewAddressForm)
+                className={`w-full h-[54px] rounded-[14px] font-bold text-sm uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 active:scale-[0.97] ${loading || (!selectedAddressId && !showNewAddressForm)
                     ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
                     : 'bg-yellow-500 text-black shadow-[0_0_24px_rgba(255,196,0,0.45)] hover:brightness-110'
-                }`}>
-                {loading
-                  ? <><Loader2 className="animate-spin" size={18} /> Processing...</>
-                  : <><ShieldCheck size={18} /> Place Order</>
-                }
+                  }`}>
+                {loading ? (
+                  <><Loader2 className="animate-spin" size={18} /> Processing...</>
+                ) : paymentMethod === 'online' ? (
+                  <><CreditCard size={18} /> Pay Online</>
+                ) : (
+                  <><ShieldCheck size={18} /> Place Order</>
+                )}
               </button>
             )}
           </div>

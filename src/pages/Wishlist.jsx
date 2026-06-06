@@ -6,10 +6,13 @@ import { Heart, ShoppingCart, Trash2, ArrowRight } from 'lucide-react'; // remov
 import PageHeader from '../components/PageHeader';
 import { Link } from 'react-router-dom';
 import { getOptimizedImage } from '../utils/cloudinary';
+import { usePromo } from '../context/PromoContext';
+import { getEffectivePrice } from '../utils/pricing';
 
 const Wishlist = () => {
   const { wishlistItems, removeFromWishlist, loading } = useWishlist();
   const { addToCart } = useCart();
+  const { promoSettings } = usePromo();
 
   if (loading) {
     return (
@@ -82,8 +85,23 @@ const Wishlist = () => {
                     <h3 className="text-sm font-black text-white uppercase tracking-wider mb-2 truncate group-hover:text-yellow-500 transition-colors">
                       {item.name}
                     </h3>
-                    {/* fix #1: guard against undefined price */}
-                    <p className="text-xl font-black text-white mb-6">₹{(item.price || 0).toLocaleString()}</p>
+                    {/* Dynamic offer calculation */}
+                    {(() => {
+                      const effPrice = getEffectivePrice(item, promoSettings);
+                      const origPrice = Number(item.originalPrice ?? item.price ?? 0);
+                      const discountPercent = origPrice > effPrice ? Math.round(((origPrice - effPrice) / origPrice) * 100) : 0;
+                      return (
+                        <div className="flex items-baseline gap-2 mb-6">
+                          <span className="text-xl font-black text-white">₹{effPrice.toLocaleString()}</span>
+                          {discountPercent > 0 && (
+                            <>
+                              <span className="text-xs text-gray-500 line-through font-semibold">₹{origPrice.toLocaleString()}</span>
+                              <span className="text-xs text-green-500 font-black">{discountPercent}% OFF</span>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     <div className="flex gap-3">
                       <button

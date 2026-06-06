@@ -109,14 +109,8 @@ const BannerCountdown = ({ offer, compact = false }) => {
     return () => clearInterval(timer);
   }, [offer?.expiryDateTime]);
 
-  // 4. Check conditional rendering issue
-  if (!offer?.expiryDateTime) {
-    return (
-      <div className="offer-timer text-xs text-yellow-400 font-bold uppercase tracking-widest animate-pulse">
-        Loading timer...
-      </div>
-    );
-  }
+  // No expiryDateTime — nothing to count down; hide silently.
+  if (!offer?.expiryDateTime) return null;
 
   if (expired) {
     return (
@@ -258,7 +252,7 @@ const ProductCard = ({ product, delay = 0, promoSettings }) => {
   }, [product, toggleWishlist]);
 
   const effPrice = getEffectivePrice(product, promoSettings);
-  const origPrice = Number(product.price || 0);
+  const origPrice = Number(product.originalPrice ?? product.price ?? 0);
   const discountPercent = origPrice > effPrice ? Math.round(((origPrice - effPrice) / origPrice) * 100) : 0;
 
   return (
@@ -506,19 +500,16 @@ const Home = () => {
 
   const safeIndex = Math.min(currentIndex, Math.max(0, bannerProducts.length - 1));
 
-  // Find the offer associated with the current banner product
+  // Find the active (non-expired) offer for the current banner product.
+  // ONLY look in activeOffers — PromoContext already filters: isActive=true AND expiryDateTime > now.
+  // Never fall back to expired offers from allOffers.
   const currentProduct = bannerProducts[safeIndex];
-  const productOffers = promoSettings?.allOffers?.filter(o => o.productId === currentProduct?.id) || [];
-  const offer = productOffers.find(o => o.isActive) || productOffers[0] || promoSettings?.activeOffer || (promoSettings?.offerEnd ? {
-    expiryDateTime: promoSettings.offerEnd,
-    offerEndDate: promoSettings.offerEnd,
-    isActive: true,
-    title: promoSettings.offerTitle || 'Promo Offer'
-  } : null);
+  const activeOffers = promoSettings?.activeOffers || [];
+  const offer = activeOffers.find(o => o.productId === currentProduct?.id) || null;
 
   // Hero banner dual-price computation (never overwrites DB price)
-  const bannerOrigPrice  = Number(currentProduct?.price || 0);
-  const bannerDiscountPct = Number(offer?.discount || promoSettings?.discount || 0);
+  const bannerOrigPrice  = Number(currentProduct?.originalPrice ?? currentProduct?.price ?? 0);
+  const bannerDiscountPct = offer ? Number(offer.discount) : 0;
   const bannerSalePrice  = bannerDiscountPct > 0
     ? Math.round(bannerOrigPrice * (1 - bannerDiscountPct / 100))
     : bannerOrigPrice;
@@ -727,7 +718,7 @@ const Home = () => {
                 );
               }
 
-              const originalPrice = Number(prod.price || 0);
+              const originalPrice = Number(prod.originalPrice ?? prod.price ?? 0);
               const discountPct = Number(activeOffer.discount || 0);
               const salePrice = Math.round(originalPrice * (1 - discountPct / 100));
 

@@ -54,7 +54,7 @@ const Cart = () => {
 
   const getSubtotalMRP = () => {
     return cart.reduce((acc, item) => {
-      const origUnit = Number(item.price || 0) + (item.priceDifference || 0);
+      const origUnit = Number(item.originalPrice ?? item.price ?? 0) + (item.priceDifference || 0);
       return acc + (origUnit * item.quantity);
     }, 0);
   };
@@ -77,7 +77,7 @@ const Cart = () => {
                 {cart.map((item) => {
                   const maxStock = getMaxStock(item);
                   const effPrice = getEffectivePrice(item, promoSettings);
-                  const origPrice = Number(item.price || 0) + (item.priceDifference || 0);
+                  const origPrice = Number(item.originalPrice ?? item.price ?? 0) + (item.priceDifference || 0);
                   const discountPercent = origPrice > effPrice ? Math.round(((origPrice - effPrice) / origPrice) * 100) : 0;
 
                   return (

@@ -170,6 +170,7 @@ const ProductDetails = () => {
           id: product.id,
           name: product.name,
           price: product.price,
+          originalPrice: product.originalPrice ?? product.price,
           image: product.image,
           category: product.category,
           stock: product.stock,
@@ -188,10 +189,10 @@ const ProductDetails = () => {
   const [touchEnd, setTouchEnd] = useState(null);
 
   // Initialize selected variant options when product changes
-  // Auto-select if there is exactly 1 variant; otherwise set to null for user selection
+  // Auto-select first variant if any variants exist
   useEffect(() => {
     if (product) {
-      if (product.variants && product.variants.length === 1) {
+      if (product.variants && product.variants.length > 0) {
         const firstVariant = product.variants[0];
         setSelectedColor(firstVariant);
         const sizesMap = firstVariant.sizes || {};
@@ -210,32 +211,25 @@ const ProductDetails = () => {
     }
   }, [product]);
 
-  const handleColorChange = (variant) => {
-    const vName = variant.colorName || variant.color || '';
-    if (selectedColorName === vName) {
-      // Toggle back to default (no selection) if multiple variants exist
-      if (product.variants && product.variants.length > 1) {
-        setSelectedColor(null);
-        setSelectedSize('');
-        setActiveMedia(0);
-      }
+  const handleVariantChange = (variant) => {
+    setSelectedColor(variant);
+    setActiveMedia(0);
+    const sizesMap = variant.sizes || {};
+    const sizeKeys = Object.keys(sizesMap);
+    if (sizeKeys.length > 0) {
+      const inStockSizes = sizeKeys.filter(s => Number(sizesMap[s]) > 0);
+      const nextSize = inStockSizes.includes(selectedSize)
+        ? selectedSize
+        : (inStockSizes[0] || sizeKeys[0] || '');
+      setSelectedSize(nextSize);
     } else {
-      setSelectedColor(variant);
-      setActiveMedia(0);
-      const sizesMap = variant.sizes || {};
-      const sizeKeys = Object.keys(sizesMap);
-      if (sizeKeys.length > 0) {
-        const inStockSizes = sizeKeys.filter(s => Number(sizesMap[s]) > 0);
-        const nextSize = inStockSizes.includes(selectedSize)
-          ? selectedSize
-          : (inStockSizes[0] || sizeKeys[0] || '');
-        setSelectedSize(nextSize);
-      } else {
-        setSelectedSize('');
-      }
+      setSelectedSize('');
     }
     setQuantity(1);
   };
+
+  // Legacy alias kept for any inline calls that still use handleColorChange
+  const handleColorChange = handleVariantChange;
 
   const getSelectedVariantStock = () => {
     if (!product) return 0;
@@ -261,7 +255,7 @@ const ProductDetails = () => {
     variants: product.variants
   }, promoSettings) : 0;
 
-  const originalPrice = product ? (Number(product.price || 0) + (selectedColor?.priceDifference || 0)) : 0;
+  const originalPrice = product ? (Number(product.originalPrice ?? product.price ?? 0) + (selectedColor?.priceDifference || 0)) : 0;
 
   const discountPercent = originalPrice > currentPrice
     ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100)
@@ -993,20 +987,27 @@ const ProductDetails = () => {
                     {product.variants.map((v, idx) => {
                       const vName = v.colorName || v.color || '';
                       const isSelected = selectedColorName === vName;
+                      const colorCode = v.colorCode || getColorCode(vName);
                       return (
                         <button
                           key={idx}
                           type="button"
-                          onClick={() => handleColorChange(v)}
-                          className={`flex items-center gap-3 px-5 py-3 rounded-full border transition-all duration-300 ${
-                            isSelected 
-                              ? 'border-yellow-500 bg-yellow-500/10 text-white shadow-md shadow-yellow-500/5' 
+                          onClick={() => handleVariantChange(v)}
+                          className={`flex items-center gap-3 px-5 py-3 rounded-2xl border transition-all duration-300 ${
+                            isSelected
+                              ? 'border-yellow-500 bg-yellow-500/10 text-white shadow-lg shadow-yellow-500/20'
                               : 'border-white/5 bg-gray-900/30 text-gray-400 hover:border-white/20 hover:text-white'
                           }`}
                         >
-                          <span className="text-base select-none">{getColorEmoji(vName)}</span>
+                          {/* Color dot swatch */}
+                          <span
+                            className="w-5 h-5 rounded-full border border-white/30 flex-shrink-0"
+                            style={{ backgroundColor: colorCode }}
+                          />
+                          {/* Color name */}
                           <span className="text-[11px] font-black uppercase tracking-widest">{vName}</span>
-                          {isSelected && <Check size={12} className="text-yellow-500 ml-1" />}
+                          {/* Active checkmark */}
+                          {isSelected && <Check size={12} className="text-yellow-400 font-bold ml-1" />}
                         </button>
                       );
                     })}
@@ -1282,7 +1283,21 @@ const ProductDetails = () => {
                       <h3 className="text-sm font-black text-white uppercase tracking-wider mb-3 leading-tight group-hover:text-yellow-500 transition-colors line-clamp-2">
                         {rp.name}
                       </h3>
-                      <p className="text-lg font-black text-white">₹{rpPrice.toLocaleString()}</p>
+                      {(() => {
+                        const rpOrigPrice = Number(rp.originalPrice ?? rp.price ?? 0);
+                        const rpDiscountPercent = rpOrigPrice > rpPrice ? Math.round(((rpOrigPrice - rpPrice) / rpOrigPrice) * 100) : 0;
+                        return (
+                          <div className="flex items-baseline gap-2 mt-1">
+                            <span className="text-lg font-black text-white">₹{rpPrice.toLocaleString()}</span>
+                            {rpDiscountPercent > 0 && (
+                              <>
+                                <span className="text-xs text-gray-500 line-through font-semibold">₹{rpOrigPrice.toLocaleString()}</span>
+                                <span className="text-xs text-green-500 font-black">{rpDiscountPercent}% OFF</span>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 );

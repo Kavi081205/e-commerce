@@ -11,7 +11,7 @@
 export const getEffectivePrice = (product, promoSettings) => {
   if (!product) return 0;
   
-  let basePrice = Number(product.price || 0);
+  let basePrice = Number(product.originalPrice ?? product.price ?? 0);
 
   // Apply variant price difference if color is selected and variants exist
   if (product.color && product.variants && product.variants.length > 0) {
@@ -24,6 +24,24 @@ export const getEffectivePrice = (product, promoSettings) => {
   
   // Check if there's an active global offer for this specific product
   const productId = product.productId || product.id;
+  
+  // Find matching offer from promoSettings.activeOffers first
+  const activeOffers = promoSettings?.activeOffers || [];
+  const matchingOffer = activeOffers.find(o => o.productId === productId);
+
+  if (matchingOffer) {
+    const expiry = matchingOffer.expiryDateTime || matchingOffer.offerEndDate;
+    const isOfferActive = 
+      matchingOffer.isActive !== false &&
+      (!expiry || Date.now() < new Date(expiry).getTime());
+
+    if (isOfferActive && Number(matchingOffer.discount) > 0) {
+      const discountAmount = (basePrice * Number(matchingOffer.discount)) / 100;
+      return basePrice - discountAmount;
+    }
+  }
+
+  // Fallback check
   const isOfferActive = 
     promoSettings?.offerActive && 
     promoSettings?.offerProductId === productId &&

@@ -52,6 +52,11 @@ const getColorCode = (name) => {
   return color;
 };
 
+const sanitizeUrl = (url) => {
+  if (!url || typeof url !== 'string') return url;
+  return url.trim().replace(/https?:\/\/localhost:(7070|37857)\/(images\/)?/g, '/images/');
+};
+
 const INITIAL_FORM = {
   name: '', price: '', description: '',
   category: 'gadgets', image: '', video: '', stock: '', costPrice: '',
@@ -156,11 +161,12 @@ const AddProduct = () => {
 
   const handleAddVariantImageUrl = (colorIdx, url) => {
     if (!url.trim()) return;
+    const sanitizedUrl = sanitizeUrl(url);
     setVariants(prev => prev.map((v, idx) => {
       if (idx === colorIdx) {
         return {
           ...v,
-          images: [...(v.images || []), url.trim()]
+          images: [...(v.images || []), sanitizedUrl]
         };
       }
       return v;
@@ -346,6 +352,7 @@ const AddProduct = () => {
       await addProduct({
         name: formData.name.trim(),
         price: Number(formData.price),
+        originalPrice: Number(formData.price),
         description: formData.description.trim(),
         category: formData.category,
         image: imageUrl,

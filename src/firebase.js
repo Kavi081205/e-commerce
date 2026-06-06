@@ -1,14 +1,15 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAnalytics, isSupported } from "firebase/analytics";
 import { getPerformance } from "firebase/performance";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  authDomain: "aurex-ecommerce.firebaseapp.com",   // Must be Firebase domain — NOT Vercel
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "aurex-ecommerce",
+  // storageBucket must end in .appspot.com — NOT .firebasestorage.app
+  storageBucket: "aurex-ecommerce.appspot.com",
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
@@ -16,7 +17,19 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-const db = getFirestore(app);
+// Use persistent cache + multi-tab support to reduce redundant Firestore
+// network calls and suppress "listen transport" errors on reconnect.
+let db;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager()
+    })
+  });
+} catch (e) {
+  // initializeFirestore throws if already initialized (e.g. HMR during dev)
+  db = getFirestore(app);
+}
 const storage = getStorage(app);
 
 // Analytics & Performance are optional — guarded so builds without

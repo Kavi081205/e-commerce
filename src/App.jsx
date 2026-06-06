@@ -58,26 +58,22 @@ const CustomerRoute = ({ children }) => {
   return children;
 };
 
-// AdminRoute: requires a logged-in admin user.
-// — Unauthenticated or non-admin → /admin-login
+// AdminRoute: requires an active admin session.
+// Accepts EITHER a local adminSession (set by adminLogin direct-check)
+// OR a Firebase-authenticated user with admin role in Firestore.
+// — No valid session → /admin-login
 const AdminRoute = ({ children }) => {
-  const { currentUser, loading, isAdmin } = useAuth();
+  const { currentUser, loading, isAdmin, adminSession } = useAuth();
   const location = useLocation();
 
-  console.log("=== Admin Route Protection Check ===");
-  console.log("Current Route:", location.pathname);
-  console.log("Auth Loading Status:", loading);
-  console.log("Current User Authenticated:", currentUser ? `${currentUser.email} (UID: ${currentUser.uid})` : "No");
-  console.log("Is Admin Privilege Granted:", isAdmin);
-  console.log("====================================");
-
+  // Wait for AuthContext to finish resolving the Firebase Auth state.
   if (loading) return null;
-  if (!currentUser || !isAdmin) {
-    console.log("[Route Guard] Access Denied. Redirecting to /admin-login");
+
+  // Grant access if the local admin session is active OR Firebase user is admin.
+  if (!isAdmin && !adminSession) {
     return <Navigate to="/admin-login" replace state={{ from: location }} />;
   }
 
-  console.log("[Route Guard] Access Granted. Rendering Protected Page.");
   return children;
 };
 

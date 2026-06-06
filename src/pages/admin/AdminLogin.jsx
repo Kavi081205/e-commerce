@@ -1,97 +1,39 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Lock, User, ShieldCheck, Loader2 } from 'lucide-react';
 import { getAuth, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
 import app from '../../firebase';
 
 const auth = getAuth(app);
 
 const AdminLogin = () => {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { login, currentUser, isAdmin, loading: authLoading } = useAuth();
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
+  const { adminLogin, currentUser, isAdmin, loading: authLoading, adminSession } = useAuth();
 
   // While AuthContext is still resolving, render nothing (avoids flash-redirect).
   if (authLoading) return null;
 
+  // Already authenticated as admin — go straight to dashboard.
+  if (isAdmin) return <Navigate to="/admin" replace />;
+
   // ── Handle Login ─────────────────────────────────────────────────────────────
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    try {
-      setError('');
-      setLoading(true);
+    setError('');
+    setLoading(true);
 
-      // Step 1: Authenticate with Firebase Auth.
-      const userCredential = await login(username, password);
-      const user = userCredential.user;
+    // Direct credential comparison (trim() to handle spaces/mobile keyboard quirks).
+    const result = adminLogin(email, password);
 
-      const userRef = doc(db, 'users', user.uid);
-
-      // Verify admin email: VITE_ADMIN_EMAIL with fallback
-      // If admin document does not exist, automatically create it.
-      const adminEmail = (import.meta.env.VITE_ADMIN_EMAIL || 'kaviyarasanmurugan78@gmail.com').toLowerCase();
-      if (user.email?.toLowerCase() === adminEmail) {
-        const checkDoc = await getDoc(userRef);
-        const checkData = checkDoc.data();
-        if (!checkDoc.exists() || checkData?.role !== 'admin' || !checkData?.isAdmin) {
-          const adminPayload = {
-            email: user.email,
-            role: "admin",
-            isAdmin: true,
-            uid: user.uid,
-            displayName: user.displayName || 'Kaviyarasan',
-            createdAt: checkData?.createdAt || new Date().toISOString()
-          };
-          const { setDoc } = await import('firebase/firestore');
-          await setDoc(userRef, adminPayload, { merge: true });
-        }
-      }
-
-      // Fetch current user document users/{uid}
-      const userDoc = await getDoc(userRef);
-
-      // If document missing: Show clear error
-      if (!userDoc.exists()) {
-        await signOut(auth);
-        throw new Error('Access denied. User profile document not found in database.');
-      }
-
-      const userData = userDoc.data();
-
-      // Add console logs as requested
-      console.log("User Data:", userData);
-      console.log("Role:", userData.role);
-      console.log("isAdmin:", userData.isAdmin);
-
-      // Verify admin flags: role = "admin" OR isAdmin = true
-      if (userData.role === 'admin' || userData.isAdmin === true) {
-        // Allow dashboard access
-        navigate('/admin');
-      } else {
-        // Not an admin — sign out immediately
-        await signOut(auth);
-        throw new Error('Access denied. This account does not have administrative privileges.');
-      }
-    } catch (err) {
-      console.error('Admin login error:', err);
-      if (err.code === 'permission-denied') {
-        setError('Firestore permission denied. Check your security rules.');
-      } else if (
-        err.code === 'auth/invalid-credential' ||
-        err.code === 'auth/wrong-password' ||
-        err.code === 'auth/user-not-found'
-      ) {
-        setError('Invalid email or password. Please check your credentials.');
-      } else {
-        setError(err.message || 'Login failed. Please try again.');
-      }
-    } finally {
+    if (result.success) {
+      navigate('/admin', { replace: true });
+    } else {
+      setError(result.message);
       setLoading(false);
     }
   };
@@ -116,7 +58,7 @@ const AdminLogin = () => {
 
           <div className="p-8 sm:p-10 bg-gray-900/50">
 
-            {/* ── Warning Banner: a non-admin session is active ─────────────── */}
+            {/* ── Warning Banner: a non-admin Firebase session is active ─────── */}
             {currentUser && !isAdmin && (
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-6 flex flex-col gap-3">
                 <p className="text-yellow-400 text-xs font-bold uppercase tracking-widest">
@@ -160,10 +102,10 @@ const AdminLogin = () => {
                     type="email"
                     required
                     autoComplete="email"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="w-full pl-12 pr-4 py-3.5 bg-slate-950 border border-yellow-900/30 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500/50 transition-all font-medium"
-                    placeholder="admin@smkptraders.com"
+                    placeholder="kaviyarasanmurugan78@gmail.com"
                   />
                 </div>
               </div>

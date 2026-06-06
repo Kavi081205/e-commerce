@@ -47,7 +47,9 @@ export const PromoProvider = ({ children }) => {
     const unsubscribe = onSnapshot(offersRef, (snapshot) => {
       const list = snapshot.docs.map(docSnap => {
         const data = docSnap.data();
-        const expiry = data.expiryDateTime || data.offerEndDate || '';
+        // Normalize both possible expiry fields; replace space with T for correct Date parsing
+        const rawExpiry = data.expiryDateTime || data.offerEndDate || '';
+        const expiry = rawExpiry ? String(rawExpiry).replace(' ', 'T') : '';
         return {
           id: docSnap.id,
           ...data,
@@ -64,8 +66,10 @@ export const PromoProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  // Auto-expire expired offers in Firestore using useEffect for side effects
+  // Auto-expire: only write to Firestore when the offers list changes,
+  // NOT on every tick. The tick is used only for display (useMemo below).
   useEffect(() => {
+    if (offers.length === 0) return;
     const now = Date.now();
     offers.forEach(async (offer) => {
       const expiry = offer.expiryDateTime || offer.offerEndDate;
@@ -75,11 +79,12 @@ export const PromoProvider = ({ children }) => {
           await updateDoc(offerDocRef, { isActive: false });
           console.log(`Automatically expired offer "${offer.title}" in Firestore`);
         } catch (e) {
-          console.warn("Failed to auto-expire offer:", offer.title, e);
+          console.warn('Failed to auto-expire offer:', offer.title, e);
         }
       }
     });
-  }, [offers, tick]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offers]); // ← NOT tick — avoids 1 Firestore write per second
 
   // Recalculate active offer and handle expiration database updates
   const promoSettings = useMemo(() => {

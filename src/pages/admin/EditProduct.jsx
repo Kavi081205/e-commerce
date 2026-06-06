@@ -53,6 +53,12 @@ const getColorCode = (name) => {
   return color;
 };
 
+// Strip any localhost:PORT prefix from image/redirect URLs before saving to Firestore
+const sanitizeUrl = (url) => {
+  if (!url || typeof url !== 'string') return url;
+  return url.trim().replace(/https?:\/\/localhost:\d+/g, 'https://e-commerce-smkp-traders.vercel.app');
+};
+
 const mapVariantsFromDb = (variantsArray, category) => {
   return (variantsArray || []).map(v => {
     const sizes = v.sizes || {};
@@ -199,11 +205,12 @@ const EditProduct = () => {
 
   const handleAddVariantImageUrl = (colorIdx, url) => {
     if (!url.trim()) return;
+    const cleanUrl = sanitizeUrl(url);
     setVariants(prev => prev.map((v, idx) => {
       if (idx === colorIdx) {
         return {
           ...v,
-          images: [...(v.images || []), url.trim()]
+          images: [...(v.images || []), cleanUrl]
         };
       }
       return v;
@@ -241,7 +248,7 @@ const EditProduct = () => {
           setVariants(mapVariantsFromDb(data.variants || [], data.category));
           setFormData({
             name: data.name || '',
-            price: data.price !== undefined ? String(data.price) : '',
+            price: data.originalPrice !== undefined ? String(data.originalPrice) : (data.price !== undefined ? String(data.price) : ''),
             category: data.category || '',
             stock: data.stock !== undefined ? String(data.stock) : '',
             image: data.image || '',
@@ -405,6 +412,7 @@ const EditProduct = () => {
       await updateDoc(productRef, {
         name: formData.name || "",
         price: Number(formData.price) || 0,
+        originalPrice: Number(formData.price) || 0,
         stock: totalStock,   // exact value admin typed — never auto-modified
         costPrice: Number(formData.costPrice),
         // NOTE: 'cost' legacy field removed — use 'costPrice' everywhere

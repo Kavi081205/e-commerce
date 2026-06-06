@@ -34,7 +34,7 @@ const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout, currentUser } = useAuth();
+  const { logout, currentUser, isAdmin } = useAuth();
 
   // ✅ Exact match for Dashboard, prefix match for all others
   const isActive = (item) =>
@@ -51,12 +51,12 @@ const AdminLayout = () => {
     }
   };
 
-  // Real-time listener checking role of currentUser. Auto signout if invalid.
+  // Auto-logout if admin access is revoked (covers both local session and Firebase role).
   useEffect(() => {
-    if (!currentUser || currentUser.role !== 'admin') {
+    if (!isAdmin) {
       handleLogout();
     }
-  }, [currentUser]);
+  }, [isAdmin]);
 
   const closeSidebar = () => setSidebarOpen(false);
 

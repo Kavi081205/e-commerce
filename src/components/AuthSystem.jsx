@@ -1,68 +1,74 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   getAuth,
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult
+  signInWithEmailAndPassword
 } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import app from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
 const auth = getAuth(app);
 
+// ─── Helper: map Firebase error codes to user-friendly messages ──────────────
+const getFriendlyError = (err) => {
+  switch (err.code) {
+    case 'auth/network-request-failed':
+      return 'Network error. Please check your connection and try again.';
+    case 'auth/email-already-in-use':
+      return 'An account with this email already exists. Try logging in.';
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':
+      return 'Invalid email or password.';
+    case 'auth/user-not-found':
+      return 'No account found with this email.';
+    case 'auth/too-many-requests':
+      return 'Too many failed attempts. Please wait a moment and try again.';
+    default:
+      return err.message
+        ?.replace('Firebase: ', '')
+        .replace(/\s*\(auth\/[^)]+\)\.?/, '')
+        || 'Authentication failed. Please try again.';
+  }
+};
+
 export default function AuthSystem() {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
 
-  const [isLoginMode, setIsLoginMode] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
+  const [isLoginMode, setIsLoginMode]     = useState(true);
+  const [email, setEmail]                 = useState('');
+  const [password, setPassword]           = useState('');
+  const [loading, setLoading]             = useState(false);
+  const [error, setError]                 = useState(null);
+  const [success, setSuccess]             = useState(null);
 
-  // Only write a 'customer' role document for brand-new accounts.
-  // For existing users (e.g. admins using the same Firebase Auth),
-  // we use getDoc first so we never overwrite an existing role.
+  // ── Save / update Firestore user document ────────────────────────────────────
+  // Never overwrites role for returning users — only sets it on brand-new accounts.
   const saveCustomerDoc = async (user, isNewAccount = false) => {
     if (!user) return;
     const userRef = doc(db, 'users', user.uid);
     if (isNewAccount) {
-      // Brand-new account: safe to set role = 'customer'
-      await setDoc(
-        userRef,
-        {
-          name: user.displayName || user.email?.split('@')[0] || 'User',
-          email: user.email || '',
-          role: 'customer',
-          createdAt: new Date().toISOString()
-        },
-        { merge: true }
-      );
+      await setDoc(userRef, {
+        name: user.displayName || user.email?.split('@')[0] || 'User',
+        email: user.email || '',
+        role: 'customer',
+        createdAt: new Date().toISOString()
+      }, { merge: true });
     } else {
-      // Returning user login: only update non-role fields — never overwrite role
-      await setDoc(
-        userRef,
-        {
-          name: user.displayName || user.email?.split('@')[0] || 'User',
-          email: user.email || '',
-          lastLogin: new Date().toISOString()
-        },
-        { merge: true }
-      );
+      // Returning user — only touch non-role fields
+      await setDoc(userRef, {
+        name: user.displayName || user.email?.split('@')[0] || 'User',
+        email: user.email || '',
+        lastLogin: new Date().toISOString()
+      }, { merge: true });
     }
   };
 
-  const validatePassword = (pass) => {
-    const regex = /^(?=.*[A-Za-z])(?=.*\d).{6,}$/;
-    return regex.test(pass);
-  };
+  // ── Email/password login and registration ────────────────────────────────────
+  const validatePassword = (pass) => /^(?=.*[A-Za-z])(?=.*\d).{6,}$/.test(pass);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -70,117 +76,31 @@ export default function AuthSystem() {
     setSuccess(null);
 
     if (!isLoginMode && !validatePassword(password)) {
-      setError("Password must be at least 6 characters and contain a mix of letters and numbers.");
+      setError('Password must be at least 6 characters and contain a mix of letters and numbers.');
       return;
     }
 
     setLoading(true);
-
     try {
-      let userCredential;
       if (isLoginMode) {
-        userCredential = await signInWithEmailAndPassword(auth, email, password);
-        await saveCustomerDoc(userCredential.user, false); // returning user — never overwrites role
-
-        // Success: AuthContext onSnapshot will resolve the user role and App.jsx will auto-redirect.
+        await signInWithEmailAndPassword(auth, email, password);
+        // AuthContext onSnapshot resolves role → App.jsx auto-redirects
         return;
       } else {
-        userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await saveCustomerDoc(userCredential.user, true); // new account — sets role: 'customer'
+        const { user } = await createUserWithEmailAndPassword(auth, email, password);
+        await saveCustomerDoc(user, true);
         setSuccess('Account created successfully!');
         navigate('/', { replace: true });
       }
       setEmail('');
       setPassword('');
     } catch (err) {
-      console.error(err);
-      if (err.code === 'auth/email-already-in-use') {
-        setError("An account with this email already exists. Try logging in.");
-      } else if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
-        setError("Invalid email or password.");
-      } else {
-        const cleanMessage = err.message.replace('Firebase: ', '');
-        setError(cleanMessage || "Authentication failed.");
-      }
+      console.error('Auth error:', err.code);
+      setError(getFriendlyError(err));
     } finally {
       setLoading(false);
     }
   };
-
-  // Handle redirect result on page load (for mobile / popup-blocked fallback)
-  useEffect(() => {
-    getRedirectResult(auth)
-      .then(async (result) => {
-        if (result?.user) {
-          await saveCustomerDoc(result.user, false);
-          // AuthContext onSnapshot will handle role resolution and redirect
-        }
-      })
-      .catch((err) => {
-        if (err.code && err.code !== 'auth/no-current-user') {
-          console.error('Google redirect result error:', err.code, window.location.hostname);
-          if (err.code === 'auth/unauthorized-domain') {
-            setError('Google Sign-In is not enabled for this domain. Please try email login or contact support.');
-          } else {
-            setError(err.message.replace('Firebase: ', '').replace(/\s*\(auth\/[^)]+\)\.?/, ''));
-          }
-        }
-      });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleGoogleSignIn = async () => {
-    setError(null);
-    setSuccess(null);
-    setLoading(true);
-
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
-
-    // Detect mobile — use redirect flow to avoid popup issues on mobile browsers
-    const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent);
-
-    try {
-      if (isMobile) {
-        // Redirect flow: page will reload and getRedirectResult() above handles the result
-        await signInWithRedirect(auth, provider);
-        return; // page navigates away — no finally needed
-      }
-
-      const result = await signInWithPopup(auth, provider);
-      // Google sign-in: treat as returning user — never overwrite existing role
-      await saveCustomerDoc(result.user, false);
-      // Success: AuthContext onSnapshot will resolve the user role and App.jsx will auto-redirect.
-    } catch (err) {
-      // Always clear loading to prevent infinite spinner
-      console.error('Google Sign-In error:', err.code, window.location.hostname, err.message);
-
-      // Map Firebase error codes to user-friendly messages
-      if (err.code === 'auth/unauthorized-domain') {
-        setError('Google Sign-In is not enabled for this domain. Please try email login or contact support.');
-      } else if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
-        setError('Sign-in was cancelled. Please try again.');
-      } else if (err.code === 'auth/popup-blocked') {
-        // Auto-fallback to redirect when popup is blocked
-        try {
-          await signInWithRedirect(auth, provider);
-          return;
-        } catch (redirectErr) {
-          console.error('Redirect fallback error:', redirectErr);
-          setError('Pop-up was blocked. Please allow pop-ups for this site and try again.');
-        }
-      } else if (err.code === 'auth/network-request-failed') {
-        setError('Network error. Please check your connection and try again.');
-      } else {
-        const cleanMessage = err.message.replace('Firebase: ', '').replace(/\s*\(auth\/[^)]+\)\.?/, '');
-        setError(cleanMessage || 'Google Sign-In failed. Please try again.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Removed automatic redirect on mount to avoid UI leakage and keep navigation explicit
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black p-4">
@@ -194,7 +114,7 @@ export default function AuthSystem() {
             className={`flex-1 py-3.5 text-[10px] font-black rounded-xl uppercase tracking-[0.3em] transition-all ${isLoginMode
               ? 'bg-yellow-500 text-black shadow-lg'
               : 'text-gray-600 hover:text-white hover:bg-white/5'
-              }`}
+            }`}
           >
             Access
           </button>
@@ -204,25 +124,25 @@ export default function AuthSystem() {
             className={`flex-1 py-3.5 text-[10px] font-black rounded-xl uppercase tracking-[0.3em] transition-all ${!isLoginMode
               ? 'bg-yellow-500 text-black shadow-lg'
               : 'text-gray-600 hover:text-white hover:bg-white/5'
-              }`}
+            }`}
           >
             Register
           </button>
         </div>
 
         {/* Form Card */}
-        <div className="bg-gray-900/60 backdrop-blur-xl border border-yellow-900/20 rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden">
+        <div className="bg-gray-900/60 backdrop-blur-xl border border-yellow-900/20 rounded-[2.5rem] p-10 shadow-2xl relative">
           {/* Ambient glow */}
           <div className="absolute -top-24 -left-24 w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-yellow-500/5 rounded-full blur-3xl pointer-events-none" />
 
-          <p className="text-yellow-500 text-[9px] font-black uppercase tracking-[0.5em] mb-4 relative z-10">
+          <p className="text-yellow-500 text-[9px] font-black uppercase tracking-[0.5em] mb-4 relative z-10 text-center">
             {isLoginMode ? 'Identity Verification' : 'New Registry'}
           </p>
-          <h2 className="text-3xl font-black text-white mb-2 uppercase tracking-tighter relative z-10">
+          <h2 className="text-3xl font-black text-white mb-2 uppercase tracking-tighter relative z-10 text-center">
             {isLoginMode ? 'Welcome Back' : 'Create Account'}
           </h2>
-          <p className="text-gray-600 text-[10px] font-black uppercase tracking-widest mb-10 relative z-10">
+          <p className="text-gray-600 text-[10px] font-black uppercase tracking-widest mb-10 relative z-10 text-center">
             {isLoginMode ? 'Enter your credentials to proceed.' : 'Register your identity in our system.'}
           </p>
 
@@ -289,10 +209,10 @@ export default function AuthSystem() {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full py-5 px-6 rounded-2xl font-black text-[10px] uppercase tracking-[0.4em] transition-all flex justify-center items-center gap-3 mt-2 ${loading
+              className={`w-full py-5 px-6 rounded-2xl font-black text-[10px] uppercase tracking-[0.4em] transition-all flex justify-center items-center gap-3 mt-2 mb-4 ${loading
                 ? 'bg-yellow-500/50 text-black cursor-not-allowed'
                 : 'bg-yellow-500 text-black hover:bg-yellow-400 hover:scale-[1.02] active:scale-95 shadow-2xl shadow-yellow-500/20'
-                }`}
+              }`}
             >
               {loading ? (
                 <svg className="animate-spin h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -302,34 +222,6 @@ export default function AuthSystem() {
               ) : isLoginMode ? 'Authenticate' : 'Create Identity'}
             </button>
           </form>
-
-          {/* Google Sign In */}
-          <div className="mt-10 relative z-10">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/5" />
-              </div>
-              <div className="relative flex justify-center">
-                <span className="px-4 bg-transparent text-[9px] font-black text-gray-700 uppercase tracking-[0.3em]">Or proceed with</span>
-              </div>
-            </div>
-
-            <div className="mt-8">
-              <button
-                onClick={handleGoogleSignIn}
-                disabled={loading}
-                className="w-full flex items-center justify-center px-6 py-4 border border-white/10 rounded-2xl bg-white/5 text-white font-black text-[10px] uppercase tracking-widest hover:bg-white/10 hover:border-yellow-500/30 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed gap-4"
-              >
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                </svg>
-                Continue with Google
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

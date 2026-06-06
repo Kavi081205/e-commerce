@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
-import { collection, onSnapshot, query, orderBy, doc, getDoc, limit } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
 import { DollarSign, ShoppingBag, TrendingUp, Users, ArrowUpRight, Loader2, Wallet, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -68,25 +68,16 @@ const Dashboard = () => {
   const [lowStockProducts, setLowStockProducts] = useState([]);
   const [outOfStockProducts, setOutOfStockProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
 
-  const { currentUser } = useAuth();
+  const { currentUser, isAdmin } = useAuth();
 
   useEffect(() => {
+    // If admin session is active (via direct-check login), start loading data.
+    // If no admin session, stop loading immediately.
+    if (!isAdmin) { setLoading(false); return; }
+    // If Firebase user is present, we can do a Firestore check. Otherwise skip.
     if (!currentUser) { setLoading(false); return; }
-    const checkAdmin = async () => {
-      try {
-        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-        setIsAdmin(userDoc.exists() && (userDoc.data().role === 'admin' || userDoc.data().isAdmin === true));
-      } catch (err) {
-        console.error("Admin check failed:", err);
-        setIsAdmin(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-    checkAdmin();
-  }, [currentUser]);
+  }, [isAdmin, currentUser]);
 
   useEffect(() => {
     if (!isAdmin) return;
