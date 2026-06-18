@@ -27,7 +27,13 @@ const auth = getAuth(app);
 
 // ─── Helper: map Firebase error codes to user-friendly messages ──────────────
 const getFriendlyError = (err) => {
-  switch (err.code) {
+  if (!err) return 'Authentication failed. Please try again.';
+  
+  // Try to extract the error code from message if not present directly
+  const codeMatch = err.message?.match(/\((auth\/[a-zA-Z0-9-_]+)\)/);
+  const code = err.code || (codeMatch ? codeMatch[1] : null);
+
+  switch (code) {
     case 'auth/network-request-failed':
       return 'Network error. Please check your connection and try again.';
     case 'auth/email-already-in-use':
@@ -47,11 +53,15 @@ const getFriendlyError = (err) => {
       return 'Sign-in window closed before completion. Please try again.';
     case 'auth/cancelled-popup-request':
       return 'Sign-in request was cancelled. Please try again.';
-    default:
-      return err.message
+    default: {
+      const cleanMsg = err.message
         ?.replace('Firebase: ', '')
         .replace(/\s*\(auth\/[^)]+\)\.?/, '')
-        || 'Authentication failed. Please try again.';
+        ?.trim();
+      return (cleanMsg && cleanMsg !== 'Error') 
+        ? cleanMsg 
+        : 'Authentication failed. Please check your credentials and try again.';
+    }
   }
 };
 

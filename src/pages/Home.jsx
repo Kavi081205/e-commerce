@@ -5,7 +5,7 @@ import { ArrowRight, Star, Truck, ShieldCheck, Loader2, Heart, Gift, Zap, Sparkl
 import { db } from '../firebase';
 import { collection, query, orderBy, limit, doc, where, getDoc, getDocs, getCountFromServer } from 'firebase/firestore';
 import { useQuery } from '@tanstack/react-query';
-import { getFeaturedProducts, getProductsByIds } from '../firebase/services';
+import { getFeaturedProducts, getProductsByIds, getProductById, getCategories } from '../firebase/services';
 import LazyImage from '../components/LazyImage';
 import { useInView } from 'react-intersection-observer'; // FIX 1: use the canonical hook directly
 import { useWishlist } from '../context/WishlistContext';
@@ -32,14 +32,7 @@ const useDynamicCategories = () => {
   const { data: categories = [], isLoading: catLoading } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
-      const q = query(
-        collection(db, 'categories'),
-        orderBy('order', 'asc')
-      );
-      const snap = await getDocs(q);
-      return snap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter(c => c.active !== false);
+      return await getCategories();
     },
     staleTime: 1000 * 60 * 10 // 10 minutes cache
   });
@@ -421,10 +414,9 @@ const Home = () => {
       await Promise.all(
         activeOffers.map(async (offer) => {
           if (!offer.productId) return;
-          const ref = doc(db, 'products', offer.productId);
-          const snap = await getDoc(ref);
-          if (snap.exists()) {
-            map[offer.id] = { id: snap.id, ...snap.data() };
+          const prod = await getProductById(offer.productId);
+          if (prod) {
+            map[offer.id] = prod;
           }
         })
       );

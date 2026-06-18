@@ -80,11 +80,11 @@ const MyOrders = () => {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [currentUser]);
+  }, [currentUser?.uid]);
 
   useEffect(() => {
     fetchOrders();
-  }, [currentUser, fetchOrders]);
+  }, [currentUser?.uid, fetchOrders]);
 
   if (loading) {
     return (

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useRef, useContext, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useRef, useContext, useCallback, useMemo } from 'react';
 import {
   getAuth,
   signInWithEmailAndPassword,
@@ -154,7 +154,7 @@ export const AuthProvider = ({ children }) => {
    * The admin password lives only in Firebase Auth — never in the JS bundle.
    * Returns { success: true } or { success: false, message: '...' }.
    */
-  const adminLogin = async (email, password) => {
+  const adminLogin = useCallback(async (email, password) => {
     const emailTrimmed = (email || '').toLowerCase().trim();
     try {
       const cred = await signInWithEmailAndPassword(auth, emailTrimmed, password);
@@ -181,29 +181,30 @@ export const AuthProvider = ({ children }) => {
       }
       return { success: false, message };
     }
-  };
+  }, []);
 
   // ── Logout ───────────────────────────────────────────────────────────────────
-  const adminLogout = async () => {
+  const adminLogout = useCallback(async () => {
     const uid = auth.currentUser?.uid;
     if (uid) await logLogout(uid, 'manual');
     try { await signOut(auth); } catch (_) {}
-  };
+  }, []);
 
-  const login = (email, password) =>
-    signInWithEmailAndPassword(auth, email, password);
+  const login = useCallback((email, password) =>
+    signInWithEmailAndPassword(auth, email, password), []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     const uid = auth.currentUser?.uid;
     if (uid) await logLogout(uid, 'manual');
     return signOut(auth);
-  };
+  }, []);
 
-  const updateProfile = async (data) => {
-    if (!currentUser) return;
-    await setDoc(doc(db, 'users', currentUser.uid), data, { merge: true });
+  const updateProfile = useCallback(async (data) => {
+    const user = auth.currentUser;
+    if (!user) return;
+    await setDoc(doc(db, 'users', user.uid), data, { merge: true });
     setCurrentUser(prev => prev ? { ...prev, ...data } : null);
-  };
+  }, []);
 
   // isAdmin: true when the Firebase user's Firestore document has role='admin'.
   const isAdmin = currentUser?.role === 'admin' || currentUser?.isAdmin === true;
@@ -211,7 +212,7 @@ export const AuthProvider = ({ children }) => {
   // adminSession is kept for backwards compatibility with AdminRoute guard in App.jsx
   const adminSession = isAdmin;
 
-  const value = {
+  const value = useMemo(() => ({
     currentUser,
     loading,
     isAdmin,
@@ -221,7 +222,7 @@ export const AuthProvider = ({ children }) => {
     adminLogin,
     adminLogout,
     updateProfile,
-  };
+  }), [currentUser, loading, isAdmin, adminSession, login, logout, adminLogin, adminLogout, updateProfile]);
 
   return (
     <AuthContext.Provider value={value}>

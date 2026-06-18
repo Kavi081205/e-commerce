@@ -1,8 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, useCallback, useMemo } from 'react';
 import { usePromo } from './PromoContext';
 import { getEffectivePrice } from '../utils/pricing';
-import { db } from '../firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { getProductById } from '../firebase/services';
 
 const CartContext = createContext();
 
@@ -73,16 +72,14 @@ export const CartProvider = ({ children }) => {
       for (const item of cart) {
         const id = item.id;
         const productId = item.productId || id.split('_')[0];
-        const firestorePath = `products/${productId}`;
-        console.log(`[Cart Startup Validation] Querying Firestore path: ${firestorePath}`);
+        console.log(`[Cart Startup Validation] Querying cached product: ${productId}`);
         try {
-          const productRef = doc(db, 'products', productId);
-          const productSnap = await getDoc(productRef);
+          const productData = await getProductById(productId);
           
-          if (productSnap.exists()) {
+          if (productData) {
             validItems.push({
               ...item,
-              ...productSnap.data(),
+              ...productData,
               id: id,
               productId: productId
             });
@@ -91,7 +88,7 @@ export const CartProvider = ({ children }) => {
             changed = true;
           }
         } catch (err) {
-          console.error(`[Cart Startup Validation] Failed to query Firestore path ${firestorePath}:`, err);
+          console.error(`[Cart Startup Validation] Failed to query product ${productId}:`, err);
           // Keep item on network/permission error to prevent aggressive user cart loss
           validItems.push(item);
         }
@@ -216,21 +213,32 @@ export const CartProvider = ({ children }) => {
   const getCartTotal = useCallback(() => cartTotal, [cartTotal]);
   const getCartCount = useCallback(() => cartCount, [cartCount]);
 
+  const value = useMemo(() => ({
+    cart,
+    cartTotal,
+    cartCount,
+    bump,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    clearCart,
+    getCartTotal,
+    getCartCount,
+  }), [
+    cart,
+    cartTotal,
+    cartCount,
+    bump,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    clearCart,
+    getCartTotal,
+    getCartCount,
+  ]);
+
   return (
-    <CartContext.Provider
-      value={{
-        cart,
-        cartTotal,
-        cartCount,
-        bump,
-        addToCart,
-        removeFromCart,
-        updateQuantity,
-        clearCart,
-        getCartTotal,
-        getCartCount,
-      }}
-    >
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   );

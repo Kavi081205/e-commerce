@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -17,6 +17,7 @@ import { logOrderEvent } from '../utils/activityLog';
 import { db } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { validatePhone, validatePincode, validateName } from '../utils/security';
+import { getProductById } from '../firebase/services';
 
 const Checkout = () => {
   const { cart, getCartTotal, clearCart, removeFromCart } = useCart();
@@ -57,6 +58,7 @@ const Checkout = () => {
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
 
+  const addressesKey = useMemo(() => JSON.stringify(currentUser?.addresses || []), [currentUser?.addresses]);
   useEffect(() => {
     if (currentUser?.addresses) {
       setAddresses(currentUser.addresses);
@@ -64,7 +66,7 @@ const Checkout = () => {
         setSelectedAddressId(currentUser.defaultAddressId || currentUser.addresses[0].id);
       }
     }
-  }, [currentUser, selectedAddressId]);
+  }, [addressesKey, currentUser?.defaultAddressId, selectedAddressId]);
 
   useEffect(() => {
     const item = localStorage.getItem('buyNow');
@@ -126,11 +128,9 @@ const Checkout = () => {
         const firestorePath = `products/${productId}`;
 
         try {
-          const productDoc = await getDoc(
-            doc(db, "products", productId)
-          );
+          const productData = await getProductById(productId);
           if (!active) return;
-          if (!productDoc.exists()) {
+          if (!productData) {
             invalidProductIds.push(item.id);
           }
         } catch (err) {

@@ -168,15 +168,15 @@ const Dashboard = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [isAdmin, currentUser]);
+  }, [isAdmin, currentUser?.uid]);
 
   useEffect(() => {
     // If admin session is active (via direct-check login), start loading data.
     // If no admin session, stop loading immediately.
     if (!isAdmin) { setLoading(false); return; }
     // If Firebase user is present, we can do a Firestore check. Otherwise skip.
-    if (!currentUser) { setLoading(false); return; }
-  }, [isAdmin, currentUser]);
+    if (!currentUser?.uid) { setLoading(false); return; }
+  }, [isAdmin, currentUser?.uid]);
 
   useEffect(() => {
     if (!isAdmin) return;

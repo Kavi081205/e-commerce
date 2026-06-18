@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { ShoppingCart, Check, Loader2, AlertCircle, Star, Play, X, Minus, Plus } from 'lucide-react';
@@ -153,6 +153,8 @@ const ProductDetails = () => {
   const [isZooming, setIsZooming] = useState(false);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [modalVideoUrl, setModalVideoUrl] = useState('');
+  const [videoLoading, setVideoLoading] = useState(false);
+  const [videoError, setVideoError] = useState(null);
 
   const [selectedColor, setSelectedColor] = useState(null);
   const [selectedSize, setSelectedSize] = useState('');
@@ -307,7 +309,7 @@ const ProductDetails = () => {
     };
 
     checkEligibility();
-  }, [currentUser, productId]);
+  }, [currentUser?.uid, productId]);
 
   // ── real-time reviews ───────────────────────────────────────────────────
   const [reviews, setReviews] = useState([]);
@@ -457,7 +459,9 @@ const ProductDetails = () => {
   const displayRating = reviews.length > 0 ? averageRating : 0;
   const displayReviewCount = reviews.length;
 
-  const userReview = reviews.find(r => r.userId === currentUser?.uid);
+  const userReview = useMemo(() => {
+    return reviews.find(r => r.userId === currentUser?.uid) || null;
+  }, [reviews, currentUser?.uid]);
 
   useEffect(() => {
     if (userReview) {
@@ -539,39 +543,98 @@ const ProductDetails = () => {
     setZoomPos({ x, y });
   };
 
-  const getEmbedUrl = (url) => {
+  const getYoutubeId = (url) => {
     if (!url) return null;
-    if (url.includes('youtube.com/watch?v=')) {
-      const videoId = url.split('v=')[1]?.split('&')[0];
-      return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
-    }
-    if (url.includes('youtu.be/')) {
-      const videoId = url.split('youtu.be/')[1]?.split('?')[0];
-      return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
-    }
-    return url;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  const getVimeoId = (url) => {
+    if (!url) return null;
+    const regExp = /vimeo\.com\/(?:video\/)?([0-9]+)/;
+    const match = url.match(regExp);
+    return match ? match[1] : null;
+  };
+
+  const getVideoType = (url) => {
+    if (!url) return null;
+    const ytId = getYoutubeId(url);
+    if (ytId) return { type: 'youtube', id: ytId, embedUrl: `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0` };
+    const vimId = getVimeoId(url);
+    if (vimId) return { type: 'vimeo', id: vimId, embedUrl: `https://player.vimeo.com/video/${vimId}?autoplay=1` };
+    const isDirect = url.includes('.mp4') || url.includes('.webm') || url.includes('.ogg') || 
+                     url.includes('firebasestorage.googleapis.com') || 
+                     url.match(/\.mp4(?:\?|$)/i);
+    if (isDirect) return { type: 'direct', embedUrl: url };
+    return null;
+  };
+
+  const getEmbedUrl = (url) => {
+    const info = getVideoType(url);
+    return info ? info.embedUrl : url;
   };
 
   const getYoutubeThumbnail = (url) => {
-    if (!url) return null;
-    let videoId = null;
-    if (url.includes('youtu.be/')) {
-      videoId = url.split('youtu.be/')[1]?.split('?')[0];
-    } else if (url.includes('v=')) {
-      videoId = url.split('v=')[1]?.split('&')[0];
-    }
-    if (!videoId) return null;
-    return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+    const ytId = getYoutubeId(url);
+    if (!ytId) return null;
+    return `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
   };
 
-  const openVideoModal = (url) => {
-    setModalVideoUrl(getEmbedUrl(url));
+  const openVideoModal = async (url) => {
     setVideoModalOpen(true);
+    setVideoLoading(true);
+    setVideoError(null);
+    setModalVideoUrl(url);
+
+    console.log('[Video Player] Loading video URL:', url);
+
+    if (!url) {
+      setVideoError('Video not available.');
+      setVideoLoading(false);
+      return;
+    }
+
+    const info = getVideoType(url);
+    if (!info) {
+      setVideoError('Video not available (unsupported format).');
+      setVideoLoading(false);
+      return;
+    }
+
+    // For direct video links, perform a network pre-flight validation check
+    if (info.type === 'direct') {
+      try {
+        const controller = new AbortController();
+        const signal = controller.signal;
+        // Request first byte only to verify file availability and avoid downloading the entire file
+        const response = await fetch(url, { 
+          signal, 
+          headers: { 'Range': 'bytes=0-0' } 
+        });
+        controller.abort(); // Abort to prevent downloading remaining file bytes
+        
+        if (response.status === 403) {
+          setVideoError('Access denied: The video URL is forbidden (HTTP 403).');
+        } else if (response.status === 404) {
+          setVideoError('The video file was not found (HTTP 404).');
+        } else if (!response.ok && response.status !== 206) {
+          // Status 206 Partial Content is expected when using Range header
+          setVideoError(`Failed to load video (HTTP ${response.status}).`);
+        }
+      } catch (err) {
+        console.error('[Video Player] Pre-flight fetch error:', err);
+        setVideoError('The video could not be loaded due to a network error or CORS restrictions.');
+      }
+    }
+    setVideoLoading(false);
   };
 
   const closeVideoModal = () => {
     setVideoModalOpen(false);
     setModalVideoUrl('');
+    setVideoError(null);
+    setVideoLoading(false);
   };
 
   const getMediaItems = () => {
@@ -1546,18 +1609,65 @@ const ProductDetails = () => {
                 <X size={18} />
               </button>
 
-              {/* YouTube iframe */}
-              {modalVideoUrl && (
-                <iframe
-                  src={modalVideoUrl}
-                  className="w-full h-full"
-                  title="Product Video"
-                  allow="autoplay; fullscreen; picture-in-picture"
-                  allowFullScreen
-                  referrerPolicy="no-referrer-when-downgrade"
-                  loading="lazy"
-                />
-              )}
+              {videoLoading ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black gap-4 text-gray-500">
+                  <Loader2 size={36} className="animate-spin text-yellow-500" />
+                  <p className="text-[10px] font-black uppercase tracking-widest">Loading video...</p>
+                </div>
+              ) : videoError ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-8 text-center gap-4 rounded-3xl">
+                  <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500">
+                    <AlertCircle size={22} />
+                  </div>
+                  <h3 className="text-white font-black text-xs uppercase tracking-widest">Unable to Play Video</h3>
+                  <p className="text-gray-400 text-xs max-w-md leading-relaxed">{videoError}</p>
+                  <button
+                    onClick={closeVideoModal}
+                    className="mt-2 px-6 py-2.5 rounded-xl bg-white text-black font-black text-[9px] uppercase tracking-widest hover:bg-yellow-500 transition-all"
+                  >
+                    Close Player
+                  </button>
+                </div>
+              ) : (() => {
+                const info = getVideoType(modalVideoUrl);
+                if (info?.type === 'youtube' || info?.type === 'vimeo') {
+                  return (
+                    <iframe
+                      src={info.embedUrl}
+                      className="w-full h-full border-none"
+                      title="Product Video"
+                      allow="autoplay; fullscreen; picture-in-picture"
+                      allowFullScreen
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  );
+                } else if (info?.type === 'direct') {
+                  return (
+                    <video
+                      src={info.embedUrl}
+                      className="w-full h-full object-contain"
+                      controls
+                      autoPlay
+                      playsInline
+                      webkit-playsinline="true"
+                      onError={(e) => {
+                        console.error('[Video Player] Direct video player source error:', e);
+                        setVideoError('The video playback failed. The format may not be supported or is corrupted.');
+                      }}
+                    />
+                  );
+                } else {
+                  return (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-8 text-center gap-4 rounded-3xl">
+                      <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500">
+                        <AlertCircle size={22} />
+                      </div>
+                      <h3 className="text-white font-black text-xs uppercase tracking-widest">Video Not Available</h3>
+                      <p className="text-gray-400 text-xs max-w-md leading-relaxed">No supported video format was found for this product.</p>
+                    </div>
+                  );
+                }
+              })()}
             </motion.div>
             <p className="absolute bottom-6 text-[10px] font-black uppercase tracking-[0.3em] text-white/30">
               Click outside to close

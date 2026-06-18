@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
@@ -44,13 +44,17 @@ export const WishlistProvider = ({ children }) => {
   }, [currentUser?.uid]);
 
   // fix #2: use setDoc with merge to avoid NOT_FOUND if doc doesn't exist yet
-  const saveItemsToFirestore = async (uid, items) => {
+  const saveItemsToFirestore = useCallback(async (uid, items) => {
     const wishlistRef = doc(db, 'wishlist', uid);
     await setDoc(wishlistRef, { items }, { merge: true });
-  };
+  }, []);
 
-  const addToWishlist = async (product) => {
-    if (!currentUser) return;
+  const isInWishlist = useCallback((productId) => {
+    return wishlistItems.some(item => item.id === productId);
+  }, [wishlistItems]);
+
+  const addToWishlist = useCallback(async (product) => {
+    if (!currentUser?.uid) return;
     // fix #1: prevent duplicates
     if (isInWishlist(product.id)) return;
     try {
@@ -70,10 +74,10 @@ export const WishlistProvider = ({ children }) => {
     } catch (err) {
       console.error("Add to Wishlist Error:", err);
     }
-  };
+  }, [currentUser?.uid, wishlistItems, isInWishlist, saveItemsToFirestore]);
 
-  const removeFromWishlist = async (productId) => {
-    if (!currentUser) return;
+  const removeFromWishlist = useCallback(async (productId) => {
+    if (!currentUser?.uid) return;
     try {
       const updated = wishlistItems.filter(item => item.id !== productId);
       await saveItemsToFirestore(currentUser.uid, updated);
@@ -81,22 +85,27 @@ export const WishlistProvider = ({ children }) => {
     } catch (err) {
       console.error("Remove from Wishlist Error:", err);
     }
-  };
+  }, [currentUser?.uid, wishlistItems, saveItemsToFirestore]);
 
-  const isInWishlist = (productId) => {
-    return wishlistItems.some(item => item.id === productId);
-  };
-
-  const toggleWishlist = async (product) => {
+  const toggleWishlist = useCallback(async (product) => {
     if (isInWishlist(product.id)) {
       await removeFromWishlist(product.id);
     } else {
       await addToWishlist(product);
     }
-  };
+  }, [isInWishlist, addToWishlist, removeFromWishlist]);
+
+  const value = useMemo(() => ({
+    wishlistItems,
+    loading,
+    addToWishlist,
+    removeFromWishlist,
+    isInWishlist,
+    toggleWishlist
+  }), [wishlistItems, loading, addToWishlist, removeFromWishlist, isInWishlist, toggleWishlist]);
 
   return (
-    <WishlistContext.Provider value={{ wishlistItems, loading, addToWishlist, removeFromWishlist, isInWishlist, toggleWishlist }}>
+    <WishlistContext.Provider value={value}>
       {children}
     </WishlistContext.Provider>
   );

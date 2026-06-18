@@ -20,76 +20,142 @@ import {
 import { db } from '../firebase';
 import { uploadImage as cloudinaryUpload } from '../services/uploadService';
 
+// --- In-Memory Query Cache & Loading Guards ---
+const queryCache = new Map();
+const activeRequests = new Map();
+
+/**
+ * Wraps a fetch function with memory caching and duplicate request prevention.
+ */
+export const cachedFetch = async (key, fetchFn, ttl = 300000, forceRefresh = false) => {
+  const now = Date.now();
+
+  // Check if cache exists and is valid
+  if (!forceRefresh && queryCache.has(key)) {
+    const cached = queryCache.get(key);
+    if (now - cached.timestamp < ttl) {
+      console.log(`[Firestore Cache Hit] Key: ${key}`);
+      return cached.data;
+    }
+  }
+
+  // Loading guard: check for active request promise
+  if (activeRequests.has(key)) {
+    console.log(`[Firestore Loading Guard] Reusing active request for key: ${key}`);
+    return activeRequests.get(key);
+  }
+
+  console.log(`[Firestore Cache Miss] Fetching fresh data for key: ${key}`);
+  const promise = (async () => {
+    try {
+      const data = await fetchFn();
+      queryCache.set(key, { data, timestamp: now });
+      return data;
+    } finally {
+      activeRequests.delete(key);
+    }
+  })();
+
+  activeRequests.set(key, promise);
+  return promise;
+};
+
+/**
+ * Invalidates cache entries matching a prefix.
+ */
+export const invalidateCache = (keyPrefix = null) => {
+  if (!keyPrefix) {
+    queryCache.clear();
+    console.log('[Firestore Cache] Cleared all cache');
+  } else {
+    for (const key of queryCache.keys()) {
+      if (key.startsWith(keyPrefix)) {
+        queryCache.delete(key);
+        console.log(`[Firestore Cache] Invalidated key: ${key}`);
+      }
+    }
+  }
+};
+
 // --- Product Services ---
 
-export const getProducts = async ({ category = null, limitCount = 20, lastVisibleDoc = null } = {}) => {
-  try {
-    const constraints = [orderBy('createdAt', 'desc')];
+export const getProducts = async ({ category = null, limitCount = 20, lastVisibleDoc = null } = {}, forceRefresh = false) => {
+  const cacheKey = `products_list_${category || 'all'}_${limitCount}_${lastVisibleDoc?.id || 'none'}`;
+  return cachedFetch(cacheKey, async () => {
+    try {
+      const constraints = [orderBy('createdAt', 'desc')];
 
-    if (category && category !== 'all') {
-      constraints.push(where('category', '==', category));
+      if (category && category !== 'all') {
+        constraints.push(where('category', '==', category));
+      }
+
+      if (lastVisibleDoc) {
+        constraints.push(startAfter(lastVisibleDoc));
+      }
+
+      constraints.push(limit(limitCount));
+
+      const q = query(collection(db, 'products'), ...constraints);
+      const snapshot = await getDocs(q);
+      
+      const products = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+      const lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
+      
+      return { products, lastDoc };
+    } catch (error) {
+      console.error("Error getting products:", error);
+      throw error;
     }
-
-    if (lastVisibleDoc) {
-      constraints.push(startAfter(lastVisibleDoc));
-    }
-
-    constraints.push(limit(limitCount));
-
-    const q = query(collection(db, 'products'), ...constraints);
-    const snapshot = await getDocs(q);
-    
-    const products = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
-    const lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
-    
-    return { products, lastDoc };
-  } catch (error) {
-    console.error("Error getting products:", error);
-    throw error;
-  }
+  }, 300000, forceRefresh);
 };
 
 // ✅ Fixed: now returns latest products for New Arrivals, falling back to unfiltered if createdAt is missing
-export const getFeaturedProducts = async (count = 4) => {
-  try {
-    const q = query(
-      collection(db, 'products'),
-      orderBy('createdAt', 'desc'),
-      limit(count)
-    );
-    const snapshot = await getDocs(q);
-    let products = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
-    
-    // If database query yields 0 due to missing createdAt fields, fallback to unfiltered
-    if (products.length === 0) {
-      console.warn("getFeaturedProducts: 0 results returned. Falling back to unfiltered query.");
-      const fallbackQuery = query(
+export const getFeaturedProducts = async (count = 4, forceRefresh = false) => {
+  const cacheKey = `featured_products_${count}`;
+  return cachedFetch(cacheKey, async () => {
+    try {
+      const q = query(
         collection(db, 'products'),
+        orderBy('createdAt', 'desc'),
         limit(count)
       );
-      const fallbackSnapshot = await getDocs(fallbackQuery);
-      products = fallbackSnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+      const snapshot = await getDocs(q);
+      let products = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+      
+      // If database query yields 0 due to missing createdAt fields, fallback to unfiltered
+      if (products.length === 0) {
+        console.warn("getFeaturedProducts: 0 results returned. Falling back to unfiltered query.");
+        const fallbackQuery = query(
+          collection(db, 'products'),
+          limit(count)
+        );
+        const fallbackSnapshot = await getDocs(fallbackQuery);
+        products = fallbackSnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+      }
+      
+      return products;
+    } catch (error) {
+      console.error("Error getting featured products:", error);
+      throw error;
     }
-    
-    return products;
-  } catch (error) {
-    console.error("Error getting featured products:", error);
-    throw error;
-  }
+  }, 300000, forceRefresh);
 };
 
-export const getProductById = async (id) => {
-  try {
-    const docRef = doc(db, 'products', id);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() };
+export const getProductById = async (id, forceRefresh = false) => {
+  const cacheKey = `product_${id}`;
+  return cachedFetch(cacheKey, async () => {
+    try {
+      const docRef = doc(db, 'products', id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() };
+      }
+      return null;
+    } catch (error) {
+      console.error("Error getting product:", error);
+      throw error;
     }
-    return null;
-  } catch (error) {
-    console.error("Error getting product:", error);
-    throw error;
-  }
+  }, 300000, forceRefresh);
 };
 
 export const getProductsByIds = async (ids) => {
@@ -110,6 +176,9 @@ export const addProduct = async (productData) => {
       ...productData,
       createdAt: serverTimestamp()
     });
+    // Invalidate list caches
+    invalidateCache('products_list_');
+    invalidateCache('featured_products_');
     return docRef.id;
   } catch (error) {
     console.error("Error adding product:", error);
@@ -124,6 +193,10 @@ export const updateProduct = async (id, productData) => {
       ...productData,
       updatedAt: serverTimestamp()
     });
+    // Invalidate caches
+    invalidateCache(`product_${id}`);
+    invalidateCache('products_list_');
+    invalidateCache('featured_products_');
   } catch (error) {
     console.error("Error updating product:", error);
     throw error;
@@ -135,6 +208,10 @@ export const uploadImage = cloudinaryUpload;
 export const deleteProduct = async (id) => {
   try {
     await deleteDoc(doc(db, 'products', id));
+    // Invalidate caches
+    invalidateCache(`product_${id}`);
+    invalidateCache('products_list_');
+    invalidateCache('featured_products_');
   } catch (error) {
     console.error("Error deleting product:", error);
     throw error;
@@ -509,18 +586,20 @@ export const deleteExpense = async (id) => {
 
 // --- Store Settings Services ---
 
-export const getStoreSettings = async () => {
-  try {
-    const docRef = doc(db, 'settings', 'store');
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return docSnap.data();
+export const getStoreSettings = async (forceRefresh = false) => {
+  return cachedFetch('store_settings', async () => {
+    try {
+      const docRef = doc(db, 'settings', 'store');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        return docSnap.data();
+      }
+      return null;
+    } catch (error) {
+      console.error("Error getting store settings:", error);
+      throw error;
     }
-    return null;
-  } catch (error) {
-    console.error("Error getting store settings:", error);
-    throw error;
-  }
+  }, 300000, forceRefresh);
 };
 
 export const updateStoreSettings = async (settingsData) => {
@@ -531,11 +610,71 @@ export const updateStoreSettings = async (settingsData) => {
       updatedAt: serverTimestamp()
     };
     await setDoc(docRef, dataToSave, { merge: true });
+    invalidateCache('store_settings');
     return dataToSave;
   } catch (error) {
     console.error("Error updating store settings:", error);
     throw error;
   }
+};
+
+// --- Categories & Promotion services with caching ---
+
+export const getCategories = async (forceRefresh = false) => {
+  return cachedFetch('categories_list', async () => {
+    try {
+      const q = query(
+        collection(db, 'categories'),
+        where('active', '==', true),
+        orderBy('order', 'asc')
+      );
+      const snap = await getDocs(q);
+      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (error) {
+      console.error("Error getting categories:", error);
+      throw error;
+    }
+  }, 600000, forceRefresh);
+};
+
+export const getOffers = async (forceRefresh = false) => {
+  return cachedFetch('offers_list', async () => {
+    try {
+      const offersRef = collection(db, 'offers');
+      const snapshot = await getDocs(offersRef);
+      const list = snapshot.docs.map(docSnap => {
+        const data = docSnap.data();
+        const rawExpiry = data.expiryDateTime || data.offerEndDate || '';
+        const expiry = rawExpiry ? String(rawExpiry).replace(' ', 'T') : '';
+        return {
+          id: docSnap.id,
+          ...data,
+          expiryDateTime: expiry,
+          offerEndDate: expiry
+        };
+      });
+      return list;
+    } catch (error) {
+      console.error("Error getting offers:", error);
+      throw error;
+    }
+  }, 300000, forceRefresh);
+};
+
+export const getMainPromotion = async (forceRefresh = false) => {
+  return cachedFetch('main_promotion', async () => {
+    try {
+      const promoDocRef = doc(db, 'promotions', 'main');
+      const snapshot = await getDoc(promoDocRef);
+      if (snapshot.exists()) {
+        return snapshot.data();
+      }
+      return { bannerProductIds: [] };
+    } catch (error) {
+      console.error("Error getting main promotion:", error);
+      throw error;
+    }
+  }, 300000, forceRefresh);
 };
 
 

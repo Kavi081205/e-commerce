@@ -15,6 +15,7 @@ import LazyImage from '../components/LazyImage';
 import { ProductSkeleton } from '../components/Skeleton';
 import ProductRating from '../components/ProductRating';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getCategories } from '../firebase/services';
 
 const PRODUCTS_PER_PAGE = 20;
 
@@ -31,15 +32,10 @@ const Products = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const q = query(
-          collection(db, 'categories'),
-          where('active', '==', true),
-          orderBy('order', 'asc')
-        );
-        const snap = await getDocs(q);
-        setCategories(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        const data = await getCategories();
+        setCategories(data);
       } catch (err) {
-        console.error('Firestore categories query error:', err.code, err.message);
+        console.error('Categories load error:', err);
       }
     };
     fetchCategories();
@@ -121,7 +117,7 @@ const Products = () => {
     };
 
     fetchProducts();
-  }, [filter, currentPageIndex, cursor, retryTrigger]);
+  }, [filter, currentPageIndex, retryTrigger]);
 
   // Keep track of the page boundaries for back-paging
   useEffect(() => {
