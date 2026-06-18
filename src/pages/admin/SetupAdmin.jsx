@@ -9,7 +9,6 @@ import { Link } from 'react-router-dom';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
-import logo from '../../assets/logo.png';
 import { ShieldCheck, AlertCircle, CheckCircle, Loader2, Info } from 'lucide-react';
 
 // fix #1: use getAuth() with no argument — relies on default Firebase app
@@ -91,7 +90,7 @@ const SetupAdmin = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="mb-4">
-            <img src={logo} alt="Logo" className="h-20 w-auto mx-auto object-contain" />
+            <img src="/logo.png" alt="Logo" className="h-20 w-auto mx-auto object-contain" />
           </div>
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 mb-4">
             <ShieldCheck size={32} className="text-yellow-400" />

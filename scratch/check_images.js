@@ -52,6 +52,7 @@ async function run() {
     await checkCollection("products");
     await checkCollection("offers");
     await checkCollection("promotions");
+    await checkCollection("categories");
   } catch (err) {
     console.error(err);
   }

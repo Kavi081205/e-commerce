@@ -25,6 +25,8 @@ export const getOptimizedImage = (url, type = 'best', fallback = '') => {
     best:      'f_auto,q_auto:best,w_800,c_limit',
     // Square thumbnails for cards — auto quality, smart-crop to 300×300
     thumbnail: 'f_auto,q_auto,w_300,h_300,c_fill,g_auto',
+    // Square grid cards — auto quality, smart-crop to 400×400
+    card:      'f_auto,q_auto,w_400,h_400,c_fill,g_auto'
   };
 
   const transform = presets[type] ?? presets.best;

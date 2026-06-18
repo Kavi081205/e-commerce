@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '../../firebase';
-import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, getCountFromServer, query, orderBy, limit, where } from 'firebase/firestore';
 import { DollarSign, ShoppingBag, TrendingUp, Users, ArrowUpRight, Loader2, Wallet, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -27,20 +27,20 @@ const formatCurrency = (value) => `₹${Number(value).toLocaleString()}`;
 const MONTHLY_TARGET = 50000;
 
 const StatCard = ({ title, value, icon: Icon, color, trend }) => (
-  <div className="bg-gray-900 rounded-2xl shadow-sm p-6 border border-yellow-900/10 hover:shadow-md transition-shadow">
-    <div className="flex items-center justify-between mb-4">
-      <div className={`p-3 rounded-xl ${color}`}>
-        <Icon size={24} className="text-white" />
+  <div className="bg-gray-900 rounded-2xl shadow-sm p-4 sm:p-6 border border-yellow-900/10 hover:shadow-md transition-shadow min-w-0">
+    <div className="flex items-center justify-between mb-3 sm:mb-4">
+      <div className={`p-2 sm:p-3 rounded-xl ${color}`}>
+        <Icon size={20} className="text-white" />
       </div>
       {trend && (
-        <span className="flex items-center text-green-500 text-xs font-bold">
-          <ArrowUpRight size={14} className="mr-0.5" /> {trend}
+        <span className="flex items-center text-green-500 text-[10px] sm:text-xs font-bold">
+          <ArrowUpRight size={12} className="mr-0.5" /> {trend}
         </span>
       )}
     </div>
     <div>
-      <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">{title}</p>
-      <h3 className="text-3xl font-black text-white tracking-tight">{value}</h3>
+      <p className="text-[9px] sm:text-xs font-black text-gray-400 uppercase tracking-widest mb-1 truncate">{title}</p>
+      <h3 className="text-xl sm:text-3xl font-black text-white tracking-tight truncate">{value}</h3>
     </div>
   </div>
 );
@@ -68,31 +68,60 @@ const Dashboard = () => {
   const [lowStockProducts, setLowStockProducts] = useState([]);
   const [outOfStockProducts, setOutOfStockProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const { currentUser, isAdmin } = useAuth();
 
-  useEffect(() => {
-    // If admin session is active (via direct-check login), start loading data.
-    // If no admin session, stop loading immediately.
-    if (!isAdmin) { setLoading(false); return; }
-    // If Firebase user is present, we can do a Firestore check. Otherwise skip.
-    if (!currentUser) { setLoading(false); return; }
-  }, [isAdmin, currentUser]);
+  const loadDashboardData = useCallback(async (isSilent = false) => {
+    if (!isAdmin || !currentUser) return;
+    if (!isSilent) setLoading(true);
+    setRefreshing(true);
 
-  useEffect(() => {
-    if (!isAdmin) return;
+    try {
+      // 1. Fetch total products count (highly optimized count query)
+      const totalProductsSnap = await getCountFromServer(collection(db, 'products'));
+      setTotalProducts(totalProductsSnap.data().count);
 
-    const ordersQuery = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-    const productsQuery = collection(db, 'products');
-    const expensesQuery = collection(db, 'expenses');
-    const topProductsQuery = query(collection(db, 'products'), orderBy('soldCount', 'desc'), limit(5));
+      // 2. Fetch only low stock products (1 to 5)
+      const lowStockQuery = query(
+        collection(db, 'products'),
+        where('stock', '>=', 1),
+        where('stock', '<=', 5)
+      );
+      const lowStockSnap = await getDocs(lowStockQuery);
+      setLowStockProducts(lowStockSnap.docs.map(d => ({ id: d.id, ...d.data() })));
 
-    const unsubOrders = onSnapshot(ordersQuery, (snap) => {
-      const docs = snap.docs.map(d => ({
-        id: d.id, ...d.data(),
-        createdAt: d.data().createdAt?.toDate() || new Date()
+      // 3. Fetch only out of stock products (<= 0)
+      const outOfStockQuery = query(
+        collection(db, 'products'),
+        where('stock', '<=', 0)
+      );
+      const outOfStockSnap = await getDocs(outOfStockQuery);
+      setOutOfStockProducts(outOfStockSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+
+      // 4. Fetch top products (max 5)
+      const topProductsQuery = query(
+        collection(db, 'products'),
+        orderBy('soldCount', 'desc'),
+        limit(5)
+      );
+      const topProductsSnap = await getDocs(topProductsQuery);
+      setTopProducts(topProductsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+
+      // 5. Fetch expenses once
+      const expensesSnap = await getDocs(collection(db, 'expenses'));
+      setTotalExpenses(expensesSnap.docs.reduce((a, d) => a + (Number(d.data().amount) || 0), 0));
+
+      // 6. Fetch orders (one-time getDocs, not onSnapshot)
+      const ordersQuery = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+      const ordersSnap = await getDocs(ordersQuery);
+      const docs = ordersSnap.docs.map(d => ({
+        id: d.id,
+        ...d.data(),
+        createdAt: d.data().createdAt?.toDate ? d.data().createdAt.toDate() : new Date(d.data().createdAt)
       }));
 
+      // Calculate order statistics
       const todayStr = new Date().toISOString().split('T')[0];
       const todayDocs = docs.filter(o => o.createdAt.toISOString().split('T')[0] === todayStr);
 
@@ -119,7 +148,7 @@ const Dashboard = () => {
 
       setOrderStats({
         totalSales: docs.reduce((a, o) => a + (Number(o.totalPrice) || 0), 0),
-        grossProfit: docs.reduce((a, o) => a + calculateOrderProfit(o), 0), // ✅ No expense deduction here
+        grossProfit: docs.reduce((a, o) => a + calculateOrderProfit(o), 0),
         todaySales: todayDocs.reduce((a, o) => a + (Number(o.totalPrice) || 0), 0),
         todayProfit: todayDocs.reduce((a, o) => a + calculateOrderProfit(o), 0),
         todayOrders: todayDocs.length,
@@ -132,38 +161,34 @@ const Dashboard = () => {
         recentOrders: docs.slice(0, 5),
         chartData
       });
+
+    } catch (err) {
+      console.error("Dashboard data fetch error:", err);
+    } finally {
       setLoading(false);
-    }, (err) => { console.error("Orders listener error:", err); setLoading(false); });
+      setRefreshing(false);
+    }
+  }, [isAdmin, currentUser]);
 
-    const unsubExpenses = onSnapshot(expensesQuery, (snap) => {
-      setTotalExpenses(snap.docs.reduce((a, d) => a + (Number(d.data().amount) || 0), 0));
-    }, (err) => console.error("Expenses listener error:", err));
+  useEffect(() => {
+    // If admin session is active (via direct-check login), start loading data.
+    // If no admin session, stop loading immediately.
+    if (!isAdmin) { setLoading(false); return; }
+    // If Firebase user is present, we can do a Firestore check. Otherwise skip.
+    if (!currentUser) { setLoading(false); return; }
+  }, [isAdmin, currentUser]);
 
-    const unsubTopProducts = onSnapshot(topProductsQuery, (snap) => {
-      setTopProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
+  useEffect(() => {
+    if (!isAdmin) return;
+    loadDashboardData();
 
-    // Real-time listener for stock levels <= 5
-    const unsubLowStock = onSnapshot(collection(db, 'products'), (snap) => {
-      setTotalProducts(snap.size);
-      const allProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Auto refresh every 5 minutes (300 seconds interval)
+    const timer = setInterval(() => {
+      loadDashboardData(true);
+    }, 300000);
 
-      const low = allProducts.filter(p => {
-        const stock = Number(p.stock ?? 0);
-        return stock >= 1 && stock <= 5;
-      });
-
-      const out = allProducts.filter(p => {
-        const stock = Number(p.stock ?? 0);
-        return stock <= 0;
-      });
-
-      setLowStockProducts(low);
-      setOutOfStockProducts(out);
-    });
-
-    return () => { unsubOrders(); unsubExpenses(); unsubTopProducts(); unsubLowStock(); };
-  }, [isAdmin]);
+    return () => clearInterval(timer);
+  }, [isAdmin, loadDashboardData]);
 
   // ✅ Derived at render time — always consistent, never stale
   const netProfit = orderStats.grossProfit - totalExpenses;
@@ -199,7 +224,7 @@ const Dashboard = () => {
           <div className="h-4 bg-gray-800 rounded-full w-64 animate-pulse" />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-          {[...Array(4)].map((_, i) => <StatSkeleton key={i} />)}
+          {[...Array(4)].map((_, i) => <StatSkeleton key={`stat-skeleton-${i}`} />)}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           <div className="lg:col-span-2 bg-gray-900 rounded-2xl h-96 animate-pulse" />
@@ -224,14 +249,28 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="animate-fadeIn">
-      <div className="mb-10">
-        <h1 className="text-3xl font-black text-white tracking-tight">Dashboard Overview</h1>
-        <p className="text-gray-500 text-sm font-medium">Real-time business performance analytics</p>
+    <div className="animate-fadeIn min-w-0 w-full">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-white tracking-tight">Dashboard Overview</h1>
+          <p className="text-gray-500 text-sm font-medium">Optimized business performance analytics</p>
+        </div>
+        <button
+          onClick={() => loadDashboardData()}
+          disabled={refreshing}
+          className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 disabled:bg-yellow-500/50 text-slate-950 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-yellow-500/10 active:scale-95 disabled:scale-100"
+        >
+          {refreshing ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <TrendingUp size={14} />
+          )}
+          {refreshing ? "Refreshing..." : "Refresh Stats"}
+        </button>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-10">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-6 mb-10 admin-stats-grid">
         <StatCard title="Total Revenue" value={formatCurrency(orderStats.totalSales)} icon={DollarSign} color="bg-yellow-500" />
         <StatCard title="Total Orders" value={orderStats.totalOrders} icon={ShoppingBag} color="bg-orange-500" />
         <StatCard title="COD Orders" value={orderStats.codOrdersCount || 0} icon={Wallet} color="bg-teal-500" />
@@ -241,8 +280,8 @@ const Dashboard = () => {
       </div>
 
       {/* Analytics Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
-        <div className="lg:col-span-2 bg-gray-900 rounded-3xl p-8 border border-yellow-900/10 shadow-sm">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 mb-10">
+        <div className="lg:col-span-2 bg-gray-900 rounded-3xl p-4 sm:p-8 border border-yellow-900/10 shadow-sm min-w-0">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-xl font-black text-white uppercase tracking-widest">Growth Analytics</h2>
@@ -436,8 +475,8 @@ const Dashboard = () => {
               <h3 className="text-xs font-black text-white uppercase tracking-widest">Top Selling Products</h3>
             </div>
             <div className="divide-y divide-yellow-900/10">
-              {topProducts.map((product) => (
-                <div key={product.id} className="p-4 flex items-center justify-between hover:bg-slate-950/50 transition-colors">
+              {topProducts.map((product, idx) => (
+                <div key={product.id || `top-prod-${idx}`} className="p-4 flex items-center justify-between hover:bg-slate-950/50 transition-colors">
                   <div className="flex items-center gap-3">
                     {/* ✅ Descriptive alt text for product images */}
                     <img
@@ -475,10 +514,10 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="divide-y divide-yellow-500/10">
-                {lowStockProducts.map((product) => {
+                {lowStockProducts.map((product, idx) => {
                   const stock = Number(product.stock ?? 0);
                   return (
-                    <div key={product.id} className="p-4 flex items-center justify-between hover:bg-yellow-500/5 transition-colors">
+                    <div key={product.id || `low-stock-${idx}`} className="p-4 flex items-center justify-between hover:bg-yellow-500/5 transition-colors">
                       <div className="flex items-center gap-3">
                         <img
                           src={getOptimizedImage(product.image, 'thumbnail')}
@@ -517,10 +556,10 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="divide-y divide-red-500/10">
-                {outOfStockProducts.map((product) => {
+                {outOfStockProducts.map((product, idx) => {
                   const stock = Number(product.stock ?? 0);
                   return (
-                    <div key={product.id} className="p-4 flex items-center justify-between hover:bg-red-500/5 transition-colors">
+                    <div key={product.id || `out-of-stock-${idx}`} className="p-4 flex items-center justify-between hover:bg-red-500/5 transition-colors">
                       <div className="flex items-center gap-3">
                         <img
                           src={getOptimizedImage(product.image, 'thumbnail')}

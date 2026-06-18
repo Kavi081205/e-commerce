@@ -1,6 +1,7 @@
-import { useState, useCallback, useRef, Suspense, lazy } from 'react';
+import { useState, useCallback, useRef, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import { lazyWithRetry } from './utils/lazyWithRetry';
 
 // UX Screens
 import LoadingScreen from './components/LoadingScreen';
@@ -14,20 +15,20 @@ import { PageSkeleton } from './components/Skeleton';
 import WebsiteLayout from './components/WebsiteLayout';
 
 // Lazy Loaded Pages & Layouts
-const Home = lazy(() => import('./pages/Home'));
-const Products = lazy(() => import('./pages/Products'));
-const ProductDetails = lazy(() => import('./pages/ProductDetails'));
-const Cart = lazy(() => import('./pages/Cart'));
-const Checkout = lazy(() => import('./pages/Checkout'));
-const ThankYou = lazy(() => import('./pages/ThankYou'));
-const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
-const Profile = lazy(() => import('./pages/Profile'));
-const Wishlist = lazy(() => import('./pages/Wishlist'));
-const NotFound = lazy(() => import('./pages/NotFound'));
-const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
-const AdminLayout = lazy(() => import('./components/AdminLayout'));
-const AuthSystem = lazy(() => import('./components/AuthSystem'));
-const MyOrders = lazy(() => import('./pages/MyOrders'));
+const Home = lazyWithRetry(() => import('./pages/Home'));
+const Products = lazyWithRetry(() => import('./pages/Products'));
+const ProductDetails = lazyWithRetry(() => import('./pages/ProductDetails'));
+const Cart = lazyWithRetry(() => import('./pages/Cart'));
+const Checkout = lazyWithRetry(() => import('./pages/Checkout'));
+const ThankYou = lazyWithRetry(() => import('./pages/ThankYou'));
+const OrderConfirmation = lazyWithRetry(() => import('./pages/OrderConfirmation'));
+const Profile = lazyWithRetry(() => import('./pages/Profile'));
+const Wishlist = lazyWithRetry(() => import('./pages/Wishlist'));
+const NotFound = lazyWithRetry(() => import('./pages/NotFound'));
+const AdminLogin = lazyWithRetry(() => import('./pages/admin/AdminLogin'));
+const AdminLayout = lazyWithRetry(() => import('./components/AdminLayout'));
+const AuthSystem = lazyWithRetry(() => import('./components/AuthSystem'));
+const MyOrders = lazyWithRetry(() => import('./pages/MyOrders'));
 
 import { WishlistProvider } from './context/WishlistContext';
 import { NotificationProvider } from './context/NotificationContext';

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { Plus, Edit, Trash2, Search, Image as ImageIcon, Loader2, AlertCircle, Clock } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { deleteProduct } from '../../firebase/services';
@@ -18,28 +18,38 @@ const ProductsManage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');     // ✅ In-modal error instead of alert()
 
+  // Fetch products once; refresh on navigate(0) or when component mounts
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setProducts(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching products:", error);
-      setLoading(false);
-    });
-    return () => unsubscribe();
+    fetchProducts();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ✅ Renamed to handleConfirmDelete — no naming collision with state
+  // Optimistic delete: remove from local state immediately, then Firestore
   const handleConfirmDelete = async () => {
     if (!deleteTargetId) return;
     setIsDeleting(true);
     setDeleteError('');
+    // Optimistic update
+    setProducts(prev => prev.filter(p => p.id !== deleteTargetId));
     try {
       await deleteProduct(deleteTargetId);
       setDeleteTargetId(null);
     } catch (error) {
-      // ✅ Show error inside modal instead of blocking alert()
+      // Rollback on failure
+      fetchProducts();
       setDeleteError(error.message || 'Failed to delete product. Please try again.');
     } finally {
       setIsDeleting(false);

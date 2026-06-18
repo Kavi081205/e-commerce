@@ -1,19 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '../../firebase';
 import {
-  collection, onSnapshot, updateDoc, doc, deleteDoc,
+  collection, getDocs, updateDoc, doc, deleteDoc,
   query, orderBy, serverTimestamp, arrayUnion
 } from 'firebase/firestore';
 import {
-  Eye, Search, Loader2, CheckCircle, Clock,
+  Eye, EyeOff, Search, Loader2, CheckCircle, Clock,
   MapPin, Phone, ShoppingBag, X, Download, History,
   Truck, Package, FileSpreadsheet, Printer, Trash2,
-  Copy, Mail, ChevronDown, ChevronUp, Calendar, CreditCard, ExternalLink
+  Copy, Mail, ChevronDown, ChevronUp, Calendar, CreditCard, ExternalLink, RefreshCw
 } from 'lucide-react';
-import { generateInvoice, printLabel } from '../../utils/invoiceGenerator';
+import { generateInvoice } from '../../utils/invoiceGenerator';
 import { exportOrdersToExcel } from '../../utils/excelExport';
 import { getOptimizedImage } from '../../utils/cloudinary';
 import { useNotification } from '../../context/NotificationContext';
+import { InvoicePrintView, LabelPrintView } from '../../components/PrintViews';
+import { useAuth } from '../../context/AuthContext';
+import { maskPhone } from '../../utils/security';
+import { logPhoneReveal } from '../../utils/activityLog';
 
 const STATUS_FLOW = ['ordered', 'processing', 'shipped', 'delivered'];
 
@@ -49,28 +53,86 @@ const OrdersManage = () => {
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [expandedItems, setExpandedItems] = useState({});
+  const [printData, setPrintData] = useState(null);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [revealedPhones, setRevealedPhones] = useState({});
 
+  const { currentUser } = useAuth();
   const { showToast } = useNotification();
   const toast = {
     success: (msg) => showToast(msg, 'success'),
     error: (msg) => showToast(msg, 'error')
   };
 
+  const handleToggleRevealPhone = useCallback(async (orderId) => {
+    if (currentUser?.role !== 'admin') {
+      toast.error("Unauthorized. Admin role required to view customer phone numbers.");
+      return;
+    }
+    const isNowRevealed = !revealedPhones[orderId];
+    if (isNowRevealed) {
+      await logPhoneReveal(orderId, currentUser?.uid);
+    }
+    setRevealedPhones(prev => ({
+      ...prev,
+      [orderId]: isNowRevealed
+    }));
+  }, [currentUser, revealedPhones]);
+
   useEffect(() => {
-    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setOrders(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    if (printData) {
+      const timer = setTimeout(() => {
+        try {
+          window.print();
+        } catch (err) {
+          console.error("Window print error:", err);
+          toast.error("Unable to generate print layout. Attempting PDF download...");
+          if (printData.type === 'invoice') {
+            generateInvoice(printData.order, { action: 'download' }).catch(e => {
+              console.error("Fallback PDF download failed:", e);
+              toast.error("Unable to generate invoice");
+            });
+          }
+        } finally {
+          setIsPrinting(false);
+          setTimeout(() => setPrintData(null), 500);
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [printData]);
+
+  const handlePrint = (order, type) => {
+    setIsPrinting(true);
+    setPrintData({ type, order });
+  };
+
+  const fetchOrders = async () => {
+    setLoading(true);
+    try {
+      const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    } finally {
       setLoading(false);
-    }, (error) => {
-      console.error("Error fetching orders:", error);
-      setLoading(false);
-    });
-    return () => unsubscribe();
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const selectedOrder = orders.find(o => o.id === selectedOrderId) ?? null;
 
   const handleStatusChange = useCallback(async (id, newStatus) => {
+    // Optimistic update
+    setOrders(prev => prev.map(o => o.id === id
+      ? { ...o, status: newStatus, orderStatus: newStatus }
+      : o
+    ));
     try {
       await updateDoc(doc(db, 'orders', id), {
         status: newStatus,
@@ -84,12 +146,18 @@ const OrdersManage = () => {
       });
       toast.success(`Order status updated to ${newStatus}`);
     } catch (error) {
-      console.error("Error updating status:", error);
-      toast.error("Failed to update order status");
+      console.error('Error updating status:', error);
+      toast.error('Failed to update order status');
+      fetchOrders(); // rollback via re-fetch
     }
   }, []);
 
   const handlePaymentStatusChange = useCallback(async (id, newPaymentStatus) => {
+    // Optimistic update
+    setOrders(prev => prev.map(o => o.id === id
+      ? { ...o, paymentStatus: newPaymentStatus }
+      : o
+    ));
     try {
       await updateDoc(doc(db, 'orders', id), {
         paymentStatus: newPaymentStatus,
@@ -97,8 +165,9 @@ const OrdersManage = () => {
       });
       toast.success(`Payment status updated to ${newPaymentStatus}`);
     } catch (error) {
-      console.error("Error updating payment status:", error);
-      toast.error("Failed to update payment status");
+      console.error('Error updating payment status:', error);
+      toast.error('Failed to update payment status');
+      fetchOrders(); // rollback
     }
   }, []);
 
@@ -109,13 +178,16 @@ const OrdersManage = () => {
   const confirmDeleteOrder = async () => {
     const { id, closeModal } = confirmDelete;
     setConfirmDelete(null);
+    // Optimistic update
+    setOrders(prev => prev.filter(o => o.id !== id));
+    if (closeModal) setSelectedOrderId(null);
     try {
       await deleteDoc(doc(db, 'orders', id));
-      if (closeModal) setSelectedOrderId(null);
-      toast.success("Order deleted successfully");
+      toast.success('Order deleted successfully');
     } catch (error) {
-      console.error("Error deleting order:", error);
-      toast.error("Failed to delete order");
+      console.error('Error deleting order:', error);
+      toast.error('Failed to delete order');
+      fetchOrders(); // rollback
     }
   };
 
@@ -168,8 +240,9 @@ const OrdersManage = () => {
     });
   };
 
-  const handleCopyAddress = (customer) => {
-    const formatted = `${customer.name}\n${customer.phone}\n${customer.email}\n\n${customer.address}${customer.landmark ? '\nLandmark: ' + customer.landmark : ''}\n${customer.district}, ${customer.state} - ${customer.pincode}`;
+  const handleCopyAddress = (orderId, customer) => {
+    const phoneToCopy = revealedPhones[orderId] ? customer.phone : maskPhone(customer.phone);
+    const formatted = `${customer.name}\n${phoneToCopy}\n${customer.email}\n\n${customer.address}${customer.landmark ? '\nLandmark: ' + customer.landmark : ''}\n${customer.district}, ${customer.state} - ${customer.pincode}`;
     navigator.clipboard.writeText(formatted);
     toast.success("Full address copied to clipboard!");
   };
@@ -229,6 +302,16 @@ const OrdersManage = () => {
           >
             <FileSpreadsheet size={14} />
             Export Excel
+          </button>
+          <button
+            type="button"
+            onClick={fetchOrders}
+            disabled={loading}
+            title="Refresh orders"
+            className="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-yellow-400 px-4 py-3 rounded-xl font-black uppercase tracking-widest text-[9px] border border-yellow-900/20 transition-all active:scale-95 disabled:opacity-50"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            Refresh
           </button>
         </div>
       </div>
@@ -349,7 +432,19 @@ const OrdersManage = () => {
                     <div className="bg-neutral-950/50 p-4 rounded-2xl border border-neutral-800/80 text-xs text-neutral-300 leading-relaxed font-sans relative group whitespace-pre-line">
                       <div className="space-y-0.5">
                         <p className="font-black text-white text-sm uppercase tracking-wide">{customer.name}</p>
-                        <p className="font-bold text-yellow-500/90">{customer.phone}</p>
+                        <p className="font-bold text-yellow-500/90 flex items-center gap-2">
+                          <span>
+                            {revealedPhones[order.id] ? customer.phone : maskPhone(customer.phone)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleRevealPhone(order.id)}
+                            className="p-1 hover:text-white transition-colors"
+                            title={revealedPhones[order.id] ? "Mask Phone" : "Reveal Phone"}
+                          >
+                            {revealedPhones[order.id] ? <EyeOff size={13} /> : <Eye size={13} />}
+                          </button>
+                        </p>
                         <p className="text-neutral-450 font-medium">{customer.email || 'No email provided'}</p>
                       </div>
                       
@@ -390,7 +485,7 @@ const OrdersManage = () => {
                     <div className="space-y-2.5">
                       {itemsToShow.map((item, idx) => (
                         <div
-                          key={idx}
+                          key={item.id || item.productId || `order-item-${idx}`}
                           className="flex items-center gap-3 p-3 bg-neutral-950/40 rounded-xl border border-neutral-800/60"
                         >
                           <div className="w-12 h-12 rounded-lg overflow-hidden bg-neutral-950 border border-neutral-800 flex-shrink-0">
@@ -480,16 +575,27 @@ const OrdersManage = () => {
 
                   {/* Actions row */}
                   <div className="grid grid-cols-2 gap-2 w-full text-[9px] font-black uppercase tracking-widest md:flex md:flex-wrap md:items-center md:gap-2 md:text-[8px]">
-                    <a
-                      href={`tel:${customer.phone}`}
-                      className="flex items-center justify-center gap-1.5 bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500 hover:text-black py-3 rounded-lg transition-colors border border-yellow-500/15 w-full md:w-auto md:px-3.5 md:py-2.5"
-                      title="Call Customer"
-                    >
-                      <Phone size={12} /> Call Customer
-                    </a>
+                    {revealedPhones[order.id] ? (
+                      <a
+                        href={`tel:${customer.phone}`}
+                        className="flex items-center justify-center gap-1.5 bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500 hover:text-black py-3 rounded-lg transition-colors border border-yellow-500/15 w-full md:w-auto md:px-3.5 md:py-2.5"
+                        title="Call Customer"
+                      >
+                        <Phone size={12} /> Call Customer
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleToggleRevealPhone(order.id)}
+                        className="flex items-center justify-center gap-1.5 bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500 hover:text-black py-3 rounded-lg transition-colors border border-yellow-500/15 w-full md:w-auto md:px-3.5 md:py-2.5"
+                        title="Reveal Phone to Call"
+                      >
+                        <Phone size={12} /> Reveal to Call
+                      </button>
+                    )}
                     <button
                       type="button"
-                      onClick={() => handleCopyAddress(customer)}
+                      onClick={() => handleCopyAddress(order.id, customer)}
                       className="flex items-center justify-center gap-1.5 bg-neutral-850 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-800 py-3 rounded-lg transition-colors w-full md:w-auto md:px-3.5 md:py-2.5"
                       title="Copy Address"
                     >
@@ -505,7 +611,7 @@ const OrdersManage = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => generateInvoice(order, { action: 'print' })}
+                      onClick={() => handlePrint(order, 'invoice')}
                       className="flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 py-3 rounded-lg transition-colors border border-neutral-850 w-full md:w-auto md:px-3.5 md:py-2.5"
                       title="Print Invoice"
                     >
@@ -513,7 +619,7 @@ const OrdersManage = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => printLabel(order)}
+                      onClick={() => handlePrint(order, 'label')}
                       className="flex items-center justify-center gap-1.5 bg-neutral-850 hover:bg-neutral-800 text-neutral-300 py-3 rounded-lg transition-colors border border-neutral-800 w-full md:w-auto md:px-3.5 md:py-2.5"
                       title="Print Shipping Label"
                     >
@@ -599,7 +705,19 @@ const OrdersManage = () => {
                         <div className="bg-neutral-950/50 p-4 rounded-xl border border-neutral-800/80 text-xs leading-relaxed text-neutral-300 whitespace-pre-line">
                           <div className="space-y-0.5">
                             <p className="font-black text-white text-sm uppercase tracking-wide">{customer.name}</p>
-                            <p className="font-bold text-yellow-500">{customer.phone}</p>
+                            <p className="font-bold text-yellow-500 flex items-center gap-2">
+                              <span>
+                                {revealedPhones[selectedOrder.id] ? customer.phone : maskPhone(customer.phone)}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleToggleRevealPhone(selectedOrder.id)}
+                                className="p-1 hover:text-white transition-colors"
+                                title={revealedPhones[selectedOrder.id] ? "Mask Phone" : "Reveal Phone"}
+                              >
+                                {revealedPhones[selectedOrder.id] ? <EyeOff size={13} /> : <Eye size={13} />}
+                              </button>
+                            </p>
                             <p className="text-neutral-450 font-medium">{customer.email || 'No email provided'}</p>
                           </div>
                           
@@ -666,16 +784,27 @@ const OrdersManage = () => {
 
                     {/* Quick actions row */}
                     <div className="grid grid-cols-2 gap-2 text-[9px] font-black uppercase tracking-widest border-t border-neutral-850 pt-4 w-full md:flex md:flex-wrap md:items-center md:gap-2 md:text-[8px]">
-                      <a
-                        href={`tel:${customer.phone}`}
-                        className="flex items-center justify-center gap-1.5 bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500 hover:text-black py-3 rounded-lg transition-colors border border-yellow-500/15 w-full md:w-auto md:px-3.5 md:py-2.5"
-                        title="Call Customer"
-                      >
-                        <Phone size={12} /> Call Customer
-                      </a>
+                      {revealedPhones[selectedOrder.id] ? (
+                        <a
+                          href={`tel:${customer.phone}`}
+                          className="flex items-center justify-center gap-1.5 bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500 hover:text-black py-3 rounded-lg transition-colors border border-yellow-500/15 w-full md:w-auto md:px-3.5 md:py-2.5"
+                          title="Call Customer"
+                        >
+                          <Phone size={12} /> Call Customer
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleToggleRevealPhone(selectedOrder.id)}
+                          className="flex items-center justify-center gap-1.5 bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500 hover:text-black py-3 rounded-lg transition-colors border border-yellow-500/15 w-full md:w-auto md:px-3.5 md:py-2.5"
+                          title="Reveal Phone to Call"
+                        >
+                          <Phone size={12} /> Reveal to Call
+                        </button>
+                      )}
                       <button
                         type="button"
-                        onClick={() => handleCopyAddress(customer)}
+                        onClick={() => handleCopyAddress(selectedOrder.id, customer)}
                         className="flex items-center justify-center gap-1.5 bg-neutral-850 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-800 py-3 rounded-lg transition-colors w-full md:w-auto md:px-3.5 md:py-2.5"
                         title="Copy Address"
                       >
@@ -691,7 +820,7 @@ const OrdersManage = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => generateInvoice(selectedOrder, { action: 'print' })}
+                        onClick={() => handlePrint(selectedOrder, 'invoice')}
                         className="flex items-center justify-center gap-1.5 bg-neutral-850 hover:bg-neutral-800 text-neutral-300 py-3 rounded-lg border border-neutral-800 w-full md:w-auto md:px-3.5 md:py-2.5"
                         title="Print Invoice"
                       >
@@ -699,7 +828,7 @@ const OrdersManage = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => printLabel(selectedOrder)}
+                        onClick={() => handlePrint(selectedOrder, 'label')}
                         className="flex items-center justify-center gap-1.5 bg-neutral-850 hover:bg-neutral-800 text-neutral-300 py-3 rounded-lg transition-colors border border-neutral-800 w-full col-span-2 md:col-span-1 md:w-auto md:px-3.5 md:py-2.5"
                         title="Print Shipping Label"
                       >
@@ -717,7 +846,7 @@ const OrdersManage = () => {
               </h3>
               <div className="space-y-2.5">
                 {parseOrderedItems(selectedOrder).map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-4 p-3 bg-neutral-950 rounded-2xl border border-neutral-800">
+                  <div key={item.id || item.productId || `modal-item-${idx}`} className="flex items-center gap-4 p-3 bg-neutral-950 rounded-2xl border border-neutral-800">
                     <div className="w-12 h-12 rounded-xl overflow-hidden border border-neutral-800 flex-shrink-0 bg-neutral-900">
                       {item.image ? (
                         <img
@@ -759,7 +888,7 @@ const OrdersManage = () => {
                 <div className="space-y-6 relative text-left">
                   <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-neutral-800" />
                   {[...(selectedOrder.statusHistory ?? [])].reverse().map((h, i) => (
-                    <div key={i} className="relative pl-8">
+                    <div key={`history-${h.status}-${h.timestamp || i}`} className="relative pl-8">
                       <div className={`absolute left-0 top-1 w-6 h-6 rounded-full border-2 border-neutral-900 shadow-sm flex items-center justify-center ${i === 0 ? 'bg-yellow-500 scale-110' : 'bg-neutral-800'}`}>
                         {h.status === 'delivered'
                           ? <CheckCircle size={10} className="text-neutral-950" />
@@ -794,6 +923,28 @@ const OrdersManage = () => {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Printing Loading Overlay */}
+      {isPrinting && (
+        <div className="fixed inset-0 z-[300] bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center text-white no-print">
+          <Loader2 size={48} className="animate-spin text-yellow-500 mb-4" />
+          <h3 className="text-xl font-black uppercase tracking-widest">
+            {printData?.type === 'invoice' ? "Generating Invoice..." : "Generating Shipping Label..."}
+          </h3>
+          <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">Preparing printable document view</p>
+        </div>
+      )}
+
+      {/* Hidden Print Container */}
+      {printData && (
+        <div id="print-area" className="hidden print:block bg-white text-black min-h-screen">
+          {printData.type === 'invoice' ? (
+            <InvoicePrintView order={printData.order} />
+          ) : (
+            <LabelPrintView order={printData.order} />
+          )}
         </div>
       )}
     </div>

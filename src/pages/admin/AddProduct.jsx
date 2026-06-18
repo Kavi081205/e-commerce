@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { addProduct, uploadImage } from '../../firebase/services';
+import { db } from '../../firebase';
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import {
   Image as ImageIcon, UploadCloud, Loader2,
   CheckCircle, AlertCircle, FilePlus
@@ -54,18 +56,47 @@ const getColorCode = (name) => {
 
 const sanitizeUrl = (url) => {
   if (!url || typeof url !== 'string') return url;
-  return url.trim().replace(/https?:\/\/localhost:(7070|37857)\/(images\/)?/g, '/images/');
+  // Strip any localhost:PORT prefix before saving to Firestore
+  return url.trim().replace(/https?:\/\/localhost:\d+/g, 'https://e-commerce-smkp-traders.vercel.app');
 };
 
 const INITIAL_FORM = {
   name: '', price: '', description: '',
-  category: 'gadgets', image: '', video: '', stock: '', costPrice: '',
+  category: '', image: '', video: '', stock: '', costPrice: '',
 };
 
 const AddProduct = () => {
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(''); // ✅ Managed object URL
+  const [categories, setCategories] = useState([]);
+
+  // Load active categories dynamically from Firestore
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const q = query(
+          collection(db, 'categories'),
+          where('active', '==', true),
+          orderBy('order', 'asc')
+        );
+        const snap = await getDocs(q);
+        const cats = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setCategories(cats);
+        if (cats.length > 0) {
+          setFormData(prev => {
+            if (!prev.category || !cats.some(c => c.slug === prev.category)) {
+              return { ...prev, category: cats[0].slug };
+            }
+            return prev;
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load categories in AddProduct:', err);
+      }
+    };
+    fetchCategories();
+  }, []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -185,8 +216,6 @@ const AddProduct = () => {
     }));
   };
 
-  console.log(formData);
-
   // ✅ Create and revoke object URL to prevent memory leaks
   useEffect(() => {
     if (!file) { setPreview(''); return; }
@@ -203,7 +232,6 @@ const AddProduct = () => {
 
   const handleCostPriceChange = (e) => {
     const value = e.target.value;
-    console.log("INPUT:", value);
     setFormData(prev => ({
       ...prev,
       costPrice: value
@@ -344,10 +372,6 @@ const AddProduct = () => {
         ? preparedVariants.reduce((sum, v) => sum + Number(v.stock || 0), 0)
         : Number(formData.stock);
 
-      // DEBUG: log full formData before save — verify costPrice is exactly what admin typed
-      console.log('[AddProduct] Saving product — full formData:', formData);
-      console.log('[AddProduct] costPrice being saved:', formData.costPrice, '-> Number:', Number(formData.costPrice));
-
       // Save exact admin-entered values — NO derived calculations
       await addProduct({
         name: formData.name.trim(),
@@ -364,7 +388,10 @@ const AddProduct = () => {
       });
 
       setSuccess('Product added successfully!');
-      setFormData(INITIAL_FORM);
+      setFormData({
+        ...INITIAL_FORM,
+        category: categories.length > 0 ? categories[0].slug : ''
+      });
       setFile(null);
       setVariants([]);
       setHasVariants(false);
@@ -385,7 +412,7 @@ const AddProduct = () => {
   const imagePreviewSrc = preview || formData.image;
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto min-w-0 w-full">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-black text-white tracking-tight">Add New Product</h1>
@@ -394,7 +421,7 @@ const AddProduct = () => {
       </div>
 
       <div className="bg-gray-900 rounded-3xl shadow-sm border border-yellow-900/10 overflow-hidden">
-        <form onSubmit={handleSubmit} className="p-8 space-y-8" noValidate>
+        <form onSubmit={handleSubmit} className="p-4 sm:p-8 space-y-8" noValidate>
 
           {error && (
             <div className="bg-red-50 text-red-600 p-4 rounded-2xl flex items-center gap-3 border border-red-100">
@@ -409,7 +436,7 @@ const AddProduct = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
 
             {/* Left Column: Details */}
             <div className="space-y-6">
@@ -429,7 +456,7 @@ const AddProduct = () => {
                 {errors.name && <p className="text-red-500 text-[10px] font-bold uppercase tracking-wider mt-1.5 ml-1">{errors.name}</p>}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="prod-price" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Price (₹)</label>
                   <input
@@ -474,12 +501,13 @@ const AddProduct = () => {
                     value={formData.category} onChange={handleInputChange}
                     className="w-full bg-slate-950 border border-yellow-900/20 rounded-2xl focus:ring-4 focus:ring-yellow-500/10 focus:border-yellow-500 p-4 outline-none transition-all font-medium text-white appearance-none"
                   >
-                    <option value="sarees">Sarees</option>
-                    <option value="kids dress">Kids Dress</option>
-                    <option value="wheat">Wheat</option>
-                    <option value="toys">Toys</option>
-                    <option value="gadgets">Gadgets</option>
-                    <option value="gifts">Gifts</option>
+                    {categories.length > 0 ? (
+                      categories.map(cat => (
+                        <option key={cat.id} value={cat.slug}>{cat.name}</option>
+                      ))
+                    ) : (
+                      <option value="">Loading categories...</option>
+                    )}
                   </select>
                 </div>
               </div>
@@ -643,12 +671,12 @@ const AddProduct = () => {
           </div>
 
           {/* Has Variants Toggle */}
-          <div className="flex items-center justify-between p-6 bg-slate-950/50 border border-yellow-900/10 rounded-2xl mb-8">
-            <div>
+          <div className="flex items-center justify-between p-4 sm:p-6 bg-slate-950/50 border border-yellow-900/10 rounded-2xl mb-8 gap-4">
+            <div className="min-w-0 flex-1">
               <h3 className="text-sm font-black text-white uppercase tracking-wider">Product Variants</h3>
               <p className="text-[10px] text-gray-500 font-medium mt-1">This product has different colors or sizes</p>
             </div>
-            <label htmlFor="has-variants" className="relative inline-flex items-center cursor-pointer">
+            <label htmlFor="has-variants" className="toggle-wrap shrink-0" aria-label="Enable product variants">
               <input 
                 id="has-variants"
                 type="checkbox" 
@@ -656,7 +684,7 @@ const AddProduct = () => {
                 onChange={(e) => setHasVariants(e.target.checked)} 
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-750 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div>
+              <div className="relative w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div>
             </label>
           </div>
 
@@ -796,9 +824,9 @@ const AddProduct = () => {
                               </div>
                             ) : (
                               <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Enable sizes (for clothing)</span>
-                                  <label htmlFor={`variant-enable-sizes-${colorIdx}`} className="relative inline-flex items-center cursor-pointer">
+                                <div className="flex items-center justify-between gap-3">
+                                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider flex-1">Enable sizes (for clothing)</span>
+                                  <label htmlFor={`variant-enable-sizes-${colorIdx}`} className="toggle-wrap shrink-0" aria-label="Enable size variants">
                                     <input 
                                       id={`variant-enable-sizes-${colorIdx}`}
                                       name={`variantEnableSizes-${colorIdx}`}
@@ -807,14 +835,14 @@ const AddProduct = () => {
                                       onChange={(e) => handleUpdateVariantColorField(colorIdx, 'enableSizes', e.target.checked)} 
                                       className="sr-only peer"
                                     />
-                                    <div className="w-9 h-5 bg-gray-750 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-600"></div>
+                                    <div className="relative w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-600"></div>
                                   </label>
                                 </div>
 
                                 {v.enableSizes ? (
                                   <div className="space-y-3 bg-slate-950/40 p-4 rounded-xl border border-white/5">
                                     <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Add Sizes & Stock</p>
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-wrap gap-2">
                                       <label htmlFor={`variant-size-${colorIdx}`} className="sr-only">Variant Size</label>
                                       <input
                                         id={`variant-size-${colorIdx}`}

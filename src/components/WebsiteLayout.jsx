@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { Outlet, Link, NavLink, useLocation, useNavigationType } from 'react-router-dom';
 import Navbar from './Navbar';
-import logo from '../assets/logo.png';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { Home, Grid, Heart, Package, ShoppingCart } from 'lucide-react';
@@ -66,7 +65,7 @@ const WebsiteLayout = () => {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             {/* Brand */}
             <div className="flex items-center gap-3">
-              <img src={logo} alt="SMKP Traders" className="h-9 w-9 object-contain rounded-md" />
+              <img src="/logo.png" alt="SMKP Traders" className="h-9 w-9 object-contain rounded-md" />
               <div>
                 <p className="text-white font-extrabold tracking-widest text-sm">SMKP TRADERS</p>
                 <p className="text-yellow-500/70 text-xs tracking-wider">Quality You Can Trust</p>
@@ -101,7 +100,7 @@ const WebsiteLayout = () => {
 
       {/* Bottom Navigation (Mobile) */}
       {!isProductDetails && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-black/95 backdrop-blur-md border-t border-yellow-900/10 py-3 px-4 flex justify-around items-center shadow-lg">
+        <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-black/95 backdrop-blur-md border-t border-yellow-900/10 pt-3 px-4 flex justify-around items-center shadow-lg bottom-nav-mobile" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom, 12px))' }}>
           <NavLink
             to="/"
             className={({ isActive }) =>

@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from 'react';
-import logo from '../assets/logo.png';
 
 const STORAGE_KEY = 'smkp_visited';
 
@@ -44,7 +43,7 @@ const SplashScreen = ({ onDone }) => {
       <div className="splash-content">
         <div className={`splash-logo-wrap ${isVisible ? 'splash-logo-wrap--visible' : ''}`}>
           <div className="splash-logo-glow" aria-hidden="true" />
-          <img src={logo} alt="SMKP Traders logo" className="splash-logo" />
+          <img src="/logo.png" alt="SMKP Traders logo" className="splash-logo" />
         </div>
 
         <div className={`splash-text-wrap ${isVisible ? 'splash-text-wrap--visible' : ''}`}>

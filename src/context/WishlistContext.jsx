@@ -17,7 +17,7 @@ export const WishlistProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!currentUser) {
+    if (!currentUser?.uid) {
       setWishlistItems([]);
       setLoading(false);
       return;
@@ -32,7 +32,6 @@ export const WishlistProvider = ({ children }) => {
           setWishlistItems(docSnap.data().items || []);
         } else {
           setWishlistItems([]);
-          await setDoc(wishlistRef, { items: [] });
         }
       } catch (err) {
         console.error("Wishlist Firestore Error:", err);
@@ -42,7 +41,7 @@ export const WishlistProvider = ({ children }) => {
     };
 
     fetchWishlist();
-  }, [currentUser]);
+  }, [currentUser?.uid]);
 
   // fix #2: use setDoc with merge to avoid NOT_FOUND if doc doesn't exist yet
   const saveItemsToFirestore = async (uid, items) => {
@@ -55,7 +54,17 @@ export const WishlistProvider = ({ children }) => {
     // fix #1: prevent duplicates
     if (isInWishlist(product.id)) return;
     try {
-      const updated = [...wishlistItems, product];
+      const lightweightItem = {
+        id: product.id,
+        name: product.name || product.title || '',
+        price: Number(product.price || 0),
+        originalPrice: Number(product.originalPrice ?? product.price ?? 0),
+        image: product.image || '',
+        category: product.category || '',
+        stock: Number(product.stock || 0),
+        soldCount: Number(product.soldCount || 0)
+      };
+      const updated = [...wishlistItems, lightweightItem];
       await saveItemsToFirestore(currentUser.uid, updated);
       setWishlistItems(updated);
     } catch (err) {

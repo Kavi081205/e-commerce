@@ -13,8 +13,10 @@ import { generateInvoice } from '../utils/invoiceGenerator';
 import { getOptimizedImage } from '../utils/cloudinary';
 import { motion, AnimatePresence } from 'framer-motion';
 import { logPurchase } from '../utils/analytics';
+import { logOrderEvent } from '../utils/activityLog';
 import { db } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { validatePhone, validatePincode, validateName } from '../utils/security';
 
 const Checkout = () => {
   const { cart, getCartTotal, clearCart, removeFromCart } = useCart();
@@ -121,17 +123,13 @@ const Checkout = () => {
         }
         if (!productId) continue;
 
-        console.log("Product ID:", productId);
-        console.log("Checkout ID:", productId);
         const firestorePath = `products/${productId}`;
-        console.log("Firestore Path:", firestorePath);
 
         try {
           const productDoc = await getDoc(
             doc(db, "products", productId)
           );
           if (!active) return;
-          console.log("Firestore Exists Result:", productDoc.exists());
           if (!productDoc.exists()) {
             invalidProductIds.push(item.id);
           }
@@ -169,6 +167,20 @@ const Checkout = () => {
 
   const handleAddNewAddress = async (e) => {
     e.preventDefault();
+
+    // ── Validate form fields before saving ──────────────────────────────────
+    const nameCheck    = validateName(formData.name);
+    const phoneCheck   = validatePhone(formData.phone);
+    const pincodeCheck = validatePincode(formData.pincode);
+
+    if (!nameCheck.valid) { showToast(nameCheck.message, 'error'); return; }
+    if (!phoneCheck.valid) { showToast(phoneCheck.message, 'error'); return; }
+    if (!formData.address || formData.address.trim().length < 5) {
+      showToast('Please enter a complete street address (min 5 characters)', 'error');
+      return;
+    }
+    if (!pincodeCheck.valid) { showToast(pincodeCheck.message, 'error'); return; }
+
     const newAddress = { ...formData, id: Date.now().toString() };
     const updatedAddresses = [...addresses, newAddress];
     try {
@@ -242,12 +254,12 @@ const Checkout = () => {
       setFormData(prev => ({ ...prev, pincode: code }));
       if (code.length === 6) {
         try {
-          const response = await fetch(`https://api.postalpincode.in/pincode/${code}`);
+          const response = await fetch(`https://api.postalpincode.in/pincode/${code}`, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+            mode: 'cors',
+          });
           if (!response.ok) {
-            const errorBody = await response.text();
-            console.error("Request URL:", response.url);
-            console.error("Status Code:", response.status);
-            console.error("Response Body:", errorBody);
             throw new Error(`Pincode API failed with status ${response.status}`);
           }
           const data = await response.json();
@@ -258,13 +270,10 @@ const Checkout = () => {
               city: `${details.District}, ${details.State}`
             }));
             showToast(`Location found: ${details.District}`, "success");
-          } else {
-            console.error("Request URL:", response.url);
-            console.error("Status Code:", response.status);
-            console.error("Response Body:", JSON.stringify(data));
           }
         } catch (error) {
-          console.error("Pincode API error", error);
+          // Silently ignore pincode lookup failures — city can be entered manually
+          console.warn("Pincode lookup failed:", error.message);
         }
       }
     }
@@ -342,6 +351,15 @@ const Checkout = () => {
       return;
     }
 
+    // ── Validate active address fields ────────────────────────────────────────
+    const nameCheck    = validateName(activeAddress.name);
+    const phoneCheck   = validatePhone(activeAddress.phone);
+    const pincodeCheck = validatePincode(activeAddress.pincode);
+
+    if (!nameCheck.valid)    { showToast(nameCheck.message,    'error'); setLoading(false); return; }
+    if (!phoneCheck.valid)   { showToast(phoneCheck.message,   'error'); setLoading(false); return; }
+    if (!pincodeCheck.valid) { showToast(pincodeCheck.message, 'error'); setLoading(false); return; }
+
     try {
       const activeItems = buyNowItem ? [buyNowItem] : cart;
 
@@ -356,16 +374,12 @@ const Checkout = () => {
         }
         if (!productId) continue;
 
-        console.log("Product ID:", productId);
-        console.log("Checkout ID:", productId);
         const firestorePath = `products/${productId}`;
-        console.log("Firestore Path:", firestorePath);
 
         try {
           const productDoc = await getDoc(
             doc(db, "products", productId)
           );
-          console.log("Firestore Exists Result:", productDoc.exists());
           if (productDoc.exists()) {
             validItems.push(item);
           } else {
@@ -481,8 +495,41 @@ const Checkout = () => {
         })
       };
 
+      // ── Duplicate order guard ──────────────────────────────────────────────
+      // Prevent accidental double-submission: reject if an identical order was
+      // placed by this user within the last 60 seconds.
+      if (currentUser?.uid) {
+        const sixtySecondsAgo = new Date(Date.now() - 60_000);
+        const dupQuery = query(
+          collection(db, 'orders'),
+          where('userId', '==', currentUser.uid),
+          where('totalPrice', '==', Math.max(0, orderData.totalPrice)),
+        );
+        const dupSnap = await getDocs(dupQuery);
+        const isDuplicate = dupSnap.docs.some(d => {
+          const created = d.data().createdAt;
+          const createdDate = created?.toDate ? created.toDate() : new Date(created);
+          return createdDate > sixtySecondsAgo;
+        });
+        if (isDuplicate) {
+          showToast('This order was already placed. Check My Orders to avoid duplicates.', 'error');
+          setLoading(false);
+          return;
+        }
+      }
+
       const executeOrderCreation = async (payloadData) => {
         const finalOrderId = await createOrder(payloadData);
+
+        // Log order creation to activity trail
+        try {
+          await logOrderEvent(finalOrderId, 'order_created', {
+            userId: currentUser?.uid,
+            totalPrice: payloadData.totalPrice,
+            itemCount: payloadData.items?.length,
+            paymentMethod: payloadData.paymentMethod,
+          });
+        } catch (_) { /* non-critical */ }
 
         // Save invoice to Firestore
         try {
@@ -545,10 +592,37 @@ const Checkout = () => {
           description: "Secure Payment",
           image: "https://e-commerce-smkp-traders.vercel.app/logo.png",
           handler: async function (response) {
-            console.log(response);
-            showToast("Payment Successful", "success");
             setLoading(true);
             try {
+              // ── Verify payment signature server-side before creating order ──
+              let signatureValid = true; // Default true if no Razorpay order_id (client-only flow)
+              if (response.razorpay_order_id) {
+                try {
+                  const verifyRes = await fetch('/api/verify-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      razorpay_payment_id: response.razorpay_payment_id,
+                      razorpay_order_id:   response.razorpay_order_id,
+                      razorpay_signature:  response.razorpay_signature,
+                    }),
+                  });
+                  const verifyData = await verifyRes.json();
+                  signatureValid = verifyData.verified === true;
+                } catch (verifyErr) {
+                  console.warn('Payment verification API unavailable — proceeding with payment_id only.', verifyErr.message);
+                  // If the API is not deployed yet, allow the order (fail-open for now)
+                  signatureValid = true;
+                }
+              }
+
+              if (!signatureValid) {
+                showToast('Payment verification failed. Please contact support with your payment ID: ' + response.razorpay_payment_id, 'error');
+                setLoading(false);
+                return;
+              }
+
+              showToast("Payment Successful", "success");
               const onlineOrderData = {
                 ...orderData,
                 paymentId: response.razorpay_payment_id,

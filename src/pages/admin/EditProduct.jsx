@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../../firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { uploadImage } from '../../firebase/services';
 import { Save, X, Loader2, Image as ImageIcon, AlertCircle, FilePlus, CheckCircle, UploadCloud } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
@@ -107,6 +107,26 @@ const EditProduct = () => {
 
   // Read-only: soldCount from Firestore (never edited by admin)
   const [soldCount, setSoldCount] = useState(0);
+
+  const [categories, setCategories] = useState([]);
+
+  // Load active categories dynamically from Firestore
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const q = query(
+          collection(db, 'categories'),
+          where('active', '==', true),
+          orderBy('order', 'asc')
+        );
+        const snap = await getDocs(q);
+        setCategories(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch (err) {
+        console.error('Failed to load categories in EditProduct:', err);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -237,11 +257,7 @@ const EditProduct = () => {
 
         if (docSnap.exists()) {
           const data = docSnap.data();
-          // DEBUG: log full product after fetch — verify raw Firestore values
-          console.log('[EditProduct] Fetched product:', data);
-          // Prefer costPrice, fall back to cost for legacy documents
           const fetchedCost = data.costPrice ?? data.cost ?? '';
-          console.log('[EditProduct] costPrice from Firestore:', fetchedCost);
           // stock = exact total stock admin set (never subtract soldCount)
           setSoldCount(data.soldCount || 0);
           setHasVariants(data.hasVariants || false);
@@ -283,7 +299,6 @@ const EditProduct = () => {
 
   const handleCostPriceChange = (e) => {
     const value = e.target.value;
-    console.log("INPUT:", value);
     setFormData(prev => ({
       ...prev,
       costPrice: value
@@ -403,10 +418,6 @@ const EditProduct = () => {
         ? preparedVariants.reduce((sum, v) => sum + Number(v.stock || 0), 0)
         : Number(formData.stock);
 
-      // DEBUG: log full formData before save — verify costPrice is exactly what admin typed
-      console.log('[EditProduct] Saving product — full formData:', formData);
-      console.log('[EditProduct] costPrice being saved:', formData.costPrice, '-> Number:', Number(formData.costPrice));
-
       // Save exact admin-entered values — NO derived calculations, NO legacy field writes
       const productRef = doc(db, 'products', id);
       await updateDoc(productRef, {
@@ -469,7 +480,7 @@ const EditProduct = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8">
+    <div className="max-w-4xl mx-auto py-8 min-w-0 w-full">
       <PageHeader
         title="Edit Product"
         breadcrumbs={[
@@ -515,7 +526,7 @@ const EditProduct = () => {
           </div>
 
           {/* Form */}
-          <div className="flex-1 p-8 md:p-12">
+          <div className="flex-1 p-4 sm:p-8 md:p-12">
             <form onSubmit={handleSubmit} className="space-y-6">
               {success && (
                 <div className="bg-green-500/10 border border-green-500/20 text-green-500 p-4 rounded-xl flex items-center gap-3 animate-fadeIn">
@@ -590,12 +601,9 @@ const EditProduct = () => {
                     className={`w-full bg-slate-950 border rounded-xl py-4 px-5 text-white font-medium focus:ring-4 outline-none transition-all appearance-none ${errors.category ? 'border-red-500 focus:ring-red-500/10' : 'border-yellow-900/20 focus:ring-yellow-500/10 focus:border-yellow-500'}`}
                   >
                     <option value="">Select Category</option>
-                    <option value="sarees">Sarees</option>
-                    <option value="kids dress">Kids Dress</option>
-                    <option value="wheat">Wheat</option>
-                    <option value="toys">Toys</option>
-                    <option value="gadgets">Gadgets</option>
-                    <option value="gifts">Gifts</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.slug}>{cat.name}</option>
+                    ))}
                   </select>
                   {errors.category && <p className="text-red-500 text-[10px] font-bold uppercase tracking-wider mt-1.5 ml-1">{errors.category}</p>}
                 </div>
@@ -673,12 +681,12 @@ const EditProduct = () => {
               </div>
 
               {/* Has Variants Toggle */}
-              <div className="flex items-center justify-between p-6 bg-slate-950/50 border border-yellow-900/10 rounded-2xl mb-8 mt-8">
-                <div>
+              <div className="flex items-center justify-between p-4 sm:p-6 bg-slate-950/50 border border-yellow-900/10 rounded-2xl mb-8 mt-8 gap-4">
+                <div className="min-w-0 flex-1">
                   <h3 className="text-sm font-black text-white uppercase tracking-wider">Product Variants</h3>
                   <p className="text-[10px] text-gray-500 font-medium mt-1">This product has different colors or sizes</p>
                 </div>
-                <label htmlFor="has-variants" className="relative inline-flex items-center cursor-pointer">
+                <label htmlFor="has-variants" className="toggle-wrap shrink-0" aria-label="Enable product variants">
                   <input 
                     id="has-variants"
                     type="checkbox" 
@@ -686,7 +694,7 @@ const EditProduct = () => {
                     onChange={(e) => setHasVariants(e.target.checked)} 
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-750 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div>
+                  <div className="relative w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div>
                 </label>
               </div>
 

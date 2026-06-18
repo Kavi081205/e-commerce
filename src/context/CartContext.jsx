@@ -148,16 +148,23 @@ export const CartProvider = ({ children }) => {
         }
       }
 
-      return [...prevCart, { 
-        ...product, 
-        id: cartItemId, 
+      const lightweightItem = {
+        id: cartItemId,
         productId: productId,
-        color: color, 
+        name: product.name || product.title || '',
+        price: Number(product.price || 0),
+        originalPrice: Number(product.originalPrice ?? product.price ?? 0),
+        discount: Number(product.discount || 0),
+        image: itemImage || '',
+        color: color,
         selectedColor: color,
-        size: size, 
+        size: size,
         quantity: quantity,
-        image: itemImage
-      }];
+        stock: Number(product.stock || 0),
+        priceDifference: Number(product.priceDifference || 0),
+        variants: product.variants || []
+      };
+      return [...prevCart, lightweightItem];
     });
     triggerBump();
   }, [triggerBump]);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
-import { collection, query, orderBy, onSnapshot, deleteDoc, doc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, deleteDoc, doc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Wallet, Plus, Trash2, Loader2, X } from 'lucide-react';
 
 const Expenses = () => {
@@ -18,42 +18,61 @@ const Expenses = () => {
 
   useEffect(() => {
     const q = query(collection(db, 'expenses'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setExpenses(snapshot.docs.map(d => ({
-        id: d.id,
-        ...d.data(),
-        displayDate: d.data().date || new Date().toLocaleDateString()
-      })));
-      setLoading(false);
-    });
-    return unsubscribe;
+    getDocs(q)
+      .then(snap => {
+        setExpenses(snap.docs.map(d => ({
+          id: d.id,
+          ...d.data(),
+          displayDate: d.data().date || new Date().toLocaleDateString()
+        })));
+      })
+      .catch(err => console.error('Error loading expenses:', err))
+      .finally(() => setLoading(false));
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.title || !formData.amount) return;
 
+    // Optimistic add: create temp entry in local state immediately
+    const tempId = `temp-${Date.now()}`;
+    const tempEntry = {
+      ...formData,
+      id: tempId,
+      amount: Number(formData.amount),
+      displayDate: formData.date || new Date().toLocaleDateString()
+    };
+    setExpenses(prev => [tempEntry, ...prev]);
+    setFormData({ title: '', amount: '', category: 'Operational', date: new Date().toISOString().split('T')[0] });
+    setIsAdding(false);
+
     try {
-      await addDoc(collection(db, 'expenses'), {
+      const docRef = await addDoc(collection(db, 'expenses'), {
         ...formData,
         amount: Number(formData.amount),
         createdAt: serverTimestamp()
       });
-      setFormData({
-        title: '',
-        amount: '',
-        category: 'Operational',
-        date: new Date().toISOString().split('T')[0]
-      });
-      setIsAdding(false);
+      // Replace temp entry with real Firestore id
+      setExpenses(prev => prev.map(e => e.id === tempId ? { ...e, id: docRef.id } : e));
     } catch (error) {
-      console.error("Error adding expense:", error);
+      console.error('Error adding expense:', error);
+      // Rollback on failure
+      setExpenses(prev => prev.filter(e => e.id !== tempId));
     }
   };
 
   const handleDelete = async (id) => {
     if (window.confirm('Delete this expense?')) {
-      await deleteDoc(doc(db, 'expenses', id));
+      // Optimistic removal
+      setExpenses(prev => prev.filter(e => e.id !== id));
+      try {
+        await deleteDoc(doc(db, 'expenses', id));
+      } catch (err) {
+        console.error('Error deleting expense:', err);
+        // Ideally refetch to restore — simplified rollback
+        const q = query(collection(db, 'expenses'), orderBy('createdAt', 'desc'));
+        getDocs(q).then(snap => setExpenses(snap.docs.map(d => ({ id: d.id, ...d.data(), displayDate: d.data().date || '' }))));
+      }
     }
   };
 

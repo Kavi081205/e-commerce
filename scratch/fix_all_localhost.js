@@ -81,6 +81,7 @@ async function run() {
     await fixCollection("products");
     await fixCollection("offers");
     await fixCollection("promotions");
+    await fixCollection("categories");
     console.log("\n✅ All localhost URLs fixed in Firestore!");
   } catch (err) {
     console.error("Error:", err);

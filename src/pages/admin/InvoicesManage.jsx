@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { getInvoices } from '../../firebase/services';
+import { getInvoices, getStoreSettings } from '../../firebase/services';
 import { generateInvoice } from '../../utils/invoiceGenerator';
 import { getOptimizedImage } from '../../utils/cloudinary';
-import { FileText, Download, Printer, Search, Loader2, X, Eye } from 'lucide-react';
+import { InvoicePrintView } from '../../components/PrintViews';
+import { FileText, Download, Printer, Search, Loader2, X, Eye, Phone, Mail, MapPin, Truck } from 'lucide-react';
 
 const GSTIN = "33IMVPM1670M1Z9";
 
@@ -11,20 +12,82 @@ const InvoicesManage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  
+  // Dynamic business details state
+  const [storeDetails, setStoreDetails] = useState({
+    name: "SMKP TRADERS",
+    ownerName: "Kaviyarasan Murugan",
+    phone: "9677417185",
+    email: "kaviyarasanmurugan78@gmail.com",
+    address: "Pommalappatti",
+    state: "Tamil Nadu",
+    country: "India",
+    gstin: GSTIN
+  });
+
+  // Courier Notes editing state
+  const [courierNotes, setCourierNotes] = useState('');
+
+  const [printData, setPrintData] = useState(null);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
-    const fetchInvoices = async () => {
+    if (printData) {
+      const timer = setTimeout(() => {
+        try {
+          window.print();
+        } catch (err) {
+          console.error("Window print error:", err);
+          generateInvoice({ ...printData.order, id: printData.order.orderId }, { action: 'download', courierNotes: printData.order.courierNotes || '' }).catch(e => {
+            console.error("Fallback PDF download failed:", e);
+          });
+        } finally {
+          setIsPrinting(false);
+          setTimeout(() => setPrintData(null), 500);
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [printData]);
+
+  const handlePrint = (invoice) => {
+    setIsPrinting(true);
+    setPrintData({ type: 'invoice', order: { ...invoice, id: invoice.orderId || invoice.id } });
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
       try {
-        const data = await getInvoices();
-        setInvoices(data);
+        const [invoiceData, settingsData] = await Promise.all([
+          getInvoices(),
+          getStoreSettings()
+        ]);
+        setInvoices(invoiceData);
+        if (settingsData) {
+          setStoreDetails({
+            name: settingsData.name || "SMKP TRADERS",
+            ownerName: settingsData.ownerName || "Kaviyarasan Murugan",
+            phone: settingsData.phone || "9677417185",
+            email: settingsData.email || "kaviyarasanmurugan78@gmail.com",
+            address: settingsData.address || "Pommalappatti",
+            state: settingsData.state || "Tamil Nadu",
+            country: settingsData.country || "India",
+            gstin: settingsData.gstin || GSTIN
+          });
+        }
       } catch (error) {
-        console.error("Error fetching invoices:", error);
+        console.error("Error fetching repository data:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchInvoices();
+    fetchData();
   }, []);
+
+  const handleOpenPreview = (inv) => {
+    setSelectedInvoice(inv);
+    setCourierNotes(inv.courierNotes || '');
+  };
 
   const filteredInvoices = invoices.filter(inv => {
     const search = searchTerm.toLowerCase();
@@ -45,8 +108,53 @@ const InvoicesManage = () => {
     );
   }
 
+  // Active sender details either snapshot on invoice, loaded settings, or fallback defaults
+  const getSenderDetails = (inv) => {
+    if (inv && inv.businessDetails) {
+      return inv.businessDetails;
+    }
+    return storeDetails;
+  };
+
   return (
     <div className="animate-fadeIn">
+      {/* Print stylesheet override to support white high-readability printing */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #invoice-print-sheet, #invoice-print-sheet * {
+            visibility: visible;
+          }
+          #invoice-print-sheet {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            background: white !important;
+            color: black !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+          }
+          .print-light-bg {
+            background-color: #f8fafc !important;
+            background: #f8fafc !important;
+          }
+          .print-text-dark {
+            color: #0f172a !important;
+          }
+          .print-border-dark {
+            border-color: #e2e8f0 !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+        }
+      `}} />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-12">
         <div>
@@ -115,7 +223,7 @@ const InvoicesManage = () => {
                       <div className="flex justify-end gap-2">
                         <button
                           type="button"
-                          onClick={() => setSelectedInvoice(inv)}
+                          onClick={() => handleOpenPreview(inv)}
                           className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-all"
                           title="View Details"
                         >
@@ -123,7 +231,7 @@ const InvoicesManage = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => generateInvoice({ ...inv, id: inv.orderId }, { action: 'download' })}
+                          onClick={() => generateInvoice({ ...inv, id: inv.orderId }, { action: 'download', courierNotes: inv.courierNotes || '' })}
                           className="p-2 text-gray-400 hover:text-yellow-600 hover:bg-yellow-500/10 rounded-lg transition-all"
                           title="Download Invoice"
                         >
@@ -131,7 +239,7 @@ const InvoicesManage = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => generateInvoice({ ...inv, id: inv.orderId }, { action: 'print' })}
+                          onClick={() => handlePrint(inv)}
                           className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-500/10 rounded-lg transition-all"
                           title="Print Invoice"
                         >
@@ -186,7 +294,7 @@ const InvoicesManage = () => {
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => setSelectedInvoice(inv)}
+                      onClick={() => handleOpenPreview(inv)}
                       className="w-11 h-11 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-xl border border-yellow-900/10 transition-all"
                       title="View Details"
                     >
@@ -194,7 +302,7 @@ const InvoicesManage = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => generateInvoice({ ...inv, id: inv.orderId }, { action: 'download' })}
+                      onClick={() => generateInvoice({ ...inv, id: inv.orderId }, { action: 'download', courierNotes: inv.courierNotes || '' })}
                       className="w-11 h-11 flex items-center justify-center text-gray-400 hover:text-yellow-600 hover:bg-yellow-500/10 rounded-xl border border-yellow-900/10 transition-all"
                       title="Download Invoice"
                     >
@@ -202,7 +310,7 @@ const InvoicesManage = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => generateInvoice({ ...inv, id: inv.orderId }, { action: 'print' })}
+                      onClick={() => handlePrint(inv)}
                       className="w-11 h-11 flex items-center justify-center text-gray-400 hover:text-indigo-600 hover:bg-indigo-500/10 rounded-xl border border-yellow-900/10 transition-all"
                       title="Print Invoice"
                     >
@@ -223,149 +331,303 @@ const InvoicesManage = () => {
           onClick={() => setSelectedInvoice(null)}
         >
           <div
-            className="bg-white text-black rounded-[2.5rem] w-full max-w-3xl overflow-hidden shadow-2xl animate-scaleIn flex flex-col max-h-[90vh]"
+            className="bg-white text-black rounded-[2.5rem] w-full max-w-4xl overflow-hidden shadow-2xl animate-scaleIn flex flex-col max-h-[95vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100 bg-gray-50">
-              <h2 className="text-lg font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
-                <FileText size={20} className="text-yellow-600" /> Invoice Preview
+            {/* Modal Header (Hidden on actual print) */}
+            <div className="flex items-center justify-between px-8 py-5 border-b border-gray-100 bg-gray-50 no-print">
+              <h2 className="text-sm font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                <FileText size={18} className="text-yellow-600" /> Invoice Sheet Preview
               </h2>
               <button
                 type="button"
                 onClick={() => setSelectedInvoice(null)}
-                className="p-2 bg-gray-200 rounded-full text-gray-600 hover:bg-gray-300 transition-colors"
+                className="p-1.5 bg-gray-200 rounded-full text-gray-600 hover:bg-gray-300 transition-colors"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
-            {/* Modal Body / Invoice Sheet */}
-            <div className="flex-1 p-10 overflow-y-auto space-y-8">
-              {/* Logo / Header */}
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-2xl font-black text-black tracking-tight">SMKP TRADERS</h3>
-                  <p className="text-xs text-gray-500 mt-1">Chennai, Tamil Nadu, India</p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">GSTIN: {selectedInvoice.businessDetails?.gstin || GSTIN}</p>
-                </div>
-                <div className="text-right">
-                  <span className="px-3 py-1 bg-yellow-500/10 border border-yellow-500/30 text-yellow-700 rounded-full text-[10px] font-black uppercase tracking-widest">
-                    TAX INVOICE
-                  </span>
-                  <p className="text-sm font-bold mt-3">{selectedInvoice.invoiceNumber}</p>
-                  <p className="text-xs text-gray-400 mt-1">Date: {new Date(selectedInvoice.invoiceDate).toLocaleDateString()}</p>
-                </div>
-              </div>
-
-              <hr className="border-gray-100" />
-
-              {/* Billed To / Details */}
-              <div className="grid grid-cols-2 gap-8 text-xs">
-                <div>
-                  <h4 className="font-bold text-gray-400 uppercase tracking-wider mb-2">Order Information</h4>
-                  <p><span className="font-medium text-gray-500">Order ID:</span> #{selectedInvoice.orderId ? selectedInvoice.orderId.toUpperCase() : ''}</p>
-                  <p className="mt-1"><span className="font-medium text-gray-500">Payment Mode:</span> {selectedInvoice.paymentMethod}</p>
-                </div>
-                <div>
-                  <h4 className="font-bold text-gray-400 uppercase tracking-wider mb-2">Billed To</h4>
-                  <p className="font-bold text-black">{selectedInvoice.customerName}</p>
-                  <p className="text-gray-500 mt-1">{selectedInvoice.address}, {selectedInvoice.city} - {selectedInvoice.pincode}</p>
-                  <p className="text-gray-500 mt-1">Phone: {selectedInvoice.phone}</p>
-                </div>
-              </div>
-
-              {/* Table */}
-              <table className="w-full text-xs text-left">
-                <thead>
-                  <tr className="border-b border-gray-200 text-gray-400 font-bold uppercase text-[9px] tracking-wider">
-                    <th className="py-2">Item</th>
-                    <th className="py-2 text-center">Qty</th>
-                    <th className="py-2 text-right">Unit Price</th>
-                    <th className="py-2 text-right">Discount</th>
-                    <th className="py-2 text-right">GST</th>
-                    <th className="py-2 text-right">Total</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {selectedInvoice.items?.map((item, idx) => {
-                    const qty = item.quantity || 1;
-                    const eff = item.effectivePrice || item.price || 0;
-                    const orig = item.price || item.effectivePrice || 0;
-                    const disc = orig > eff ? (orig - eff) * qty : 0;
-                    return (
-                      <tr key={idx}>
-                        <td className="py-3">
-                          <div className="flex items-center gap-3">
-                            {item.image && (
-                              <img
-                                src={getOptimizedImage(item.image, 'thumbnail')}
-                                alt={item.name}
-                                loading="lazy"
-                                className="w-8 h-8 rounded object-cover border border-gray-100"
-                              />
-                            )}
-                            <span className="font-bold text-gray-800">{item.name}</span>
-                          </div>
-                        </td>
-                        <td className="py-3 text-center text-gray-600">{qty}</td>
-                        <td className="py-3 text-right text-gray-600">Rs.{(eff / 1.18).toFixed(2)}</td>
-                        <td className="py-3 text-right text-red-500">-Rs.{(disc / 1.18).toFixed(2)}</td>
-                        <td className="py-3 text-right text-gray-600">Rs.{(eff - (eff / 1.18)).toFixed(2)}</td>
-                        <td className="py-3 text-right font-bold text-gray-800">Rs.{(eff * qty).toFixed(2)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-
-              {/* Summary */}
-              <div className="flex justify-end pt-4">
-                <div className="w-64 space-y-2 text-xs">
-                  <div className="flex justify-between text-gray-500">
-                    <span>Subtotal (excl. GST):</span>
-                    <span>Rs.{(selectedInvoice.pricing?.subtotal || 0).toFixed(2)}</span>
+            {/* Modal Body / Scrollable Area */}
+            <div className="flex-1 overflow-y-auto p-6 sm:p-10 space-y-6">
+              
+              {/* Actual Printable Invoice Sheet */}
+              <div id="invoice-print-sheet" className="p-8 border border-gray-100 rounded-3xl space-y-8 print-bg-white print-text-black">
+                {/* Logo & Corporate Title */}
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                  <div>
+                    <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase print-text-dark">
+                      {getSenderDetails(selectedInvoice).name}
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1 print-text-dark font-medium">
+                      Owner: {getSenderDetails(selectedInvoice).ownerName}
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-0.5 print-text-dark font-medium">
+                      GSTIN: {getSenderDetails(selectedInvoice).gstin}
+                    </p>
                   </div>
-                  {selectedInvoice.pricing?.discount > 0 && (
-                    <div className="flex justify-between text-red-500">
-                      <span>Discount (excl. GST):</span>
-                      <span>-Rs.{(selectedInvoice.pricing?.discount || 0).toFixed(2)}</span>
+                  <div className="sm:text-right">
+                    <span className="px-3 py-1 bg-yellow-500/10 border border-yellow-500/30 text-yellow-700 rounded-full text-[9px] font-black uppercase tracking-widest print-border-dark print-text-dark">
+                      TAX INVOICE
+                    </span>
+                    <p className="text-xs font-mono font-bold text-slate-900 mt-3 print-text-dark">
+                      No: {selectedInvoice.invoiceNumber}
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-1 print-text-dark">
+                      Date: {new Date(selectedInvoice.invoiceDate).toLocaleString('en-IN', {
+                        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                </div>
+
+                <hr className="border-gray-100 print-border-dark" />
+
+                {/* Shipping Metadata Strip */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-2xl text-[10px] print-light-bg print-border-dark border border-gray-100">
+                  <div>
+                    <span className="font-bold text-gray-400 uppercase tracking-widest block mb-0.5">Order ID</span>
+                    <span className="font-mono text-slate-950 font-bold uppercase print-text-dark">
+                      #{selectedInvoice.orderId ? selectedInvoice.orderId.toUpperCase() : 'N/A'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-gray-400 uppercase tracking-widest block mb-0.5">Date Placed</span>
+                    <span className="text-slate-950 font-bold print-text-dark">
+                      {new Date(selectedInvoice.invoiceDate).toLocaleDateString('en-IN')}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-gray-400 uppercase tracking-widest block mb-0.5">Payment Method</span>
+                    <span className="text-slate-950 font-bold uppercase print-text-dark">
+                      {selectedInvoice.paymentMethod}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-gray-400 uppercase tracking-widest block mb-0.5">Payment Status</span>
+                    <span className={`font-black uppercase ${selectedInvoice.paymentStatus?.toLowerCase() === 'paid' ? 'text-green-700' : 'text-orange-600'}`}>
+                      {selectedInvoice.paymentStatus}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Professional Dual shipping address layouts */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                  {/* FROM Section */}
+                  <div className="p-5 border border-yellow-500/20 bg-yellow-500/[0.02] rounded-2xl print-bg-white print-border-dark">
+                    <h4 className="text-[10px] font-black text-yellow-600 uppercase tracking-widest mb-3 border-b border-yellow-500/10 pb-1.5 print-text-dark">
+                      SENDER (FROM)
+                    </h4>
+                    <p className="font-black text-slate-950 text-sm print-text-dark uppercase">
+                      {getSenderDetails(selectedInvoice).name}
+                    </p>
+                    <p className="text-gray-500 mt-1 font-medium print-text-dark">
+                      Owner: {getSenderDetails(selectedInvoice).ownerName}
+                    </p>
+                    
+                    <div className="mt-3 space-y-1 text-gray-500 font-medium print-text-dark">
+                      <div className="flex items-center gap-1.5">
+                        <Phone size={10} className="text-yellow-600 shrink-0 print-text-dark" />
+                        <span>Phone: {getSenderDetails(selectedInvoice).phone}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Mail size={10} className="text-yellow-600 shrink-0 print-text-dark" />
+                        <span>Email: {getSenderDetails(selectedInvoice).email}</span>
+                      </div>
+                      <div className="flex items-start gap-1.5">
+                        <MapPin size={10} className="text-yellow-600 mt-0.5 shrink-0 print-text-dark" />
+                        <span>
+                          {getSenderDetails(selectedInvoice).address}, {getSenderDetails(selectedInvoice).state}, {getSenderDetails(selectedInvoice).country}
+                        </span>
+                      </div>
                     </div>
-                  )}
-                  <div className="flex justify-between text-gray-500">
-                    <span>Shipping:</span>
-                    <span>Rs.{(selectedInvoice.pricing?.shipping || 0).toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-gray-500">
-                    <span>GST (18%):</span>
-                    <span>Rs.{(selectedInvoice.pricing?.gst || 0).toFixed(2)}</span>
+
+                  {/* TO Section */}
+                  <div className="p-5 border border-slate-200 bg-slate-500/[0.02] rounded-2xl print-bg-white print-border-dark">
+                    <h4 className="text-[10px] font-black text-slate-700 uppercase tracking-widest mb-3 border-b border-slate-200 pb-1.5 print-text-dark">
+                      SHIP TO (TO / RECEIVER)
+                    </h4>
+                    <p className="font-black text-slate-950 text-sm print-text-dark uppercase">
+                      {selectedInvoice.customerName}
+                    </p>
+
+                    <div className="mt-3 space-y-1 text-gray-500 font-medium print-text-dark">
+                      <div className="flex items-center gap-1.5">
+                        <Phone size={10} className="text-slate-600 shrink-0 print-text-dark" />
+                        <span className="font-bold text-slate-800 print-text-dark">Phone: {selectedInvoice.phone}</span>
+                      </div>
+                      {selectedInvoice.email && (
+                        <div className="flex items-center gap-1.5">
+                          <Mail size={10} className="text-slate-600 shrink-0 print-text-dark" />
+                          <span>Email: {selectedInvoice.email}</span>
+                        </div>
+                      )}
+                      <div className="flex items-start gap-1.5">
+                        <MapPin size={10} className="text-slate-600 mt-0.5 shrink-0 print-text-dark" />
+                        <span>
+                          {selectedInvoice.address}
+                          {selectedInvoice.landmark && <span className="block text-gray-400 text-[10px]">Landmark: {selectedInvoice.landmark}</span>}
+                          <span className="block mt-0.5 font-bold text-slate-700 print-text-dark">
+                            {selectedInvoice.city}{selectedInvoice.district ? ', ' + selectedInvoice.district : ''}
+                          </span>
+                          <span className="block font-bold text-slate-700 print-text-dark">
+                            {selectedInvoice.state} - {selectedInvoice.pincode}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-between font-black text-base text-black pt-2 border-t border-gray-200">
-                    <span>Grand Total:</span>
-                    <span>Rs.{(selectedInvoice.pricing?.grandTotal || 0).toFixed(2)}</span>
+                </div>
+
+                {/* Display Courier notes on invoice block if present */}
+                {courierNotes.trim() && (
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-2xl text-xs text-yellow-800 print-light-bg print-border-dark print-text-dark flex items-start gap-2">
+                    <Truck size={14} className="shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-black uppercase tracking-wider text-[9px] block mb-0.5">Courier Instructions</span>
+                      <span className="font-semibold">{courierNotes}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Products Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead>
+                      <tr className="border-b border-gray-200 text-gray-400 font-bold uppercase text-[9px] tracking-wider print-border-dark print-text-dark">
+                        <th className="py-2.5">Item Details</th>
+                        <th className="py-2.5 text-center">Qty</th>
+                        <th className="py-2.5 text-right">Taxable Val</th>
+                        <th className="py-2.5 text-right">Discount</th>
+                        <th className="py-2.5 text-right">GST (18%)</th>
+                        <th className="py-2.5 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 print-border-dark">
+                      {selectedInvoice.items?.map((item, idx) => {
+                        const qty = item.quantity || 1;
+                        const eff = item.effectivePrice || item.price || 0;
+                        const orig = item.price || item.effectivePrice || 0;
+                        const disc = orig > eff ? (orig - eff) * qty : 0;
+                        return (
+                          <tr key={item.id || item.productId || `inv-item-${idx}`} className="print-text-dark">
+                            <td className="py-3">
+                              <div className="flex items-center gap-3">
+                                {item.image && (
+                                  <img
+                                    src={getOptimizedImage(item.image, 'thumbnail')}
+                                    alt={item.name}
+                                    loading="lazy"
+                                    className="w-8 h-8 rounded object-cover border border-gray-100 no-print"
+                                  />
+                                )}
+                                <div>
+                                  <span className="font-bold text-gray-800 print-text-dark block">{item.name}</span>
+                                  {item.color || item.size ? (
+                                    <span className="text-[10px] text-gray-400 mt-0.5 block uppercase tracking-wider">
+                                      {item.color} {item.size ? `· Size ${item.size}` : ''}
+                                    </span>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 text-center text-gray-600 print-text-dark font-medium">{qty}</td>
+                            <td className="py-3 text-right text-gray-600 print-text-dark font-mono">Rs.{(eff / 1.18).toFixed(2)}</td>
+                            <td className="py-3 text-right text-red-500 font-mono">-Rs.{(disc / 1.18).toFixed(2)}</td>
+                            <td className="py-3 text-right text-gray-600 print-text-dark font-mono">Rs.{(eff - (eff / 1.18)).toFixed(2)}</td>
+                            <td className="py-3 text-right font-bold text-gray-800 print-text-dark font-mono">Rs.{(eff * qty).toFixed(2)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Price Summary */}
+                <div className="flex justify-end pt-4">
+                  <div className="w-72 space-y-2 text-xs">
+                    <div className="flex justify-between text-gray-500 print-text-dark font-medium">
+                      <span>Taxable Subtotal:</span>
+                      <span className="font-mono">Rs.{((selectedInvoice.pricing?.grandTotal - selectedInvoice.pricing?.shipping + selectedInvoice.pricing?.couponDiscount) / 1.18).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-500 print-text-dark font-medium">
+                      <span>CGST (9%):</span>
+                      <span className="font-mono">Rs.{((selectedInvoice.pricing?.grandTotal - selectedInvoice.pricing?.shipping + selectedInvoice.pricing?.couponDiscount - ((selectedInvoice.pricing?.grandTotal - selectedInvoice.pricing?.shipping + selectedInvoice.pricing?.couponDiscount) / 1.18)) / 2).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-500 print-text-dark font-medium">
+                      <span>SGST (9%):</span>
+                      <span className="font-mono">Rs.{((selectedInvoice.pricing?.grandTotal - selectedInvoice.pricing?.shipping + selectedInvoice.pricing?.couponDiscount - ((selectedInvoice.pricing?.grandTotal - selectedInvoice.pricing?.shipping + selectedInvoice.pricing?.couponDiscount) / 1.18)) / 2).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-500 print-text-dark font-medium">
+                      <span>Shipping Charges:</span>
+                      <span className="font-mono">Rs.{(selectedInvoice.pricing?.shipping || 0).toFixed(2)}</span>
+                    </div>
+                    {selectedInvoice.pricing?.couponDiscount > 0 && (
+                      <div className="flex justify-between text-red-500 font-bold">
+                        <span>Coupon Discount:</span>
+                        <span className="font-mono">-Rs.{(selectedInvoice.pricing?.couponDiscount || 0).toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-black text-sm text-black pt-2 border-t border-gray-200 print-border-dark print-text-dark">
+                      <span>GRAND TOTAL:</span>
+                      <span className="font-mono text-base">Rs.{(selectedInvoice.pricing?.grandTotal || 0).toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
               </div>
+
+              {/* Edit Courier Notes Panel (Hidden on actual print) */}
+              <div className="mt-8 bg-gray-50 rounded-3xl p-6 border border-gray-150 space-y-4 no-print">
+                <h4 className="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                  <Truck size={16} className="text-yellow-600" /> Edit Courier Instructions
+                </h4>
+                <p className="text-[10px] text-gray-500">Add instructions (e.g. courier routing, gate notes, time slots) to appear on the PDF download and printed copies.</p>
+                <textarea
+                  value={courierNotes}
+                  onChange={(e) => setCourierNotes(e.target.value)}
+                  placeholder="e.g. Handle with care. Leave with neighbor if gate is locked."
+                  rows="3"
+                  className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-yellow-500 text-black placeholder-gray-400 transition-colors"
+                />
+              </div>
+
             </div>
 
-            {/* Modal Footer */}
-            <div className="px-8 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+            {/* Modal Footer / Actions (Hidden on actual print) */}
+            <div className="px-8 py-5 bg-gray-50 border-t border-gray-100 flex justify-end gap-3 no-print">
               <button
                 type="button"
-                onClick={() => generateInvoice({ ...selectedInvoice, id: selectedInvoice.orderId }, { action: 'print' })}
+                onClick={() => window.print()}
                 className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold uppercase tracking-wider text-[10px] transition-all"
               >
-                <Printer size={14} /> Print
+                <Printer size={14} /> Print Invoice
               </button>
               <button
                 type="button"
-                onClick={() => generateInvoice({ ...selectedInvoice, id: selectedInvoice.orderId }, { action: 'download' })}
-                className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-2.5 rounded-xl font-bold uppercase tracking-wider text-[10px] transition-all"
+                onClick={() => generateInvoice({ ...selectedInvoice, id: selectedInvoice.orderId }, { action: 'download', courierNotes })}
+                className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-slate-950 px-5 py-2.5 rounded-xl font-bold uppercase tracking-wider text-[10px] transition-all"
               >
                 <Download size={14} /> Download PDF
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Printing Loading Overlay */}
+      {isPrinting && (
+        <div className="fixed inset-0 z-[300] bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center text-white no-print">
+          <Loader2 size={48} className="animate-spin text-yellow-500 mb-4" />
+          <h3 className="text-xl font-black uppercase tracking-widest">Generating Invoice...</h3>
+          <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">Preparing printable document view</p>
+        </div>
+      )}
+
+      {/* Hidden Print Container */}
+      {printData && (
+        <div id="print-area" className="hidden print:block bg-white text-black min-h-screen">
+          <InvoicePrintView order={printData.order} />
         </div>
       )}
     </div>

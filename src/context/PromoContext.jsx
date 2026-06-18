@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
 import { db } from '../firebase';
-import { doc, onSnapshot, collection, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, updateDoc } from 'firebase/firestore';
 
 const PromoContext = createContext();
 
@@ -18,52 +18,55 @@ export const PromoProvider = ({ children }) => {
   });
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tick, setTick] = useState(0);
+  // Ref used only to skip double-auto-expire on identical offers list
+  const lastOffersKeyRef = useRef('');
 
-  // Tick every second to evaluate offer exipries in real-time
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTick(t => t + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
+  // NOTE: No 1-second tick here. Countdowns are rendered locally by each
+  // component using their own setInterval. This context only reacts to
+  // actual Firestore data changes (onSnapshot), keeping reads minimal.
 
-  // Listen to main promotion doc (banner products)
+  // Fetch main promotion doc (banner products) once on mount
   useEffect(() => {
-    const promoDocRef = doc(db, 'promotions', 'main');
-    const unsubscribe = onSnapshot(promoDocRef, (snapshot) => {
-      if (snapshot.exists()) {
-        setMainPromo(snapshot.data());
+    const fetchPromo = async () => {
+      try {
+        const promoDocRef = doc(db, 'promotions', 'main');
+        const snapshot = await getDoc(promoDocRef);
+        if (snapshot.exists()) {
+          setMainPromo(snapshot.data());
+        }
+      } catch (error) {
+        console.error('Error fetching main promo settings:', error);
       }
-    }, (error) => {
-      console.error('Error fetching main promo settings:', error);
-    });
-    return () => unsubscribe();
+    };
+    fetchPromo();
   }, []);
 
-  // Listen to offers collection
+  // Fetch offers collection once on mount
   useEffect(() => {
-    const offersRef = collection(db, 'offers');
-    const unsubscribe = onSnapshot(offersRef, (snapshot) => {
-      const list = snapshot.docs.map(docSnap => {
-        const data = docSnap.data();
-        // Normalize both possible expiry fields; replace space with T for correct Date parsing
-        const rawExpiry = data.expiryDateTime || data.offerEndDate || '';
-        const expiry = rawExpiry ? String(rawExpiry).replace(' ', 'T') : '';
-        return {
-          id: docSnap.id,
-          ...data,
-          expiryDateTime: expiry,
-          offerEndDate: expiry
-        };
-      });
-      setOffers(list);
-      setLoading(false);
-    }, (error) => {
-      console.error('Error fetching offers:', error);
-      setLoading(false);
-    });
-    return () => unsubscribe();
+    const fetchOffers = async () => {
+      try {
+        const offersRef = collection(db, 'offers');
+        const snapshot = await getDocs(offersRef);
+        const list = snapshot.docs.map(docSnap => {
+          const data = docSnap.data();
+          // Normalize both possible expiry fields; replace space with T for correct Date parsing
+          const rawExpiry = data.expiryDateTime || data.offerEndDate || '';
+          const expiry = rawExpiry ? String(rawExpiry).replace(' ', 'T') : '';
+          return {
+            id: docSnap.id,
+            ...data,
+            expiryDateTime: expiry,
+            offerEndDate: expiry
+          };
+        });
+        setOffers(list);
+      } catch (error) {
+        console.error('Error fetching offers:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOffers();
   }, []);
 
   // Auto-expire: only write to Firestore when the offers list changes,
@@ -77,7 +80,7 @@ export const PromoProvider = ({ children }) => {
         try {
           const offerDocRef = doc(db, 'offers', offer.id);
           await updateDoc(offerDocRef, { isActive: false });
-          console.log(`Automatically expired offer "${offer.title}" in Firestore`);
+          console.info(`[Promo] Auto-expired offer: "${offer.title}"`);
         } catch (e) {
           console.warn('Failed to auto-expire offer:', offer.title, e);
         }
@@ -118,7 +121,8 @@ export const PromoProvider = ({ children }) => {
       activeOffer: currentOffer,
       allOffers: offers
     };
-  }, [mainPromo, offers, tick]);
+  // Only recompute when real Firestore data changes — NOT on a timer tick
+  }, [mainPromo, offers]);
 
   return (
     <PromoContext.Provider value={{ promoSettings, loading }}>

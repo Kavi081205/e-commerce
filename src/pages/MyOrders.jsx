@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { collection, query, where, orderBy, limit, startAfter, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -25,7 +25,7 @@ const MyOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [lastDoc, setLastDoc] = useState(null);
+  const lastDocRef = useRef(null);
   const [hasMore, setHasMore] = useState(true);
   const [expandedOrders, setExpandedOrders] = useState({});
 
@@ -40,7 +40,10 @@ const MyOrders = () => {
     if (!currentUser?.uid) return;
 
     if (isLoadMore) setLoadingMore(true);
-    else setLoading(true);
+    else {
+      setLoading(true);
+      lastDocRef.current = null;
+    }
 
     try {
       let q = query(
@@ -50,12 +53,12 @@ const MyOrders = () => {
         limit(ORDERS_PER_PAGE)
       );
 
-      if (isLoadMore && lastDoc) {
+      if (isLoadMore && lastDocRef.current) {
         q = query(
           collection(db, 'orders'),
           where('userId', '==', currentUser.uid),
           orderBy('createdAt', 'desc'),
-          startAfter(lastDoc),
+          startAfter(lastDocRef.current),
           limit(ORDERS_PER_PAGE)
         );
       }
@@ -69,7 +72,7 @@ const MyOrders = () => {
         setOrders(newOrders);
       }
 
-      setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+      lastDocRef.current = snapshot.docs[snapshot.docs.length - 1] || null;
       setHasMore(snapshot.docs.length === ORDERS_PER_PAGE);
     } catch (error) {
       console.error("Error fetching orders:", error);
@@ -77,18 +80,18 @@ const MyOrders = () => {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [currentUser, lastDoc]);
+  }, [currentUser]);
 
   useEffect(() => {
     fetchOrders();
-  }, [currentUser]);
+  }, [currentUser, fetchOrders]);
 
   if (loading) {
     return (
       <div className="bg-black min-h-screen">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 space-y-12">
           <PageHeader title="My Orders" breadcrumbs={[{ label: 'My Orders', path: '/my-orders' }]} />
-          {[...Array(3)].map((_, i) => <OrderSkeleton key={i} />)}
+          {[...Array(3)].map((_, i) => <OrderSkeleton key={`order-skeleton-${i}`} />)}
         </div>
       </div>
     );
@@ -167,7 +170,7 @@ const MyOrders = () => {
                   {/* Order Items List (Flipkart-style vertical stack) */}
                   <div className="divide-y divide-neutral-800/60 px-4 md:px-6">
                     {order.items?.map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-4 py-4">
+                      <div key={item.id || item.productId || `order-item-${idx}`} className="flex items-center gap-4 py-4">
                         <div className="w-14 h-14 md:w-16 md:h-16 bg-neutral-950 rounded-lg overflow-hidden flex-shrink-0 border border-neutral-800">
                           {item.image ? (
                             <img

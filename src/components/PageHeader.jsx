@@ -32,7 +32,7 @@ const PageHeader = ({ title, breadcrumbs = [], showBack = true }) => {
         </Link>
 
         {breadcrumbs.map((crumb, index) => (
-          <React.Fragment key={index}>
+          <React.Fragment key={crumb.path || crumb.label || index}>
             <ChevronRight size={10} className="text-gray-800 flex-shrink-0" />
             {/* fix: last crumb is current page — render as non-interactive span */}
             {index === breadcrumbs.length - 1 ? (

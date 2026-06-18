@@ -18,6 +18,7 @@ import {
   runTransaction      // ✅ Added for atomic order creation
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { uploadImage as cloudinaryUpload } from '../services/uploadService';
 
 // --- Product Services ---
 
@@ -129,34 +130,7 @@ export const updateProduct = async (id, productData) => {
   }
 };
 
-export const uploadImage = async (file) => {
-  if (!file) return null;
-
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("upload_preset", "smkp_upload");
-
-  try {
-    const res = await fetch(
-      "https://api.cloudinary.com/v1_1/doca4zvcx/image/upload",
-      { method: "POST", body: formData }
-    );
-
-    if (!res.ok) {
-      const errorBody = await res.text();
-      console.error("Request URL:", res.url);
-      console.error("Status Code:", res.status);
-      console.error("Response Body:", errorBody);
-      throw new Error(`Cloudinary upload failed with status ${res.status}`);
-    }
-
-    const data = await res.json();
-    return data.secure_url;
-  } catch (error) {
-    console.error("Cloudinary Error:", error);
-    throw error;
-  }
-};
+export const uploadImage = cloudinaryUpload;
 
 export const deleteProduct = async (id) => {
   try {
@@ -251,7 +225,6 @@ export const createOrder = async (orderData) => {
       for (const item of orderData.items) {
         const prodId = item.productId || item.id;
         if (!productSnaps[prodId]) {
-          console.log("Reading product...");
           const productRef = doc(db, 'products', prodId);
           const productSnap = await transaction.get(productRef);
           if (!productSnap.exists()) {
@@ -298,8 +271,6 @@ export const createOrder = async (orderData) => {
         }
 
         const stock = tempStockTracker[stockKey];
-        console.log("Stock available:", stock);
-
         const quantity = item.quantity || 1;
         if (stock < quantity) {
           const colorName = typeof item.color === 'object' ? item.color.name : item.color;
@@ -536,6 +507,38 @@ export const deleteExpense = async (id) => {
   }
 };
 
+// --- Store Settings Services ---
+
+export const getStoreSettings = async () => {
+  try {
+    const docRef = doc(db, 'settings', 'store');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data();
+    }
+    return null;
+  } catch (error) {
+    console.error("Error getting store settings:", error);
+    throw error;
+  }
+};
+
+export const updateStoreSettings = async (settingsData) => {
+  try {
+    const docRef = doc(db, 'settings', 'store');
+    const dataToSave = {
+      ...settingsData,
+      updatedAt: serverTimestamp()
+    };
+    await setDoc(docRef, dataToSave, { merge: true });
+    return dataToSave;
+  } catch (error) {
+    console.error("Error updating store settings:", error);
+    throw error;
+  }
+};
+
+
 // --- Invoice Services ---
 
 export const saveInvoice = async (orderId, orderData) => {
@@ -562,6 +565,36 @@ export const saveInvoice = async (orderId, orderData) => {
       }
     }
 
+    // Fetch store details to snapshot them on the invoice
+    let businessDetails = {
+      name: "SMKP TRADERS",
+      ownerName: "Kaviyarasan Murugan",
+      phone: "9677417185",
+      email: "kaviyarasanmurugan78@gmail.com",
+      address: "Pommalappatti",
+      state: "Tamil Nadu",
+      country: "India",
+      gstin: "33IMVPM1670M1Z9"
+    };
+
+    try {
+      const storeDetails = await getStoreSettings();
+      if (storeDetails) {
+        businessDetails = {
+          name: storeDetails.name || businessDetails.name,
+          ownerName: storeDetails.ownerName || businessDetails.ownerName,
+          phone: storeDetails.phone || businessDetails.phone,
+          email: storeDetails.email || businessDetails.email,
+          address: storeDetails.address || businessDetails.address,
+          state: storeDetails.state || businessDetails.state,
+          country: storeDetails.country || businessDetails.country,
+          gstin: storeDetails.gstin || businessDetails.gstin
+        };
+      }
+    } catch (e) {
+      console.warn("Failed to retrieve store settings for invoice snapshot, using default:", e);
+    }
+    
     const invoiceData = {
       orderId: orderId,
       invoiceNumber: `INV-${orderId.slice(-8).toUpperCase()}`,
@@ -570,10 +603,15 @@ export const saveInvoice = async (orderId, orderData) => {
       paymentStatus: orderData.paymentStatus || 'Pending',
       customerName: orderData.customerName || orderData.name || 'Customer',
       phone: orderData.phone || '',
+      email: orderData.customerDetails?.email || orderData.userEmail || '',
       address: orderData.address || '',
       city: orderData.city || '',
+      district: orderData.district || orderData.customerDetails?.district || '',
+      state: orderData.state || orderData.customerDetails?.state || '',
       pincode: orderData.pincode || '',
+      landmark: orderData.landmark || orderData.customerDetails?.landmark || '',
       userId: orderData.userId || 'guest',
+      businessDetails: businessDetails,
       items: items.map(item => ({
         id: item.id || '',
         name: item.name || item.title || '',

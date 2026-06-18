@@ -1,5 +1,3 @@
-/* Google Fonts MUST come first before all other @import statements */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -1004,6 +1002,13 @@ img {
 html, body {
   max-width: 100vw;
   overflow-x: hidden;
+  /* iOS Safari: prevent font size bumping on orientation change */
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Safe area insets for iPhone X+ notch / home indicator */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* Hide scrollbar utility class */
@@ -1013,4 +1018,160 @@ html, body {
 .scrollbar-none {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE TOUCH TARGETS
+   Ensure minimum 44x44px tap targets per Apple HIG / WCAG
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  button, a, [role="button"] {
+    min-height: 44px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ADMIN PANEL — MOBILE RESPONSIVE HELPERS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Force all admin content containers to stay within viewport width */
+.admin-page {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Card grids collapse to 1 column on small screens */
+@media (max-width: 640px) {
+  .admin-stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .admin-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Admin form inputs — ensure they don't overflow */
+.admin-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   STOREFRONT — MOBILE RESPONSIVE HELPERS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Product card grid — never let cards overflow */
+.product-grid-card {
+  min-width: 0;
+  contain: layout;
+}
+
+/* Ensure images in cards don't bleed */
+.product-grid-card img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Bottom nav safe area on iPhone */
+.bottom-nav-mobile {
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOGGLE SWITCH — iOS SAFARI FIX
+   The after:: pseudo element needs relative parent for correct calc
+   ═══════════════════════════════════════════════════════════════ */
+label.toggle-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TEXT WRAP PREVENTION FOR HEADINGS
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  h1 {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* Reduce huge tracking on mobile — tracking-widest can cause overflow */
+  .tracking-widest {
+    letter-spacing: 0.05em;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TABLE OVERFLOW WRAPPER
+   ═══════════════════════════════════════════════════════════════ */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CHECKOUT — MOBILE STEP INDICATOR
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  .checkout-step-label {
+    display: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GLOBAL PRINT CONFIGURATION
+   ═══════════════════════════════════════════════════════════════ */
+@media print {
+  html, body {
+    background-color: #fff !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+  
+  /* Hide all interactive app elements by default using visibility */
+  body * {
+    visibility: hidden !important;
+  }
+  
+  /* Show only the designated print area container or invoice sheet */
+  #print-area, #print-area *, #invoice-print-sheet, #invoice-print-sheet * {
+    visibility: visible !important;
+  }
+  
+  #print-area {
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    background: #fff !important;
+    color: #000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 99999 !important;
+  }
+
+  #invoice-print-sheet {
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    background: #fff !important;
+    color: #000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    z-index: 99999 !important;
+  }
 }

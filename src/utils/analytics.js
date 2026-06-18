@@ -127,11 +127,24 @@ export const logSystemError = async (error, context = 'unknown', extra = {}) => 
     return;
   }
 
+  // Prevent infinite loops where Firebase database errors try to write error logs back to the database
+  const isFirebaseError =
+    lowerMsg.includes('resource-exhausted') ||
+    lowerMsg.includes('quota exceeded') ||
+    lowerMsg.includes('backoff') ||
+    lowerMsg.includes('firebase') ||
+    lowerMsg.includes('firestore');
+
   // 1. Analytics event (non-blocking)
   await logEvent('exception', {
     description: `[${context}] ${message}`,
     fatal: false,
   });
+
+  if (isFirebaseError) {
+    console.warn(`[Analytics] Intercepted Firebase/Quota error. Skipping Firestore write to prevent recursive loop:`, message);
+    return;
+  }
 
   // 2. Persist to Firestore `errors` collection for admin review
   try {

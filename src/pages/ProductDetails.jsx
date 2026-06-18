@@ -23,9 +23,9 @@ import {
   where,
   limit,
   doc,
-  onSnapshot,
   updateDoc,
-  getDocs
+  getDocs,
+  getDoc
 } from 'firebase/firestore';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=800&q=80';
@@ -102,8 +102,6 @@ const ProductDetails = () => {
     success: (msg) => showToast(msg, 'success'),
     error: (msg) => showToast(msg, 'error')
   };
-  console.log("Product Page ID:", id);
-  console.log("ProductDetails loaded with id:", id);
   const navigate = useNavigate();
   const location = useLocation();
   const { addToCart } = useCart();
@@ -126,24 +124,27 @@ const ProductDetails = () => {
     setIsError(false);
     setError(null);
 
-    const productRef = doc(db, 'products', id);
-    const unsub = onSnapshot(productRef, (docSnap) => {
-      if (docSnap.exists()) {
-        setProduct({ id: docSnap.id, ...docSnap.data() });
-      } else {
-        setProduct(null);
+    const fetchProduct = async () => {
+      try {
+        const productRef = doc(db, 'products', id);
+        const docSnap = await getDoc(productRef);
+        if (docSnap.exists()) {
+          setProduct({ id: docSnap.id, ...docSnap.data() });
+        } else {
+          setProduct(null);
+          setIsError(true);
+          setError(new Error("Product not found"));
+        }
+      } catch (err) {
+        console.error("Error getting product details:", err);
         setIsError(true);
-        setError(new Error("Product not found"));
+        setError(err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    }, (err) => {
-      console.error("Error subscribing to product details:", err);
-      setIsError(true);
-      setError(err);
-      setLoading(false);
-    });
+    };
 
-    return () => unsub();
+    fetchProduct();
   }, [id]);
 
   const [added, setAdded] = useState(false);
@@ -311,13 +312,6 @@ const ProductDetails = () => {
   // ── real-time reviews ───────────────────────────────────────────────────
   const [reviews, setReviews] = useState([]);
 
-  console.log("Current Product ID:", productId);
-  console.log("Loaded Reviews:", reviews);
-  console.log("Current Product:", product?.name);
-  console.log("Review Product:", reviewForm.productName);
-  console.log("Route Product ID:", id);
-  console.log("Firestore Product:", product);
-
   useEffect(() => {
     setReviewForm(prev => ({
       ...prev,
@@ -326,25 +320,27 @@ const ProductDetails = () => {
   }, [product?.id]);
 
   useEffect(() => {
-    const q = query(
-      collection(db, 'products', productId, 'reviews'),
-      where("productId", "==", currentProductId)
-    );
-    const unsub = onSnapshot(q, (snapshot) => {
-      const reviewsList = snapshot.docs
-        .map(d => ({ id: d.id, ...d.data() }));
-      reviewsList.sort((a, b) => {
-        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
-        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
-        return dateB - dateA;
-      });
-      setReviews(reviewsList);
-    }, (err) => {
-      console.error("Error subscribing to reviews:", err);
-    });
+    const fetchReviews = async () => {
+      try {
+        const q = query(
+          collection(db, 'products', productId, 'reviews')
+        );
+        const snapshot = await getDocs(q);
+        const reviewsList = snapshot.docs
+          .map(d => ({ id: d.id, ...d.data() }));
+        reviewsList.sort((a, b) => {
+          const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+          const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+          return dateB - dateA;
+        });
+        setReviews(reviewsList);
+      } catch (err) {
+        console.error("Error getting reviews:", err);
+      }
+    };
 
-    return () => unsub();
-  }, [productId, currentProductId]);
+    fetchReviews();
+  }, [productId]);
 
   // ── real-time related products ──────────────────────────────────────────
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -355,23 +351,25 @@ const ProductDetails = () => {
       return;
     }
 
-    const q = query(
-      collection(db, 'products'),
-      where('category', '==', product.category),
-      limit(5)
-    );
+    const fetchRelated = async () => {
+      try {
+        const q = query(
+          collection(db, 'products'),
+          where('category', '==', product.category),
+          limit(5)
+        );
+        const snapshot = await getDocs(q);
+        const list = snapshot.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(p => p.id !== id)
+          .slice(0, 4);
+        setRelatedProducts(list);
+      } catch (err) {
+        console.error("Error getting related products:", err);
+      }
+    };
 
-    const unsub = onSnapshot(q, (snapshot) => {
-      const list = snapshot.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter(p => p.id !== id)
-        .slice(0, 4);
-      setRelatedProducts(list);
-    }, (err) => {
-      console.error("Error subscribing to related products:", err);
-    });
-
-    return () => unsub();
+    fetchRelated();
   }, [product?.category, id]);
 
   // ── Analytics: fire view_item once when product data loads ────────────────
@@ -433,14 +431,20 @@ const ProductDetails = () => {
     }
     const variantId = `${product.id}_${selectedColorName || ''}_${selectedSize || ''}`;
     const buyNowItem = {
-      ...product,
       id: variantId,
       productId: product.id,
+      name: product.name || product.title || '',
+      price: Number(product.price || 0),
+      originalPrice: Number(product.originalPrice ?? product.price ?? 0),
+      discount: Number(product.discount || 0),
+      image: (selectedColor?.images && Array.isArray(selectedColor.images) && selectedColor.images.length > 0) ? selectedColor.images[0] : (product?.image || ''),
       color: selectedColorName,
       selectedColor: selectedColorName,
       size: selectedSize,
       quantity: quantity,
-      image: (selectedColor?.images && Array.isArray(selectedColor.images) && selectedColor.images.length > 0) ? selectedColor.images[0] : (product?.image || '')
+      stock: Number(product.stock || 0),
+      priceDifference: Number(selectedColor?.priceDifference || 0),
+      variants: product.variants || []
     };
     localStorage.setItem('buyNow', JSON.stringify(buyNowItem));
     navigate('/checkout');
@@ -488,10 +492,6 @@ const ProductDetails = () => {
           userName: reviewForm.userName,
           updatedAt: serverTimestamp()
         };
-
-        console.log("Review ID:", reviewId);
-        console.log("Current User:", currentUser?.uid);
-        console.log("Review Data:", updatedReview);
 
         if (!reviewId) {
           throw new Error("Review ID is missing.");
@@ -647,11 +647,11 @@ const ProductDetails = () => {
     const hasHalf = Number(rating) - floor >= 0.5;
     for (let i = 1; i <= 5; i++) {
       if (i <= floor) {
-        stars.push(<Star key={i} size={14} fill="#eab308" className="text-yellow-500 animate-pulse" />);
+        stars.push(<Star key={`rating-star-${i}`} size={14} fill="#eab308" className="text-yellow-500 animate-pulse" />);
       } else if (i === floor + 1 && hasHalf) {
-        stars.push(<Star key={i} size={14} fill="#eab308" className="text-yellow-500 opacity-60" />);
+        stars.push(<Star key={`rating-star-${i}`} size={14} fill="#eab308" className="text-yellow-500 opacity-60" />);
       } else {
-        stars.push(<Star key={i} size={14} fill="none" className="text-gray-700" />);
+        stars.push(<Star key={`rating-star-${i}`} size={14} fill="none" className="text-gray-700" />);
       }
     }
     return stars;
@@ -816,7 +816,7 @@ const ProductDetails = () => {
                 <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-10 lg:hidden">
                   {mediaItems.map((_, idx) => (
                     <div
-                      key={idx}
+                      key={`media-indicator-${idx}`}
                       className={`h-1.5 rounded-full transition-all duration-300 ${activeMedia === idx ? 'w-4 bg-yellow-500' : 'w-1.5 bg-gray-600'}`}
                     />
                   ))}
@@ -834,7 +834,7 @@ const ProductDetails = () => {
 
                   return (
                     <button
-                      key={idx}
+                      key={`media-thumb-${idx}`}
                       onClick={() => {
                         setActiveMedia(idx);
                         if (isVideo) openVideoModal(item.url);
@@ -990,7 +990,7 @@ const ProductDetails = () => {
                       const colorCode = v.colorCode || getColorCode(vName);
                       return (
                         <button
-                          key={idx}
+                          key={`variant-${vName}-${idx}`}
                           type="button"
                           onClick={() => handleVariantChange(v)}
                           className={`flex items-center gap-3 px-5 py-3 rounded-2xl border transition-all duration-300 ${
@@ -1350,7 +1350,7 @@ const ProductDetails = () => {
                       </div>
                       <div className="flex gap-0.5">
                         {[...Array(Number(r.rating || 5))].map((_, i) => (
-                          <Star key={i} size={10} fill="#eab308" className="text-yellow-500" />
+                          <Star key={`review-star-${i}`} size={10} fill="#eab308" className="text-yellow-500" />
                         ))}
                       </div>
                     </div>
@@ -1380,7 +1380,7 @@ const ProductDetails = () => {
                           </span>
                           <div className="flex gap-0.5">
                             {[...Array(Number(userReview.rating || 5))].map((_, i) => (
-                              <Star key={i} size={10} fill="#eab308" className="text-yellow-500" />
+                              <Star key={`user-review-star-${i}`} size={10} fill="#eab308" className="text-yellow-500" />
                             ))}
                           </div>
                         </div>
@@ -1554,6 +1554,8 @@ const ProductDetails = () => {
                   title="Product Video"
                   allow="autoplay; fullscreen; picture-in-picture"
                   allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  loading="lazy"
                 />
               )}
             </motion.div>

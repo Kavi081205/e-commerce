@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
 import {
-  collection, onSnapshot, addDoc, updateDoc, deleteDoc,
+  collection, getDocs, addDoc, updateDoc, deleteDoc,
   doc, serverTimestamp, query, orderBy
 } from 'firebase/firestore';
 import { Tag, Plus, Trash2, ToggleLeft, ToggleRight, Loader2, Copy, Check } from 'lucide-react';
@@ -27,14 +27,15 @@ const CouponsManage = () => {
 
   useEffect(() => {
     const q = query(collection(db, 'coupons'), orderBy('createdAt', 'desc'));
-    const unsub = onSnapshot(q, (snap) => {
-      setCoupons(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
-    }, (err) => {
-      console.error('Coupons listener error:', err);
-      setLoading(false);
-    });
-    return () => unsub();
+    getDocs(q)
+      .then(snap => {
+        setCoupons(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Coupons fetch error:', err);
+        setLoading(false);
+      });
   }, []);
 
   const handleChange = (e) => {
@@ -46,8 +47,20 @@ const CouponsManage = () => {
     e.preventDefault();
     if (!form.code || !form.discountValue || !form.expiryDate) return;
     setSaving(true);
+    // Optimistic add with temp id
+    const tempId = `temp-${Date.now()}`;
+    const tempCoupon = {
+      ...form,
+      id: tempId,
+      code: form.code.trim().toUpperCase(),
+      discountValue: Number(form.discountValue),
+      minOrderAmount: Number(form.minOrderAmount) || 0,
+    };
+    setCoupons(prev => [tempCoupon, ...prev]);
+    setForm(EMPTY_FORM);
+    setShowForm(false);
     try {
-      await addDoc(collection(db, 'coupons'), {
+      const docRef = await addDoc(collection(db, 'coupons'), {
         code: form.code.trim().toUpperCase(),
         discountType: form.discountType,
         discountValue: Number(form.discountValue),
@@ -56,29 +69,40 @@ const CouponsManage = () => {
         isActive: form.isActive,
         createdAt: serverTimestamp(),
       });
-      setForm(EMPTY_FORM);
-      setShowForm(false);
+      setCoupons(prev => prev.map(c => c.id === tempId ? { ...c, id: docRef.id } : c));
     } catch (err) {
       console.error('Error creating coupon:', err);
+      setCoupons(prev => prev.filter(c => c.id !== tempId)); // rollback
     } finally {
       setSaving(false);
     }
   };
 
   const toggleActive = async (coupon) => {
-    await updateDoc(doc(db, 'coupons', coupon.id), { isActive: !coupon.isActive });
+    // Optimistic toggle
+    setCoupons(prev => prev.map(c => c.id === coupon.id ? { ...c, isActive: !c.isActive } : c));
+    try {
+      await updateDoc(doc(db, 'coupons', coupon.id), { isActive: !coupon.isActive });
+    } catch (err) {
+      console.error('Error toggling coupon:', err);
+      setCoupons(prev => prev.map(c => c.id === coupon.id ? { ...c, isActive: coupon.isActive } : c)); // rollback
+    }
   };
 
   const handleDelete = async () => {
     if (!deleteId) return;
     setDeleting(true);
+    // Optimistic delete
+    const removed = coupons.find(c => c.id === deleteId);
+    setCoupons(prev => prev.filter(c => c.id !== deleteId));
+    setDeleteId(null);
     try {
       await deleteDoc(doc(db, 'coupons', deleteId));
     } catch (err) {
       console.error('Error deleting coupon:', err);
+      if (removed) setCoupons(prev => [removed, ...prev]); // rollback
     } finally {
       setDeleting(false);
-      setDeleteId(null);
     }
   };
 

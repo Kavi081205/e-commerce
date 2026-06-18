@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import { collection, query, where, orderBy, onSnapshot, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 // fix #4: removed unused User, Mail, Calendar, Plus imports
-import { Package, Settings, LogOut, ChevronRight, ShoppingBag, Clock, CheckCircle, Truck, MapPin, Trash2, Smartphone, Home, Briefcase, Loader2, ArrowRight } from 'lucide-react';
+import { Package, Settings, LogOut, ChevronRight, ShoppingBag, Clock, CheckCircle, Truck, MapPin, Trash2, Smartphone, Home, Briefcase, Loader2, ArrowRight, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageHeader from '../components/PageHeader';
 import { Link } from 'react-router-dom';
@@ -27,6 +27,11 @@ const Profile = () => {
   const [newName, setNewName] = useState(currentUser?.displayName || '');
   const [addressToDelete, setAddressToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [profileImgFailed, setProfileImgFailed] = useState(false);
+
+  useEffect(() => {
+    setProfileImgFailed(false);
+  }, [currentUser?.uid]);
 
   // fix #3: sync newName if currentUser.displayName updates externally
   useEffect(() => {
@@ -35,25 +40,32 @@ const Profile = () => {
 
   useEffect(() => {
     if (!currentUser?.uid) return;
+    let cancelled = false;
 
-    const q = query(
-      collection(db, 'orders'),
-      where('userId', '==', currentUser.uid),
-      orderBy('createdAt', 'desc'),
-      limit(5)
-    );
+    const fetchOrders = async () => {
+      try {
+        const q = query(
+          collection(db, 'orders'),
+          where('userId', '==', currentUser.uid),
+          orderBy('createdAt', 'desc'),
+          limit(5)
+        );
+        const snap = await getDocs(q);
+        if (!cancelled) {
+          setOrders(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+          setLoading(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Error fetching profile orders:', err);
+          setLoading(false);
+        }
+      }
+    };
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const ordersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setOrders(ordersData);
-      setLoading(false);
-    }, (err) => {
-      console.error('Error in profile snapshot listener:', err);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [currentUser]);
+    fetchOrders();
+    return () => { cancelled = true; };
+  }, [currentUser?.uid]);
 
   const handleUpdateName = async (e) => {
     e.preventDefault();
@@ -123,9 +135,24 @@ const Profile = () => {
             <div className="lg:col-span-1 space-y-10">
               <div className="bg-gray-900/30 backdrop-blur-xl p-10 rounded-[3rem] border border-yellow-900/10 shadow-2xl">
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-28 h-28 bg-yellow-500 text-black rounded-full flex items-center justify-center text-5xl font-black mb-8 shadow-2xl shadow-yellow-500/20 uppercase">
-                    {currentUser.displayName?.[0] || currentUser.email?.[0]}
-                  </div>
+                  {currentUser.photoURL && !profileImgFailed ? (
+                    <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-yellow-500 mb-8 shadow-2xl shadow-yellow-500/20 bg-slate-950 flex items-center justify-center">
+                      <img
+                        src={currentUser.photoURL}
+                        alt={currentUser.displayName || 'Profile'}
+                        className="w-full h-full object-cover animate-fadeIn"
+                        onError={() => setProfileImgFailed(true)}
+                      />
+                    </div>
+                  ) : currentUser.photoURL && profileImgFailed ? (
+                    <div className="w-28 h-28 rounded-full bg-slate-950 flex items-center justify-center text-yellow-500 border-4 border-yellow-500 mb-8 shadow-2xl shadow-yellow-500/20">
+                      <User size={48} className="text-yellow-500" />
+                    </div>
+                  ) : (
+                    <div className="w-28 h-28 bg-yellow-500 text-black rounded-full flex items-center justify-center text-5xl font-black mb-8 shadow-2xl shadow-yellow-500/20 uppercase">
+                      {currentUser.displayName?.[0] || currentUser.email?.[0]}
+                    </div>
+                  )}
                   {editing ? (
                     <form onSubmit={handleUpdateName} className="w-full space-y-4">
                       <label htmlFor="profile-name" className="sr-only">Display Name</label>

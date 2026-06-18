@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
-import { collection, onSnapshot, doc, setDoc, query, orderBy, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, query, orderBy, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import {
   Zap,
   Layout,
@@ -10,7 +10,8 @@ import {
   AlertCircle,
   Search,
   Plus,
-  Calendar
+  Calendar,
+  RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getOptimizedImage } from '../../utils/cloudinary';
@@ -36,48 +37,36 @@ const Promotions = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Fetch products, promotions main config, and offers ledger in real-time
+  // Fetch all data once (admin page doesn't need real-time updates)
+  const fetchAll = async () => {
+    setLoading(true);
+    try {
+      const [productsSnap, promoSnap, offersSnap] = await Promise.all([
+        getDocs(query(collection(db, 'products'), orderBy('createdAt', 'desc'))),
+        getDoc(doc(db, 'promotions', 'main')),
+        getDocs(collection(db, 'offers'))
+      ]);
+
+      setProducts(productsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+
+      if (promoSnap.exists()) {
+        setSettings(prev => ({ ...prev, ...promoSnap.data() }));
+      }
+
+      const offersList = offersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      offersList.sort((a, b) => new Date(a.offerEndDate) - new Date(b.offerEndDate));
+      setOffersList(offersList);
+    } catch (err) {
+      console.error('Promotions fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch products, promotions main config, and offers ledger once
   useEffect(() => {
-    const productsQuery = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
-
-    const unsubProducts = onSnapshot(
-      productsQuery,
-      (snapshot) => {
-        setProducts(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-      },
-      (err) => {
-        console.error('Products fetch error:', err);
-        const fallbackQuery = collection(db, 'products');
-        onSnapshot(fallbackQuery, (snapshot) => {
-          setProducts(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-        });
-      }
-    );
-
-    const unsubSettings = onSnapshot(doc(db, 'promotions', 'main'), (docSnap) => {
-      if (docSnap.exists()) {
-        setSettings(prev => ({ ...prev, ...docSnap.data() }));
-      }
-      setLoading(false);
-    }, (err) => {
-      console.error('Settings fetch error:', err);
-      setLoading(false);
-    });
-
-    const unsubOffers = onSnapshot(collection(db, 'offers'), (snapshot) => {
-      const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      // Sort offers by end date ascending
-      list.sort((a, b) => new Date(a.offerEndDate) - new Date(b.offerEndDate));
-      setOffersList(list);
-    }, (err) => {
-      console.error('Offers fetch error:', err);
-    });
-
-    return () => {
-      unsubProducts();
-      unsubSettings();
-      unsubOffers();
-    };
+    fetchAll();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSave = async () => {
@@ -100,6 +89,17 @@ const Promotions = () => {
       setMessage({ type: 'error', text: 'Please fill in all offer fields.' });
       return;
     }
+    // Optimistic: add temp entry immediately
+    const tempId = `temp-${Date.now()}`;
+    const tempOffer = {
+      id: tempId,
+      ...newOffer,
+      expiryDateTime: newOffer.offerEndDate,
+      discount: Number(newOffer.discount || 0),
+      createdAt: new Date().toISOString()
+    };
+    setOffersList(prev => [...prev, tempOffer].sort((a, b) => new Date(a.offerEndDate) - new Date(b.offerEndDate)));
+    setNewOffer({ title: '', productId: '', discount: 10, offerEndDate: '', isActive: true });
     try {
       const offerRef = doc(collection(db, 'offers'));
       await setDoc(offerRef, {
@@ -108,37 +108,40 @@ const Promotions = () => {
         discount: Number(newOffer.discount || 0),
         createdAt: new Date().toISOString()
       });
-      setNewOffer({
-        title: '',
-        productId: '',
-        discount: 10,
-        offerEndDate: '',
-        isActive: true
-      });
+      // Replace temp id with real Firestore id
+      setOffersList(prev => prev.map(o => o.id === tempId ? { ...o, id: offerRef.id } : o));
       setMessage({ type: 'success', text: 'New offer added successfully!' });
     } catch (err) {
-      console.error("Error creating offer:", err);
+      console.error('Error creating offer:', err);
+      setOffersList(prev => prev.filter(o => o.id !== tempId)); // rollback
       setMessage({ type: 'error', text: 'Failed to create offer.' });
     }
   };
 
   const handleToggleOfferActive = async (id, currentVal) => {
+    // Optimistic toggle
+    setOffersList(prev => prev.map(o => o.id === id ? { ...o, isActive: !currentVal } : o));
     try {
       await updateDoc(doc(db, 'offers', id), { isActive: !currentVal });
       setMessage({ type: 'success', text: 'Offer status updated!' });
     } catch (err) {
-      console.error("Error toggling offer:", err);
+      console.error('Error toggling offer:', err);
+      setOffersList(prev => prev.map(o => o.id === id ? { ...o, isActive: currentVal } : o)); // rollback
       setMessage({ type: 'error', text: 'Failed to update status.' });
     }
   };
 
   const handleDeleteOffer = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this offer?")) return;
+    if (!window.confirm('Are you sure you want to delete this offer?')) return;
+    // Optimistic: remove immediately
+    const removed = offersList.find(o => o.id === id);
+    setOffersList(prev => prev.filter(o => o.id !== id));
     try {
       await deleteDoc(doc(db, 'offers', id));
       setMessage({ type: 'success', text: 'Offer deleted successfully!' });
     } catch (err) {
-      console.error("Error deleting offer:", err);
+      console.error('Error deleting offer:', err);
+      if (removed) setOffersList(prev => [...prev, removed].sort((a, b) => new Date(a.offerEndDate) - new Date(b.offerEndDate))); // rollback
       setMessage({ type: 'error', text: 'Failed to delete offer.' });
     }
   };
@@ -169,20 +172,31 @@ const Promotions = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 md:p-10 space-y-10">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 md:p-10 space-y-8 md:space-y-10 min-w-0 w-full">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
-          <h1 className="text-4xl font-black text-white tracking-tight mb-2">Campaign Manager</h1>
-          <p className="text-gray-500 font-medium">Control your website's featured content and global offers.</p>
+          <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-2">Campaign Manager</h1>
+          <p className="text-gray-500 text-xs sm:text-sm font-medium">Control your website's featured content and global offers.</p>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-3 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 text-white px-8 py-4 rounded-2xl font-black transition-all shadow-xl shadow-yellow-600/20 active:scale-95"
-        >
-          {saving ? <Loader2 className="animate-spin" /> : <Save />}
-          {saving ? 'Syncing...' : 'Save Slider Selection'}
-        </button>
+        <div className="flex gap-3 w-full sm:w-auto">
+          <button
+            onClick={fetchAll}
+            disabled={loading}
+            title="Refresh data"
+            className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-yellow-400 px-4 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest border border-yellow-900/20 transition-all active:scale-95 disabled:opacity-50"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center justify-center gap-3 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl font-black transition-all shadow-xl shadow-yellow-600/20 active:scale-95 flex-1 sm:flex-none text-center"
+          >
+            {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+            {saving ? 'Syncing...' : 'Save Slider Selection'}
+          </button>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -359,7 +373,7 @@ const Promotions = () => {
                       className={`w-10 h-6 rounded-full relative transition-all duration-300 ${newOffer.isActive ? 'bg-yellow-500' : 'bg-gray-700'}`}
                       aria-label="Toggle active status"
                     >
-                      <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-gray-900 transition-all duration-300 ${newOffer.isActive ? 'left-4.5' : 'left-0.5'}`} />
+                      <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-gray-900 transition-all duration-300 ${newOffer.isActive ? 'translate-x-4' : 'translate-x-0'} left-0.5`} />
                     </button>
                   </div>
                 </div>

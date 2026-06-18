@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { db } from '../firebase';
-import { collection, query, where, orderBy, limit, startAfter, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, startAfter, getDocs } from 'firebase/firestore';
 import { useWishlist } from '../context/WishlistContext';
 import {
   Search, Filter, SlidersHorizontal,
@@ -17,7 +17,6 @@ import ProductRating from '../components/ProductRating';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const PRODUCTS_PER_PAGE = 20;
-const CATEGORIES = ['all', 'sarees', 'kids dress', 'wheat', 'toys', 'gadgets', 'gifts'];
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Component
@@ -25,10 +24,34 @@ const CATEGORIES = ['all', 'sarees', 'kids dress', 'wheat', 'toys', 'gadgets', '
 const Products = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const urlCategory = searchParams.get('category');
-  const initialFilter = CATEGORIES.includes(urlCategory) ? urlCategory : 'all';
+  const [filter, setFilter] = useState(urlCategory || 'all');
+  const [categories, setCategories] = useState([]);
+
+  // Load categories once (static admin data — no real-time needed)
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const q = query(
+          collection(db, 'categories'),
+          where('active', '==', true),
+          orderBy('order', 'asc')
+        );
+        const snap = await getDocs(q);
+        setCategories(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch (err) {
+        console.error('Firestore categories query error:', err.code, err.message);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Sync URL category query param with filter state
+  useEffect(() => {
+    const urlCat = searchParams.get('category');
+    setFilter(urlCat || 'all');
+  }, [searchParams]);
 
   // ── filter-state ─────────────────────────────────────────────────────────
-  const [filter, setFilter] = useState(initialFilter);
   const [searchTerm, setSearchTerm] = useState('');
   const [maxPrice, setMaxPrice] = useState(100_000);
   const [inStockOnly, setInStockOnly] = useState(false);
@@ -81,20 +104,23 @@ const Products = () => {
 
     const q = query(collection(db, 'products'), ...constraints);
 
-    const unsub = onSnapshot(q, (snapshot) => {
-      const productsList = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
-      const lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
+    const fetchProducts = async () => {
+      try {
+        const snapshot = await getDocs(q);
+        const productsList = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+        const lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
 
-      setProductsData({ products: productsList, lastDoc });
-      setIsLoading(false);
-    }, (err) => {
-      console.error('Firestore products query error:', err.code, err.message);
-      setIsError(true);
-      setError(err);
-      setIsLoading(false);
-    });
+        setProductsData({ products: productsList, lastDoc });
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Firestore products query error:', err.code, err.message);
+        setIsError(true);
+        setError(err);
+        setIsLoading(false);
+      }
+    };
 
-    return () => unsub();
+    fetchProducts();
   }, [filter, currentPageIndex, cursor, retryTrigger]);
 
   // Keep track of the page boundaries for back-paging
@@ -158,17 +184,17 @@ const Products = () => {
 
         {/* Horizontal scroll categories for mobile */}
         <div className="flex lg:hidden flex-nowrap gap-2 overflow-x-auto scrollbar-none py-3 mb-6 border-y border-yellow-900/10 select-none touch-pan-x">
-          {CATEGORIES.map(cat => (
+          {[{ name: 'All', slug: 'all' }, ...categories].map(cat => (
             <button
-              key={cat}
+              key={cat.slug}
               type="button"
-              onClick={() => handleFilterChange(cat)}
-              className={`px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border flex-shrink-0 transition-all ${filter === cat
+              onClick={() => handleFilterChange(cat.slug)}
+              className={`px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border flex-shrink-0 transition-all ${filter === cat.slug
                 ? 'bg-yellow-500 border-yellow-500 text-black shadow-lg shadow-yellow-500/10'
                 : 'border-yellow-900/20 text-gray-400'
               }`}
             >
-              {cat}
+              {cat.name}
             </button>
           ))}
         </div>
@@ -224,18 +250,18 @@ const Products = () => {
                   <h3 className="text-[10px] font-black uppercase tracking-[0.2em]">Category</h3>
                 </div>
                 <div className="space-y-3">
-                  {CATEGORIES.map(cat => (
+                  {[{ name: 'All Collections', slug: 'all' }, ...categories].map(cat => (
                     <button
-                      key={cat}
+                      key={cat.slug}
                       type="button"
-                      aria-pressed={filter === cat}
-                      onClick={() => handleFilterChange(cat)}
-                      className={`w-full text-left px-5 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${filter === cat
+                      aria-pressed={filter === cat.slug}
+                      onClick={() => handleFilterChange(cat.slug)}
+                      className={`w-full text-left px-5 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${filter === cat.slug
                         ? 'bg-yellow-500 text-black shadow-xl shadow-yellow-500/10'
                         : 'text-gray-500 hover:text-white hover:bg-white/5'
                         }`}
                     >
-                      {cat}
+                      {cat.name}
                     </button>
                   ))}
                 </div>
@@ -314,7 +340,7 @@ const Products = () => {
             {isLoading ? (
               <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
                 {[...Array(8)].map((_, i) => (
-                  <div key={i} className="animate-pulse bg-gray-900/50 h-[260px] rounded-2xl border border-white/5" />
+                  <div key={`product-skeleton-${i}`} className="animate-pulse bg-gray-900/50 h-[260px] rounded-2xl border border-white/5" />
                 ))}
               </div>
 
@@ -506,17 +532,17 @@ const Products = () => {
                     <span className="text-[9px] font-black uppercase tracking-widest">Category</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {CATEGORIES.map(cat => (
+                    {[{ name: 'All Collections', slug: 'all' }, ...categories].map(cat => (
                       <button
-                        key={cat}
+                        key={cat.slug}
                         type="button"
-                        onClick={() => handleFilterChange(cat)}
-                        className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all ${filter === cat
+                        onClick={() => handleFilterChange(cat.slug)}
+                        className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all ${filter === cat.slug
                           ? 'bg-yellow-500 border-yellow-500 text-black'
                           : 'border-yellow-900/20 text-gray-400 hover:text-white'
                         }`}
                       >
-                        {cat}
+                        {cat.name}
                       </button>
                     ))}
                   </div>

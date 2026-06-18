@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from 'react';
-import logo from '../assets/logo.png';
 
 const LoadingScreen = ({ onDone }) => {
   const [fadeOut, setFadeOut] = useState(false);
@@ -35,7 +34,7 @@ const LoadingScreen = ({ onDone }) => {
         <div className="loading-logo-wrap">
           <div className="loading-logo-glow" aria-hidden="true" />
           {/* ✅ alt="" because brand name is already in the h1 below */}
-          <img src={logo} alt="" role="presentation" className="loading-logo" />
+          <img src="/logo.png" alt="" role="presentation" className="loading-logo" />
         </div>
 
         {/* Brand */}

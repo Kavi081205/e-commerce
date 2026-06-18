@@ -6,16 +6,17 @@ const Toast = ({ message, type, onClose }) => {
   const resolvedType = ['success', 'error', 'info'].includes(type) ? type : 'info';
 
   const iconMap = {
-    success: <CheckCircle className="text-yellow-500" size={18} />,
+    success: <CheckCircle className="text-green-500" size={18} />,
     error: <XCircle className="text-red-500" size={18} />,
     info: <Info className="text-blue-400" size={18} />,
   };
 
   const bgMap = {
-    success: 'border-yellow-500/20 bg-gray-950 shadow-yellow-500/5',
+    success: 'border-green-500/20 bg-gray-950 shadow-green-500/5',
     error: 'border-red-500/20 bg-gray-950 shadow-red-500/5',
     info: 'border-blue-500/20 bg-gray-950 shadow-blue-500/5',
   };
+
 
   return (
     <motion.div

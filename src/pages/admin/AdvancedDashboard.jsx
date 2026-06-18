@@ -11,7 +11,6 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import Confetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
-import logo from '../../assets/logo.png';
 import { Link, useNavigate } from 'react-router-dom';
 
 /* ── Mock Data ──────────────────────────────────────────────────── */
@@ -136,7 +135,7 @@ const AdvancedDashboard = () => {
         >
           <div className="p-8 flex items-center justify-between">
             <Link to="/" className="flex items-center">
-              <img src={logo} alt="Logo" className="h-14 w-auto object-contain" />
+              <img src="/logo.png" alt="Logo" className="h-14 w-auto object-contain" />
             </Link>
             {/* Close button only visible on mobile */}
             <button
@@ -237,7 +236,7 @@ const AdvancedDashboard = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {stats.map((stat, i) => (
               <motion.div
-                key={i}
+                key={stat.title || i}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}

@@ -39,9 +39,6 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
 
       // Product reviews sub-collection:
-      // Authenticated users can read all reviews.
-      // Any signed-in user can create a review (one per call, rate-limited by auth).
-      // Only admins can delete reviews.
       match /reviews/{reviewId} {
         allow read: if true;
         allow create: if isSignedIn()
@@ -66,13 +63,15 @@ service cloud.firestore {
       allow create: if isSignedIn()
                     && request.resource.data.userId == request.auth.uid
                     && request.resource.data.keys().hasAll(['userId', 'items', 'totalPrice', 'status'])
-                    && request.resource.data.status == 'ordered';
+                    && request.resource.data.status == 'ordered'
+                    && request.resource.data.totalPrice is number
+                    && request.resource.data.totalPrice > 0;  // Prevent zero-value orders
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 
     // ── invoices ─────────────────────────────────────────────────────────────
-    // Customers can create and read their own invoices (created automatically at checkout).
+    // Customers can create and read their own invoices.
     // Admins have full access.
     match /invoices/{invoiceId} {
       allow read: if isAdmin() || isOwner(resource.data.userId);
@@ -88,7 +87,7 @@ service cloud.firestore {
     }
 
     // ── promotions ───────────────────────────────────────────────────────────
-    // Anyone can read the active promotions document.
+    // Anyone can read active promotions.
     // Only admins can create or modify promotions.
     match /promotions/{docId} {
       allow read: if true;
@@ -103,11 +102,44 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ── categories ───────────────────────────────────────────────────────────
+    // Anyone can browse categories.
+    // Only admins can create, edit, or delete categories.
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // ── errors ───────────────────────────────────────────────────────────────
     // Authenticated users can log errors. Only admins can read them.
     match /errors/{errorId} {
       allow create: if isSignedIn();
       allow read, update, delete: if isAdmin();
+    }
+
+    // ── activity_logs ─────────────────────────────────────────────────────────
+    // Security audit trail: any authenticated user can write (for logging events).
+    // Only admins can read (sensitive data: failed logins, phone reveals, etc.)
+    match /activity_logs/{logId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ── settings ─────────────────────────────────────────────────────────────
+    // Admin-only write: store/payment configuration, feature flags, etc.
+    // Public read is allowed so customers can fetch store details for invoice/label rendering.
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+
+    // ── coupons ───────────────────────────────────────────────────────────────
+    // Authenticated users can read (for coupon validation at checkout).
+    // Only admins can create or modify coupons.
+    match /coupons/{couponId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
 
   }

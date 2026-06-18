@@ -3,34 +3,74 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { ArrowRight, Star, Truck, ShieldCheck, Loader2, Heart, Gift, Zap, Sparkles } from 'lucide-react';
 import { db } from '../firebase';
-import { collection, query, orderBy, limit, doc, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, limit, doc, where, getDoc, getDocs, getCountFromServer } from 'firebase/firestore';
+import { useQuery } from '@tanstack/react-query';
+import { getFeaturedProducts, getProductsByIds } from '../firebase/services';
 import LazyImage from '../components/LazyImage';
 import { useInView } from 'react-intersection-observer'; // FIX 1: use the canonical hook directly
 import { useWishlist } from '../context/WishlistContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePromo } from '../context/PromoContext';
-import logo from '../assets/logo.png';
 import { getEffectivePrice } from '../utils/pricing';
 import { getOptimizedImage, getHDImage } from '../utils/cloudinary';
 import ProductRating from '../components/ProductRating';
 
 /* ─────────────────────────────────────────────────────────────────
-   STATIC DATA
+   STATIC DATA (non-category)
 ───────────────────────────────────────────────────────────────── */
-const categories = [
-  { id: 1, name: 'Sarees', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80', comingSoon: false },
-  { id: 2, name: 'Kids Dress', image: '/kids-dress.png', comingSoon: false },
-  { id: 3, name: 'Wheat', image: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&w=800&q=80', comingSoon: false },
-  { id: 4, name: 'Toys', image: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&w=800&q=80', comingSoon: false },
-  { id: 5, name: 'Gadgets', image: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&q=80', comingSoon: true },
-  { id: 6, name: 'Gifts', image: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=800&q=80', comingSoon: true },
-];
 
 const perks = [
   { icon: Truck, title: 'Logistics', desc: 'Fast & Secure Delivery' },
   { icon: ShieldCheck, title: 'Secure Payments', desc: 'End-to-end encrypted payments' },
   { icon: Star, title: 'Quality Products', desc: 'Only the finest trending products' },
 ];
+
+/* ─────────────────────────────────────────────────────────────────
+   HOOK — Dynamic categories from Firestore
+───────────────────────────────────────────────────────────────── */
+const useDynamicCategories = () => {
+  const { data: categories = [], isLoading: catLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const q = query(
+        collection(db, 'categories'),
+        orderBy('order', 'asc')
+      );
+      const snap = await getDocs(q);
+      return snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(c => c.active !== false);
+    },
+    staleTime: 1000 * 60 * 10 // 10 minutes cache
+  });
+
+  const categoriesKey = JSON.stringify(categories.map(c => ({ id: c.id, slug: c.slug })));
+
+  const { data: productCounts = {} } = useQuery({
+    queryKey: ['categoryCounts', categoriesKey],
+    queryFn: async () => {
+      if (categories.length === 0) return {};
+      const counts = {};
+      await Promise.all(
+        categories.map(async (cat) => {
+          try {
+            const q = query(collection(db, 'products'), where('category', '==', cat.slug));
+            const countSnap = await getCountFromServer(q);
+            counts[cat.id] = countSnap.data().count;
+          } catch (err) {
+            console.error('Failed to get count for category', cat.slug, err);
+            counts[cat.id] = 0;
+          }
+        })
+      );
+      return counts;
+    },
+    enabled: categories.length > 0,
+    staleTime: 1000 * 60 * 10 // 10 minutes cache
+  });
+
+  return { categories, catLoading, productCounts };
+};
 
 /* ─────────────────────────────────────────────────────────────────
    BANNER COUNTDOWN TIMER (compact pill for banner overlay)
@@ -73,11 +113,6 @@ const BannerCountdown = ({ offer, compact = false }) => {
 
   // 4. Add working countdown useEffect
   useEffect(() => {
-    // 1. Verify offer expiryDateTime exists
-    if (offer) {
-      console.log("Offer Expiry:", offer.expiryDateTime);
-    }
-
     if (!offer?.expiryDateTime) return;
 
     const tick = () => {
@@ -334,14 +369,7 @@ const Home = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const { promoSettings } = usePromo();
-
-  // Local state for banner products
-  const [bannerProducts, setBannerProducts] = useState([]);
-  const [bannerLoading, setBannerLoading] = useState(true);
-
-  // Local state for featured products (New Arrivals)
-  const [featuredProducts, setFeaturedProducts] = useState([]);
-  const [featuredLoading, setFeaturedLoading] = useState(true);
+  const { categories, catLoading, productCounts } = useDynamicCategories();
 
   // Local recently viewed state
   const [recentlyViewed, setRecentlyViewed] = useState([]);
@@ -355,136 +383,56 @@ const Home = () => {
     }
   }, []);
 
-  // Real-time listener for banner products
-  useEffect(() => {
-    const bannerIds = promoSettings?.bannerProductIds;
-    if (!Array.isArray(bannerIds) || bannerIds.length === 0) {
-      setBannerProducts([]);
-      setBannerLoading(false);
-      return;
-    }
+  const bannerIds = promoSettings?.bannerProductIds || [];
+  const bannerIdsKey = JSON.stringify(bannerIds);
 
-    setBannerLoading(true);
-    const unsubscribes = [];
-    const productsMap = {};
+  // Fetch banner products (cached)
+  const { data: bannerProducts = [], isLoading: bannerLoading } = useQuery({
+    queryKey: ['bannerProducts', bannerIdsKey],
+    queryFn: async () => {
+      if (bannerIds.length === 0) return [];
+      return await getProductsByIds(bannerIds);
+    },
+    enabled: bannerIds.length > 0,
+    staleTime: 1000 * 60 * 5 // 5 minutes cache
+  });
 
-    let loadedCount = 0;
-    const totalIds = bannerIds.length;
-
-    bannerIds.forEach((id) => {
-      const productRef = doc(db, 'products', id);
-      const unsub = onSnapshot(productRef, (docSnap) => {
-        if (docSnap.exists()) {
-          productsMap[id] = { id: docSnap.id, ...docSnap.data() };
-        } else {
-          delete productsMap[id];
-        }
-
-        const orderedProducts = bannerIds
-          .map(bid => productsMap[bid])
-          .filter(Boolean);
-
-        setBannerProducts(orderedProducts);
-
-        if (loadedCount < totalIds) {
-          loadedCount++;
-          if (loadedCount === totalIds) {
-            setBannerLoading(false);
-          }
-        }
-      }, (error) => {
-        console.error(`Error subscribing to banner product ${id}:`, error);
-        if (loadedCount < totalIds) {
-          loadedCount++;
-          if (loadedCount === totalIds) {
-            setBannerLoading(false);
-          }
-        }
-      });
-      unsubscribes.push(unsub);
-    });
-
-    const timeoutId = setTimeout(() => {
-      setBannerLoading(false);
-    }, 5000);
-
-    return () => {
-      clearTimeout(timeoutId);
-      unsubscribes.forEach(unsub => unsub());
-    };
-  }, [promoSettings?.bannerProductIds]);
-
-  // Real-time listener for featured products (New Arrivals)
-  useEffect(() => {
-    setFeaturedLoading(true);
-    let fallbackUnsub = null;
-
-    const q = query(
-      collection(db, 'products'),
-      orderBy('createdAt', 'desc'),
-      limit(8)
-    );
-
-    const unsub = onSnapshot(q, (snapshot) => {
-      if (snapshot.empty) {
-        const fallbackQ = query(collection(db, 'products'), limit(8));
-        fallbackUnsub = onSnapshot(fallbackQ, (fallbackSnapshot) => {
-          const productsList = fallbackSnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
-          setFeaturedProducts(productsList);
-          setFeaturedLoading(false);
-        });
-      } else {
-        const productsList = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
-        setFeaturedProducts(productsList);
-        setFeaturedLoading(false);
-      }
-    }, (error) => {
-      console.error("Error with primary featured products subscription:", error);
-      setFeaturedLoading(false);
-    });
-
-    return () => {
-      unsub();
-      if (fallbackUnsub) {
-        fallbackUnsub();
-      }
-    };
-  }, []);
+  // Fetch featured products (New Arrivals - cached)
+  const { data: featuredProducts = [], isLoading: featuredLoading } = useQuery({
+    queryKey: ['featuredProducts'],
+    queryFn: async () => {
+      return await getFeaturedProducts(8);
+    },
+    staleTime: 1000 * 60 * 5 // 5 minutes cache
+  });
 
   const products = featuredProducts;
   const loading = featuredLoading;
 
-  // Fetch product details for ALL active offers in real-time
-  const [offerProductsMap, setOfferProductsMap] = useState({});
+  const activeOffers = promoSettings?.activeOffers || [];
+  const activeOffersKey = JSON.stringify(activeOffers.map(o => ({ id: o.id, productId: o.productId })));
 
-  useEffect(() => {
-    const activeOffers = promoSettings?.activeOffers || [];
-    if (activeOffers.length === 0) {
-      setOfferProductsMap({});
-      return;
-    }
-
-    const unsubscribes = [];
-    const map = {};
-
-    activeOffers.forEach((offer) => {
-      if (!offer.productId) return;
-      const ref = doc(db, 'products', offer.productId);
-      const unsub = onSnapshot(ref, (snap) => {
-        if (snap.exists()) {
-          map[offer.id] = { id: snap.id, ...snap.data() };
-        } else {
-          delete map[offer.id];
-        }
-        setOfferProductsMap({ ...map });
-      }, (err) => {
-        console.error('Error fetching offer product:', offer.productId, err);
-      });
-      unsubscribes.push(unsub);
-    });
-
-    return () => unsubscribes.forEach(u => u());
-  }, [promoSettings?.activeOffers]);
+  // Fetch product details for ALL active offers (cached)
+  const { data: offerProductsMap = {} } = useQuery({
+    queryKey: ['offerProducts', activeOffersKey],
+    queryFn: async () => {
+      if (activeOffers.length === 0) return {};
+      const map = {};
+      await Promise.all(
+        activeOffers.map(async (offer) => {
+          if (!offer.productId) return;
+          const ref = doc(db, 'products', offer.productId);
+          const snap = await getDoc(ref);
+          if (snap.exists()) {
+            map[offer.id] = { id: snap.id, ...snap.data() };
+          }
+        })
+      );
+      return map;
+    },
+    enabled: activeOffers.length > 0,
+    staleTime: 1000 * 60 * 5 // 5 minutes cache
+  });
 
   useEffect(() => {
     setCurrentIndex(0);
@@ -504,8 +452,8 @@ const Home = () => {
   // ONLY look in activeOffers — PromoContext already filters: isActive=true AND expiryDateTime > now.
   // Never fall back to expired offers from allOffers.
   const currentProduct = bannerProducts[safeIndex];
-  const activeOffers = promoSettings?.activeOffers || [];
-  const offer = activeOffers.find(o => o.productId === currentProduct?.id) || null;
+  const offer = (promoSettings?.activeOffers || []).find(o => o.productId === currentProduct?.id) || null;
+
 
   // Hero banner dual-price computation (never overwrites DB price)
   const bannerOrigPrice  = Number(currentProduct?.originalPrice ?? currentProduct?.price ?? 0);
@@ -529,20 +477,52 @@ const Home = () => {
         <meta name="description" content="Shop luxury sarees, kids dresses, wheat grains, premium toys, gadgets, and luxury gifts at SMKP Traders. Exceptional quality guaranteed." />
       </Helmet>
 
-      {/* ── 1. Flipkart-style Top Categories Bar ── */}
+      {/* ── 1. Dynamic Top Categories Bar ── */}
       <div className="w-full max-w-full bg-slate-950/60 border-b border-yellow-900/10 py-4 px-4 overflow-x-auto scrollbar-none flex flex-nowrap gap-6 sm:gap-8 items-center justify-start md:justify-center select-none touch-pan-x">
-        {categories.map((cat) => (
-          <Link
-            key={cat.id}
-            to={cat.comingSoon ? '#' : `/products?category=${cat.name.toLowerCase()}`}
-            className={`flex flex-col items-center gap-1.5 flex-shrink-0 transition-transform hover:scale-105 active:scale-95 ${cat.comingSoon ? 'cursor-not-allowed opacity-55' : ''}`}
-          >
-            <div className="w-14 h-14 rounded-full border-2 border-yellow-900/20 overflow-hidden bg-black p-0.5 group-hover:border-yellow-500 transition-colors">
-              <img src={cat.image} alt={cat.name} className="w-full h-full object-cover rounded-full" />
+        {catLoading ? (
+          // Skeleton loaders
+          [...Array(6)].map((_, i) => (
+            <div key={`cat-skeleton-${i}`} className="flex flex-col items-center gap-1.5 flex-shrink-0 animate-pulse">
+              <div className="w-14 h-14 rounded-full bg-gray-800 border-2 border-yellow-900/10" />
+              <div className="h-2 w-10 rounded bg-gray-800" />
             </div>
-            <span className="text-[9px] font-black uppercase text-gray-400 tracking-wider">{cat.name}</span>
-          </Link>
-        ))}
+          ))
+        ) : categories.length === 0 ? (
+          <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest w-full text-center py-2">
+            No categories available
+          </p>
+        ) : (
+          categories.map((cat) => (
+            <Link
+              key={cat.id}
+              to={`/products?category=${cat.slug}`}
+              className="flex flex-col items-center gap-1.5 flex-shrink-0 group transition-transform hover:scale-105 active:scale-95"
+            >
+              <div className="relative w-14 h-14 rounded-full border-2 border-yellow-900/20 group-hover:border-yellow-500 overflow-hidden bg-black p-0.5 transition-all duration-300 group-hover:shadow-[0_0_16px_rgba(234,179,8,0.35)]">
+                {cat.image ? (
+                  <img
+                    src={cat.image}
+                    alt={cat.name}
+                    className="w-full h-full object-cover rounded-full"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-full h-full rounded-full bg-gray-800 flex items-center justify-center">
+                    <span className="text-yellow-500/40 text-lg font-black">{cat.name?.[0]}</span>
+                  </div>
+                )}
+              </div>
+              <span className="text-[9px] font-black uppercase text-gray-400 group-hover:text-yellow-400 tracking-wider transition-colors">
+                {cat.name}
+              </span>
+              {productCounts[cat.id] !== undefined && (
+                <span className="text-[7px] font-bold text-yellow-600/60 -mt-1">
+                  {productCounts[cat.id]} items
+                </span>
+              )}
+            </Link>
+          ))
+        )}
       </div>
 
       {/* ── 2. Hero Banner Carousel ── */}
@@ -679,7 +659,7 @@ const Home = () => {
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
               {bannerProducts.map((_, idx) => (
                 <button
-                  key={idx}
+                  key={`slide-dot-${idx}`}
                   onClick={() => setCurrentIndex(idx)}
                   className={`h-1.5 rounded-full transition-all duration-300 ${safeIndex === idx ? 'w-7 bg-yellow-500' : 'w-1.5 bg-gray-700'}`}
                   aria-label={`Slide ${idx + 1}`}
@@ -729,10 +709,11 @@ const Home = () => {
                 >
                   {/* Product image */}
                   <div className="relative h-[100px] sm:h-[140px] lg:h-[160px] overflow-hidden bg-black flex-shrink-0">
-                    <img
-                      src={getHDImage(prod.image)}
+                    <LazyImage
+                      src={getOptimizedImage(prod.image, 'card')}
                       alt={prod.name}
                       className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                      wrapperClass="w-full h-full"
                     />
                     {/* Discount badge */}
                     <div className="absolute top-1.5 left-1.5 sm:top-3 sm:left-3 bg-yellow-500 text-black text-[6px] sm:text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-lg">
@@ -792,13 +773,13 @@ const Home = () => {
         {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="animate-pulse bg-gray-900/50 h-[260px] rounded-2xl border border-white/5" />
+              <div key={`new-arrival-skeleton-${i}`} className="animate-pulse bg-gray-900/50 h-[260px] rounded-2xl border border-white/5" />
             ))}
           </div>
         ) : products && products.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {products.map((p, i) => (
-              <ProductCard key={p.id} product={p} delay={i * 50} promoSettings={promoSettings} />
+              <ProductCard key={p.id || `new-arrival-${i}`} product={p} delay={i * 50} promoSettings={promoSettings} />
             ))}
           </div>
         ) : (
@@ -828,7 +809,7 @@ const Home = () => {
       {/* ── FOOTER ──────────────────────────────────────────────── */}
       <footer className="bg-black py-32 border-t border-yellow-900/10">
         <div className="max-w-7xl mx-auto px-6 text-center">
-          <img src={logo} alt="Brand" className="h-20 w-auto mx-auto mb-10 opacity-40 grayscale" />
+          <img src="/logo.png" alt="Brand" className="h-20 w-auto mx-auto mb-10 opacity-40 grayscale" />
           <p className="text-gray-600 text-[10px] font-black uppercase tracking-[0.8em]">
             SMKP TRADERS — Est. {new Date().getFullYear()}
           </p>

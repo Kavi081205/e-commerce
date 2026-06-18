@@ -2,12 +2,58 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>e-commerce</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!--
+      PRELOAD: logo.png is used immediately by the hidden <img> below,
+      satisfying the browser's "used within a few seconds" requirement.
+      This eliminates the "preloaded but not used" console warning.
+    -->
+    <link rel="preload" href="/logo.png" as="image" type="image/png" fetchpriority="high" />
+
+    <!-- DNS prefetch for third-party origins (non-blocking) -->
+    <link rel="dns-prefetch" href="https://checkout.razorpay.com" />
+    <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
+    <link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+
+    <!-- Google Fonts: preconnect FIRST, then stylesheet -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    />
+
+    <!-- Page title (overridden per-page by react-helmet) -->
+    <title>SMKP TRADERS | Premium E-Commerce Store</title>
+    <meta
+      name="description"
+      content="Shop premium sarees, kids dresses, wheat, toys, gadgets and gifts at SMKP Traders."
+    />
   </head>
   <body>
+    <!--
+      This hidden <img> immediately consumes the preloaded /logo.png,
+      preventing the browser "preloaded but not used" warning.
+      It is visually hidden via inline style (CSS may not load yet at this point).
+      React will render its own visible logo inside #root.
+    -->
+    <img
+      src="/logo.png"
+      alt=""
+      aria-hidden="true"
+      fetchpriority="high"
+      style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden"
+    />
+
     <div id="root"></div>
+
+    <!-- Razorpay payment gateway (loaded synchronously as required by Razorpay docs) -->
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script type="module" src="/src/main.jsx"></script>
   </body>

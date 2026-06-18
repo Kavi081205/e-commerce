@@ -1,33 +1,38 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import ErrorBoundary from './ErrorBoundary';
 import { Routes, Route, Navigate, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Package,
-  ShoppingCart, LogOut, Menu, X, Zap, IndianRupee, Tag
+  ShoppingCart, LogOut, Menu, X, Zap, IndianRupee, Tag, Layers, Settings as SettingsIcon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import logo from '../assets/logo.png';
 import { PageSkeleton } from './Skeleton';
+import { lazyWithRetry } from '../utils/lazyWithRetry';
 
 // Admin Sub-pages (lazy loaded)
-const Dashboard = lazy(() => import('../pages/admin/Dashboard'));
-const ProductsManage = lazy(() => import('../pages/admin/ProductsManage'));
-const AddProduct = lazy(() => import('../pages/admin/AddProduct'));
-const EditProduct = lazy(() => import('../pages/admin/EditProduct'));
-const OrdersManage = lazy(() => import('../pages/admin/OrdersManage'));
-const InvoicesManage = lazy(() => import('../pages/admin/InvoicesManage'));
-const Promotions = lazy(() => import('../pages/admin/Promotions'));
-const Expenses = lazy(() => import('../pages/admin/Expenses'));
-const AdvancedDashboard = lazy(() => import('../pages/admin/AdvancedDashboard'));
-const SetupAdmin = lazy(() => import('../pages/admin/SetupAdmin'));
-const CouponsManage = lazy(() => import('../pages/admin/CouponsManage'));
+const Dashboard = lazyWithRetry(() => import('../pages/admin/Dashboard'));
+const ProductsManage = lazyWithRetry(() => import('../pages/admin/ProductsManage'));
+const AddProduct = lazyWithRetry(() => import('../pages/admin/AddProduct'));
+const EditProduct = lazyWithRetry(() => import('../pages/admin/EditProduct'));
+const OrdersManage = lazyWithRetry(() => import('../pages/admin/OrdersManage'));
+const InvoicesManage = lazyWithRetry(() => import('../pages/admin/InvoicesManage'));
+const Promotions = lazyWithRetry(() => import('../pages/admin/Promotions'));
+const Expenses = lazyWithRetry(() => import('../pages/admin/Expenses'));
+const AdvancedDashboard = lazyWithRetry(() => import('../pages/admin/AdvancedDashboard'));
+const SetupAdmin = lazyWithRetry(() => import('../pages/admin/SetupAdmin'));
+const CouponsManage = lazyWithRetry(() => import('../pages/admin/CouponsManage'));
+const CategoryManage = lazyWithRetry(() => import('../pages/admin/CategoryManage'));
+const Settings = lazyWithRetry(() => import('../pages/admin/Settings'));
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, exact: true },
   { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
   { name: 'Products', href: '/admin/products', icon: Package },
+  { name: 'Categories', href: '/admin/categories', icon: Layers },
   { name: 'Coupons', href: '/admin/coupons', icon: Tag },
   { name: 'Promotions', href: '/admin/promotions', icon: Zap },
   { name: 'Expenses', href: '/admin/expenses', icon: IndianRupee },
+  { name: 'Settings', href: '/admin/settings', icon: SettingsIcon },
 ];
 
 const AdminLayout = () => {
@@ -86,7 +91,7 @@ const AdminLayout = () => {
         <div className="flex items-center justify-between h-20 px-6 border-b border-yellow-900/20 shrink-0">
           <div className="flex items-center gap-3">
             {/* ✅ Descriptive alt text */}
-            <img src={logo} alt="SMKP Traders" className="w-8 h-8 object-contain rounded-lg" />
+            <img src="/logo.png" alt="SMKP Traders" className="w-8 h-8 object-contain rounded-lg" />
             <span className="text-lg font-black tracking-widest uppercase">SMKP Admin</span>
           </div>
           {/* ✅ type="button" — prevents accidental form submission */}
@@ -173,23 +178,27 @@ const AdminLayout = () => {
         </header>
 
         {/* Page Content */}
-        <main className="flex-grow overflow-x-hidden overflow-y-auto bg-slate-950/50 p-6 sm:p-8">
-          <Suspense fallback={<PageSkeleton />}>
-            <Routes>
-              <Route index element={<Dashboard />} />
-              <Route path="products" element={<ProductsManage />} />
-              <Route path="add-product" element={<AddProduct />} />
-              <Route path="edit-product/:id" element={<EditProduct />} />
-              <Route path="orders" element={<OrdersManage />} />
-              <Route path="invoices" element={<InvoicesManage />} />
-              <Route path="promotions" element={<Promotions />} />
-              <Route path="expenses" element={<Expenses />} />
-              <Route path="coupons" element={<CouponsManage />} />
-              <Route path="advanced-dashboard" element={<AdvancedDashboard />} />
-              <Route path="setup" element={<SetupAdmin />} />
-              <Route path="*" element={<Navigate to="/admin" replace />} />
-            </Routes>
-          </Suspense>
+        <main className="flex-grow overflow-x-hidden overflow-y-auto bg-slate-950/50 p-4 sm:p-6 lg:p-8">
+          <ErrorBoundary>
+            <Suspense fallback={<PageSkeleton />}>
+              <Routes>
+                <Route index element={<Dashboard />} />
+                <Route path="products" element={<ProductsManage />} />
+                <Route path="add-product" element={<AddProduct />} />
+                <Route path="edit-product/:id" element={<EditProduct />} />
+                <Route path="orders" element={<OrdersManage />} />
+                <Route path="invoices" element={<InvoicesManage />} />
+                <Route path="promotions" element={<Promotions />} />
+                <Route path="expenses" element={<Expenses />} />
+                <Route path="categories" element={<CategoryManage />} />
+                <Route path="coupons" element={<CouponsManage />} />
+                <Route path="advanced-dashboard" element={<AdvancedDashboard />} />
+                <Route path="setup" element={<SetupAdmin />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="*" element={<Navigate to="/admin" replace />} />
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
     </div>

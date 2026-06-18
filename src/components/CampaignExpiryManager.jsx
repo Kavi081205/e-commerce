@@ -154,7 +154,7 @@ const CampaignExpiryManager = ({ initialDate, onDateChange, id = 'campaign-expir
               { label: 'Min',  value: timeLeft.mins },
               { label: 'Sec',  value: timeLeft.secs }
             ].map((unit, idx) => (
-              <div key={idx} className="flex flex-col items-center">
+              <div key={unit.label} className="flex flex-col items-center">
                 <div className={`w-full aspect-square rounded-2xl flex items-center justify-center text-xl font-black shadow-inner border ${
                   timeLeft.expired
                     ? 'bg-gray-800 border-gray-700 text-gray-500'

@@ -16,5 +16,11 @@ export default defineConfig({
   },
   server: {
     cors: true
+  },
+  build: {
+    modulePreload: {
+      polyfill: false,
+      resolveDependencies: () => []
+    }
   }
 })
