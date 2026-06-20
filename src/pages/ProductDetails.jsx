@@ -615,13 +615,31 @@ const ProductDetails = () => {
   // All YouTube/Vimeo/iframe logic has been removed.
   // Videos are now Cloudinary MP4s — played natively via HTML5 <video>.
 
+  const getMp4VideoUrl = (url) => {
+    if (!url || typeof url !== 'string') return url;
+    if (url.includes('cloudinary.com') && url.includes('/video/upload/')) {
+      const [baseUrl, queryStr] = url.split('?');
+      const lastDotIdx = baseUrl.lastIndexOf('.');
+      const lastSlashIdx = baseUrl.lastIndexOf('/');
+      if (lastDotIdx > lastSlashIdx) {
+        const ext = baseUrl.slice(lastDotIdx).toLowerCase();
+        if (ext !== '.mp4') {
+          return baseUrl.slice(0, lastDotIdx) + '.mp4' + (queryStr ? `?${queryStr}` : '');
+        }
+      }
+    }
+    return url;
+  };
+
   const openVideoModal = (url) => {
     if (!url) {
       setVideoError('No video available for this product.');
       setVideoModalOpen(true);
       return;
     }
-    setModalVideoUrl(url);
+    const mp4Url = getMp4VideoUrl(url);
+    console.log("Opening Video Modal with URL (MP4 requested):", mp4Url);
+    setModalVideoUrl(mp4Url);
     setVideoError(null);
     setVideoModalOpen(true);
   };
@@ -634,20 +652,21 @@ const ProductDetails = () => {
 
   const getMediaItems = () => {
     if (!product) return [];
+    const videoUrl = product.video ? getMp4VideoUrl(product.video) : '';
     if (selectedColor && selectedColor.images && Array.isArray(selectedColor.images) && selectedColor.images.length > 0) {
       return [
         ...selectedColor.images.map(url => ({ type: 'image', url })),
-        ...(product.video ? [{ type: 'video', url: product.video }] : [])
+        ...(videoUrl ? [{ type: 'video', url: videoUrl }] : [])
       ];
     }
     return product.images && Array.isArray(product.images) && product.images.length > 0
       ? [
         ...product.images.map(url => ({ type: 'image', url })),
-        ...(product.video ? [{ type: 'video', url: product.video }] : [])
+        ...(videoUrl ? [{ type: 'video', url: videoUrl }] : [])
       ]
       : [
         { type: 'image', url: product.image || FALLBACK_IMAGE },
-        ...(product.video ? [{ type: 'video', url: product.video }] : [])
+        ...(videoUrl ? [{ type: 'video', url: videoUrl }] : [])
       ];
   };
 
@@ -1606,12 +1625,11 @@ const ProductDetails = () => {
                   autoPlay
                   playsInline
                   preload="metadata"
+                  crossOrigin="anonymous"
                   className="w-full h-full object-contain rounded-3xl"
                   onError={() => setVideoError('Video playback failed. The format may not be supported by your browser.')}
                 >
                   <source src={modalVideoUrl} type="video/mp4" />
-                  <source src={modalVideoUrl} type="video/webm" />
-                  <source src={modalVideoUrl} type="video/quicktime" />
                   Your browser does not support HTML5 video.
                 </video>
               ) : null}

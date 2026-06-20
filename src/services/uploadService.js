@@ -284,9 +284,21 @@ export const uploadVideo = async (file, options = {}) => {
     }
 
     const data = await res.json();
-    console.log("Video Upload Success! secure_url:", data.secure_url);
+    let secureUrl = data.secure_url;
+    if (secureUrl && typeof secureUrl === 'string') {
+      const [baseUrl, queryStr] = secureUrl.split('?');
+      const lastDotIdx = baseUrl.lastIndexOf('.');
+      const lastSlashIdx = baseUrl.lastIndexOf('/');
+      if (lastDotIdx > lastSlashIdx) {
+        const ext = baseUrl.slice(lastDotIdx).toLowerCase();
+        if (ext !== '.mp4') {
+          secureUrl = baseUrl.slice(0, lastDotIdx) + '.mp4' + (queryStr ? `?${queryStr}` : '');
+        }
+      }
+    }
+    console.log("Video Upload Success! secure_url (MP4 requested):", secureUrl);
     console.groupEnd();
-    return data.secure_url;
+    return secureUrl;
 
   } catch (err) {
     clearTimeout(timeoutId);
