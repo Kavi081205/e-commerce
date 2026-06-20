@@ -193,7 +193,10 @@ const ProductDetails = () => {
 
   useEffect(() => {
     if (videoModalOpen && videoRef.current) {
-      console.log('Video Modal Opened: calling load() and play() on ref');
+      console.log('Video Modal Opened: calling load() and play() on ref via useEffect');
+      if (videoRef.current.src !== modalVideoUrl) {
+        videoRef.current.src = modalVideoUrl;
+      }
       videoRef.current.load();
       videoRef.current.play().catch((err) => {
         console.warn('Video playback autoplay rejected/blocked:', err);
@@ -653,9 +656,21 @@ const ProductDetails = () => {
     setModalVideoUrl(mp4Url);
     setVideoError(false);
     setVideoModalOpen(true);
+
+    if (videoRef.current) {
+      videoRef.current.src = mp4Url;
+      videoRef.current.load();
+      videoRef.current.play().catch((err) => {
+        console.warn('Sync play() rejected/blocked on gesture:', err);
+      });
+    }
   };
 
   const closeVideoModal = () => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.src = '';
+    }
     setVideoModalOpen(false);
     setModalVideoUrl('');
     setVideoError(false);
@@ -1591,87 +1606,84 @@ const ProductDetails = () => {
       </div>
 
       {/* ── Video Modal ──────────────────────────────────────────────── */}
-      {videoModalOpen && (
+      <div
+        className={`fixed inset-0 z-[999] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 transition-all duration-300 ${
+          videoModalOpen ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'
+        }`}
+        onClick={closeVideoModal}
+      >
         <div
-          className="fixed inset-0 z-[999] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
-          onClick={closeVideoModal}
+          className="relative w-full max-w-4xl max-h-[90vh] rounded-3xl bg-black overflow-hidden border border-white/10 shadow-2xl flex items-center justify-center"
+          onClick={(e) => e.stopPropagation()}
         >
-          <div
-            className="relative w-full max-w-4xl max-h-[90vh] rounded-3xl bg-black overflow-hidden border border-white/10 shadow-2xl flex items-center justify-center"
-            onClick={(e) => e.stopPropagation()}
+          {/* Close Button */}
+          <button
+            onClick={closeVideoModal}
+            className="absolute top-4 right-4 z-50 p-2.5 rounded-full bg-black/40 hover:bg-black/80 text-white/60 hover:text-white border border-white/5 hover:border-white/20 transition-all"
           >
-            {/* Close Button */}
-            <button
-              onClick={closeVideoModal}
-              className="absolute top-4 right-4 z-50 p-2.5 rounded-full bg-black/40 hover:bg-black/80 text-white/60 hover:text-white border border-white/5 hover:border-white/20 transition-all"
-            >
-              <X size={16} />
-            </button>
+            <X size={16} />
+          </button>
 
-            {modalVideoUrl && (
-              <video
-                ref={videoRef}
-                key={modalVideoUrl}
-                src={modalVideoUrl}
-                controls
-                autoPlay
-                playsInline
-                controlsList="nodownload"
-                preload="metadata"
-                disablePictureInPicture
-                webkit-playsinline="true"
-                muted={false}
-                loop={false}
-                className={`w-full max-h-[90vh] object-contain rounded-3xl ${videoError ? 'hidden' : 'block'}`}
-                onLoadedData={() => {
-                  console.log('Video Event: onLoadedData succeeded for URL:', modalVideoUrl);
-                  setVideoError(false);
-                }}
-                onCanPlay={() => {
-                  console.log('Video Event: onCanPlay succeeded for URL:', modalVideoUrl);
-                  setVideoError(false);
-                }}
-                onError={(e) => {
-                  const video = e.currentTarget;
-                  if (video.error) {
-                    console.log("HTML5 Video Error code:", video.error.code);
-                    console.log("MediaError object:", video.error);
-                    // Only trigger videoError state if the error is fatal (code 3/decode or 4/src_not_supported)
-                    if (video.error.code === 3 || video.error.code === 4) {
-                      setVideoError(true);
-                    }
-                  } else {
-                    console.warn("Video onError event fired without an active video.error object");
-                  }
-                }}
-              >
-                Your browser does not support HTML5 video.
-              </video>
-            )}
+          <video
+            ref={videoRef}
+            src={modalVideoUrl || undefined}
+            controls
+            playsInline
+            controlsList="nodownload"
+            preload="metadata"
+            disablePictureInPicture
+            webkit-playsinline="true"
+            webkitPlaysInline
+            muted={false}
+            loop={false}
+            className={`w-full max-h-[90vh] object-contain rounded-3xl ${(!modalVideoUrl || videoError) ? 'hidden' : 'block'}`}
+            onLoadedData={() => {
+              console.log('Video Event: onLoadedData succeeded for URL:', modalVideoUrl);
+              setVideoError(false);
+            }}
+            onCanPlay={() => {
+              console.log('Video Event: onCanPlay succeeded for URL:', modalVideoUrl);
+              setVideoError(false);
+            }}
+            onError={(e) => {
+              const video = e.currentTarget;
+              if (video.error) {
+                console.log("HTML5 Video Error code:", video.error.code);
+                console.log("MediaError object:", video.error);
+                // Only trigger videoError state if the error is fatal (code 3/decode or 4/src_not_supported)
+                if (video.error.code === 3 || video.error.code === 4) {
+                  setVideoError(true);
+                }
+              } else {
+                console.warn("Video onError event fired without an active video.error object");
+              }
+            }}
+          >
+            Your browser does not support HTML5 video.
+          </video>
 
-            {videoError && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-8 text-center gap-4 rounded-3xl z-10">
-                <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500">
-                  <AlertCircle size={22} />
-                </div>
-                <h3 className="text-white font-black text-xs uppercase tracking-widest">Unable to Play Video</h3>
-                <p className="text-gray-400 text-xs max-w-md leading-relaxed">
-                  Video playback failed. The format may not be supported by your browser.
-                </p>
-                <button
-                  onClick={closeVideoModal}
-                  className="mt-2 px-6 py-2.5 rounded-xl bg-white text-black font-black text-[9px] uppercase tracking-widest hover:bg-yellow-500 transition-all"
-                >
-                  Close Player
-                </button>
+          {videoError && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-8 text-center gap-4 rounded-3xl z-10">
+              <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500">
+                <AlertCircle size={22} />
               </div>
-            )}
-          </div>
-          <p className="absolute bottom-6 text-[10px] font-black uppercase tracking-[0.3em] text-white/30">
-            Click outside to close
-          </p>
+              <h3 className="text-white font-black text-xs uppercase tracking-widest">Unable to Play Video</h3>
+              <p className="text-gray-400 text-xs max-w-md leading-relaxed">
+                Video playback failed. The format may not be supported by your browser.
+              </p>
+              <button
+                onClick={closeVideoModal}
+                className="mt-2 px-6 py-2.5 rounded-xl bg-white text-black font-black text-[9px] uppercase tracking-widest hover:bg-yellow-500 transition-all"
+              >
+                Close Player
+              </button>
+            </div>
+          )}
         </div>
-      )}
+        <p className="absolute bottom-6 text-[10px] font-black uppercase tracking-[0.3em] text-white/30">
+          Click outside to close
+        </p>
+      </div>
     </div>
   );
 };
