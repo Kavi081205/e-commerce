@@ -581,8 +581,9 @@ const ProductDetails = () => {
 
   const getVideoMimeType = (url) => {
     if (!url) return 'video/mp4';
-    if (url.includes('.webm')) return 'video/webm';
-    if (url.includes('.ogg')) return 'video/ogg';
+    if (/\.webm(\?|$)/i.test(url)) return 'video/webm';
+    if (/\.ogg(\?|$)/i.test(url)) return 'video/ogg';
+    if (/\.mov(\?|$)/i.test(url)) return 'video/quicktime';
     return 'video/mp4';
   };
 
@@ -592,9 +593,20 @@ const ProductDetails = () => {
     if (ytId) return { type: 'youtube', id: ytId, embedUrl: `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0&mute=1&playsinline=1` };
     const vimId = getVimeoId(url);
     if (vimId) return { type: 'vimeo', id: vimId, embedUrl: `https://player.vimeo.com/video/${vimId}?autoplay=1&muted=1&playsinline=1` };
-    const isDirect = url.includes('.mp4') || url.includes('.webm') || url.includes('.ogg') || 
-                     url.includes('firebasestorage.googleapis.com') || 
-                     url.match(/\.mp4(?:\?|$)/i);
+    // Detect direct video file URLs broadly:
+    // - explicit extension (.mp4, .webm, .ogg, .mov)
+    // - Firebase Storage URLs (firebasestorage.googleapis.com)
+    // - Cloudinary video URLs
+    // - Any URL with a video MIME hint
+    const isDirect =
+      /\.mp4(\?|$)/i.test(url) ||
+      /\.webm(\?|$)/i.test(url) ||
+      /\.ogg(\?|$)/i.test(url) ||
+      /\.mov(\?|$)/i.test(url) ||
+      url.includes('firebasestorage.googleapis.com') ||
+      url.includes('storage.googleapis.com') ||
+      (url.includes('cloudinary.com') && url.includes('/video/')) ||
+      url.includes('video/upload');
     if (isDirect) return { type: 'direct', embedUrl: url };
     return null;
   };
@@ -610,16 +622,10 @@ const ProductDetails = () => {
     return `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
   };
 
-  const openVideoModal = async (url) => {
-    setVideoModalOpen(true);
-    setVideoLoading(true);
-    setVideoError(null);
-    setModalVideoUrl(url);
-
-    console.log('[Video Player] Loading video URL:', url);
-
+  const openVideoModal = (url) => {
     if (!url) {
       setVideoError('Video not available.');
+      setVideoModalOpen(true);
       setVideoLoading(false);
       return;
     }
@@ -627,36 +633,16 @@ const ProductDetails = () => {
     const info = getVideoType(url);
     if (!info) {
       setVideoError('Video not available (unsupported format).');
+      setVideoModalOpen(true);
       setVideoLoading(false);
       return;
     }
 
-    // For direct video links, perform a network pre-flight validation check
-    if (info.type === 'direct') {
-      try {
-        const controller = new AbortController();
-        const signal = controller.signal;
-        // Request first byte only to verify file availability and avoid downloading the entire file
-        const response = await fetch(url, { 
-          signal, 
-          headers: { 'Range': 'bytes=0-0' } 
-        });
-        controller.abort(); // Abort to prevent downloading remaining file bytes
-        
-        if (response.status === 403) {
-          setVideoError('Access denied: The video URL is forbidden (HTTP 403).');
-        } else if (response.status === 404) {
-          setVideoError('The video file was not found (HTTP 404).');
-        } else if (!response.ok && response.status !== 206) {
-          // Status 206 Partial Content is expected when using Range header
-          setVideoError(`Failed to load video (HTTP ${response.status}).`);
-        }
-      } catch (err) {
-        console.error('[Video Player] Pre-flight fetch error:', err);
-        setVideoError('The video could not be loaded due to a network error or CORS restrictions.');
-      }
-    }
+    console.log('[Video Player] Opening video:', url, '| type:', info.type);
+    setModalVideoUrl(url);
+    setVideoError(null);
     setVideoLoading(false);
+    setVideoModalOpen(true);
   };
 
   const closeVideoModal = () => {
@@ -1677,20 +1663,20 @@ const ProductDetails = () => {
                 } else if (info?.type === 'direct') {
                   return (
                     <video
-                      className="w-full h-full object-contain"
+                      key={info.embedUrl}
+                      style={{ width: '100%', height: 'auto', borderRadius: '16px', display: 'block', maxHeight: '80vh' }}
                       controls
                       autoPlay
-                      muted
-                      loop
                       playsInline
-                      webkit-playsinline="true"
+                      preload="metadata"
                       onError={(e) => {
                         console.error('[Video Player] Direct video player source error:', e);
-                        setVideoError('The video playback failed. The format may not be supported or is corrupted.');
+                        setVideoError('The video playback failed. The format may not be supported by your browser.');
                       }}
                     >
                       <source src={info.embedUrl} type={getVideoMimeType(info.embedUrl)} />
-                      Your browser does not support the video tag.
+                      <source src={info.embedUrl} type="video/mp4" />
+                      Your browser does not support HTML5 video.
                     </video>
                   );
                 } else {
