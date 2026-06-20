@@ -32,8 +32,6 @@ const AdminLayout = lazyWithRetry(() => import('./components/AdminLayout'));
 
 import { WishlistProvider } from './context/WishlistContext';
 import { NotificationProvider } from './context/NotificationContext';
-import { PromoProvider } from './context/PromoContext';
-import { CartProvider } from './context/CartContext';
 
 
 
@@ -105,78 +103,74 @@ function App() {
   }, [loadingDone, authLoading, phase, showSplash]);
 
   return (
-    <PromoProvider>
-      <NotificationProvider>
-        <CartProvider>
-          <WishlistProvider>
-          {phase === 'loading' && <LoadingScreen onDone={handleLoadingDone} />}
-          {phase === 'splash' && <SplashScreen onDone={handleSplashDone} />}
+    <NotificationProvider>
+      <WishlistProvider>
+      {phase === 'loading' && <LoadingScreen onDone={handleLoadingDone} />}
+      {phase === 'splash' && <SplashScreen onDone={handleSplashDone} />}
 
-          {/* ✅ Routes only mount once the app is ready and auth state has resolved */}
-          {phase === 'ready' && !authLoading && (
-            <ErrorBoundary>
-              <Suspense fallback={<PageSkeleton />}>
-                <Routes>
-                  {/* Customer-facing store */}
-                  <Route element={<WebsiteLayout />}>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/products" element={<Products />} />
-                    {/* Dynamic product detail — /product/:id */}
-                    <Route path="/product/:id" element={<ProductDetails />} />
-                    {/* Redirect bare /product (no id) to the products listing */}
-                    <Route path="/product" element={<Navigate to="/products" replace />} />
-                    <Route path="/cart" element={<Cart />} />
-                    <Route path="/thank-you" element={<ThankYou />} />
-                    <Route path="/order-confirmation" element={<OrderConfirmation />} />
-                    <Route path="/login" element={<Navigate to="/" replace />} />
-                    <Route path="/checkout" element={<Checkout />} />
-                    <Route path="/profile" element={<Navigate to="/" replace />} />
-                    <Route path="/wishlist" element={<Wishlist />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/my-orders" element={<MyOrders />} />
-                    <Route path="/my-complaints" element={<MyComplaints />} />
-                    {/* 404 fallback — renders inside the store layout (keeps Navbar/Footer) */}
-                    <Route path="*" element={<NotFound />} />
-                  </Route>
+      {/* ✅ Routes only mount once the app is ready and auth state has resolved */}
+      {phase === 'ready' && !authLoading && (
+        <ErrorBoundary>
+          <Suspense fallback={<PageSkeleton />}>
+            <Routes>
+              {/* Customer-facing store */}
+              <Route element={<WebsiteLayout />}>
+                <Route path="/" element={<Home />} />
+                <Route path="/products" element={<Products />} />
+                {/* Dynamic product detail — /product/:id */}
+                <Route path="/product/:id" element={<ProductDetails />} />
+                {/* Redirect bare /product (no id) to the products listing */}
+                <Route path="/product" element={<Navigate to="/products" replace />} />
+                <Route path="/cart" element={<Cart />} />
+                <Route path="/thank-you" element={<ThankYou />} />
+                <Route path="/order-confirmation" element={<OrderConfirmation />} />
+                <Route path="/login" element={<Navigate to="/" replace />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/profile" element={<Navigate to="/" replace />} />
+                <Route path="/wishlist" element={<Wishlist />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/my-orders" element={<MyOrders />} />
+                <Route path="/my-complaints" element={<MyComplaints />} />
+                {/* 404 fallback — renders inside the store layout (keeps Navbar/Footer) */}
+                <Route path="*" element={<NotFound />} />
+              </Route>
 
-                  {/* Admin login — public route.
-                      Redirects already-authenticated admins directly to the dashboard.
-                      Note: AuthContext blocks all rendering until loading=false, so
-                      the loading guard here is unnecessary. */}
-                  <Route
-                    path="/admin-login"
-                    element={<AdminLogin />}
-                  />
+              {/* Admin login — public route.
+                  Redirects already-authenticated admins directly to the dashboard.
+                  Note: AuthContext blocks all rendering until loading=false, so
+                  the loading guard here is unnecessary. */}
+              <Route
+                path="/admin-login"
+                element={<AdminLogin />}
+              />
 
-                  {/* Production admin-subdomain (admin.smkptraders.com):
-                      Root "/" redirects straight to the admin panel.             */}
-                  {IS_ADMIN_DOMAIN && (
-                    <Route
-                      path="/"
-                      element={<Navigate to="/admin-login" replace />}
-                    />
-                  )}
+              {/* Production admin-subdomain (admin.smkptraders.com):
+                  Root "/" redirects straight to the admin panel.             */}
+              {IS_ADMIN_DOMAIN && (
+                <Route
+                  path="/"
+                  element={<Navigate to="/admin-login" replace />}
+                />
+              )}
 
-                  {/* Admin dashboard (protected) */}
-                  <Route
-                    path="/admin/*"
-                    element={
-                      <AdminRoute>
-                        <AdminLayout />
-                      </AdminRoute>
-                    }
-                  />
+              {/* Admin dashboard (protected) */}
+              <Route
+                path="/admin/*"
+                element={
+                  <AdminRoute>
+                    <AdminLayout />
+                  </AdminRoute>
+                }
+              />
 
-                  {/* Alias for /admin dashboard */}
-                  <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
-                </Routes>
-              </Suspense>
-            </ErrorBoundary>
-          )}
-          </WishlistProvider>
-        </CartProvider>
-      </NotificationProvider>
-    </PromoProvider>
+              {/* Alias for /admin dashboard */}
+              <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
+      )}
+      </WishlistProvider>
+    </NotificationProvider>
   );
 }
 

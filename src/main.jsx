@@ -3,6 +3,8 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './context/AuthContext';
+import { PromoProvider } from './context/PromoContext';
+import { CartProvider } from './context/CartContext';
 import './index.css';
 import App from './App.jsx';
 import FirebaseStatusBanner from './components/FirebaseStatusBanner.jsx';
@@ -113,9 +115,13 @@ createRoot(rootElement).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          {/* Global Firebase quota recovery banner */}
-          <FirebaseStatusBanner />
-          <App />
+          <PromoProvider>
+            <CartProvider>
+              {/* Global Firebase quota recovery banner */}
+              <FirebaseStatusBanner />
+              <App />
+            </CartProvider>
+          </PromoProvider>
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
