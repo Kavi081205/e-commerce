@@ -92,9 +92,11 @@ export default defineConfig({
   },
   server: {
     cors: true,
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups'
-    }
+    // NOTE: COOP header removed — it caused Samsung Internet and Android Chrome
+    // to treat embedded YouTube iframes as cross-origin threats and block them
+    // with "This content is blocked" errors. COOP is only required for
+    // SharedArrayBuffer usage which this app does not use.
+    headers: {}
   },
   build: {
     modulePreload: {

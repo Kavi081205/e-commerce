@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { ShoppingCart, Check, Loader2, AlertCircle, Star, Play, X, Minus, Plus } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,6 +29,7 @@ import {
 } from 'firebase/firestore';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=800&q=80';
+const STANDARD_SIZES = ['S', 'M', 'L', 'XL', 'XXL', '3XL'];
 
 const formatDate = (timestamp) => {
   if (!timestamp) return '';
@@ -94,8 +96,13 @@ const getColorEmoji = (name) => {
 const ProductDetails = () => {
   const { id } = useParams();
   const productId = id;
-  const currentProductId = id;
-  const currentUser = null;
+
+  // NOTE: previously this was hardcoded to `null`, which silently broke the
+  // entire review/eligibility system (no logged-in user could ever submit
+  // or edit a review). Wired in the real auth context here with a safe guest fallback.
+  const auth = useAuth ? useAuth() : null;
+  const currentUser = auth?.currentUser ?? null;
+
   const { showToast } = useNotification();
   const toast = {
     success: (msg) => showToast(msg, 'success'),
@@ -118,6 +125,8 @@ const ProductDetails = () => {
   const [matchingOrder, setMatchingOrder] = useState(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     setProduct(null); // Reset product state immediately when id changes to update immediately when navigating
     setLoading(true);
     setIsError(false);
@@ -127,6 +136,8 @@ const ProductDetails = () => {
       try {
         const productRef = doc(db, 'products', id);
         const docSnap = await getDoc(productRef);
+        if (!isMounted) return;
+
         if (docSnap.exists()) {
           const data = docSnap.data();
           if (
@@ -149,15 +160,20 @@ const ProductDetails = () => {
           setError(new Error("Product not found"));
         }
       } catch (err) {
+        if (!isMounted) return;
         console.error("Error getting product details:", err);
         setIsError(true);
         setError(err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     fetchProduct();
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
   const [added, setAdded] = useState(false);
@@ -168,7 +184,9 @@ const ProductDetails = () => {
   const [modalVideoUrl, setModalVideoUrl] = useState('');
   const [videoLoading, setVideoLoading] = useState(false);
   const [videoError, setVideoError] = useState(null);
-  const isVerticalVideo = modalVideoUrl && (modalVideoUrl.includes('/shorts/') || modalVideoUrl.includes('vertical'));
+  // isVerticalVideo: drives the 9:16 portrait container for Shorts
+  const isVerticalVideo = modalVideoUrl &&
+    (/\/shorts\//i.test(modalVideoUrl) || modalVideoUrl.includes('vertical'));
 
   const [selectedColor, setSelectedColor] = useState(null);
   const [selectedSize, setSelectedSize] = useState('');
@@ -245,9 +263,6 @@ const ProductDetails = () => {
     setQuantity(1);
   };
 
-  // Legacy alias kept for any inline calls that still use handleColorChange
-  const handleColorChange = handleVariantChange;
-
   const getSelectedVariantStock = () => {
     if (!product) return 0;
     if (!product.variants || product.variants.length === 0) {
@@ -284,10 +299,14 @@ const ProductDetails = () => {
 
   // ── review eligibility check ─────────────────────────────────────────────
   useEffect(() => {
+    let isMounted = true;
+
     const checkEligibility = async () => {
       if (!currentUser?.uid) {
-        setIsEligible(false);
-        setEligibilityLoading(false);
+        if (isMounted) {
+          setIsEligible(false);
+          setEligibilityLoading(false);
+        }
         return;
       }
       setEligibilityLoading(true);
@@ -298,6 +317,8 @@ const ProductDetails = () => {
           where('status', '==', 'delivered')
         );
         const snapshot = await getDocs(q);
+        if (!isMounted) return;
+
         let eligible = false;
         let foundOrderId = null;
         for (const docSnap of snapshot.docs) {
@@ -315,14 +336,19 @@ const ProductDetails = () => {
         setIsEligible(eligible);
         setMatchingOrder(foundOrderId);
       } catch (err) {
+        if (!isMounted) return;
         console.error("Error checking review eligibility:", err);
         setIsEligible(false);
       } finally {
-        setEligibilityLoading(false);
+        if (isMounted) setEligibilityLoading(false);
       }
     };
 
     checkEligibility();
+
+    return () => {
+      isMounted = false;
+    };
   }, [currentUser?.uid, productId]);
 
   // ── real-time reviews ───────────────────────────────────────────────────
@@ -336,12 +362,16 @@ const ProductDetails = () => {
   }, [product?.id]);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchReviews = async () => {
       try {
         const q = query(
           collection(db, 'products', productId, 'reviews')
         );
         const snapshot = await getDocs(q);
+        if (!isMounted) return;
+
         const reviewsList = snapshot.docs
           .map(d => ({ id: d.id, ...d.data() }));
         reviewsList.sort((a, b) => {
@@ -351,11 +381,16 @@ const ProductDetails = () => {
         });
         setReviews(reviewsList);
       } catch (err) {
+        if (!isMounted) return;
         console.error("Error getting reviews:", err);
       }
     };
 
     fetchReviews();
+
+    return () => {
+      isMounted = false;
+    };
   }, [productId]);
 
   // ── real-time related products ──────────────────────────────────────────
@@ -367,6 +402,8 @@ const ProductDetails = () => {
       return;
     }
 
+    let isMounted = true;
+
     const fetchRelated = async () => {
       try {
         const q = query(
@@ -375,6 +412,8 @@ const ProductDetails = () => {
           limit(10) // fetch more to account for filters
         );
         const snapshot = await getDocs(q);
+        if (!isMounted) return;
+
         const list = snapshot.docs
           .map(d => ({ id: d.id, ...d.data() }))
           .filter(p => {
@@ -389,11 +428,16 @@ const ProductDetails = () => {
           .slice(0, 4);
         setRelatedProducts(list);
       } catch (err) {
+        if (!isMounted) return;
         console.error("Error getting related products:", err);
       }
     };
 
     fetchRelated();
+
+    return () => {
+      isMounted = false;
+    };
   }, [product?.category, id]);
 
   // ── Analytics: fire view_item once when product data loads ────────────────
@@ -482,7 +526,8 @@ const ProductDetails = () => {
   const displayReviewCount = reviews.length;
 
   const userReview = useMemo(() => {
-    return reviews.find(r => r.userId === currentUser?.uid) || null;
+    if (!currentUser?.uid) return null;
+    return reviews.find(r => r.userId === currentUser.uid) || null;
   }, [reviews, currentUser?.uid]);
 
   useEffect(() => {
@@ -506,6 +551,11 @@ const ProductDetails = () => {
     e.preventDefault();
     if (!reviewForm.userName.trim() || !reviewForm.comment.trim()) return;
 
+    if (!currentUser?.uid) {
+      toast.error("Please sign in to submit a review.");
+      return;
+    }
+
     setSubmittingReview(true);
     try {
       if (userReview) {
@@ -522,7 +572,7 @@ const ProductDetails = () => {
         if (!reviewId) {
           throw new Error("Review ID is missing.");
         }
-        if (!currentUser?.uid || userReview.userId !== currentUser.uid) {
+        if (userReview.userId !== currentUser.uid) {
           throw new Error("Unauthorized: You do not own this review.");
         }
 
@@ -536,7 +586,7 @@ const ProductDetails = () => {
         const newReview = {
           productId: product?.id || productId,
           productName: product?.name || '',
-          userId: currentUser?.uid,
+          userId: currentUser.uid,
           orderId: matchingOrder,
           rating: Number(reviewForm.rating),
           reviewText: reviewForm.comment,
@@ -589,15 +639,28 @@ const ProductDetails = () => {
 
   const getVideoType = (url) => {
     if (!url) return null;
+
+    // ── YouTube (watch, youtu.be, shorts) ──────────────────────────────────
+    // Uses youtube-nocookie.com: YouTube's privacy-enhanced embed domain.
+    // Samsung Internet's Smart Anti-Tracking blocks www.youtube.com iframes
+    // as third-party trackers. The nocookie domain is explicitly whitelisted
+    // because it doesn't set tracking cookies, so it passes the blocker.
     const ytId = getYoutubeId(url);
-    if (ytId) return { type: 'youtube', id: ytId, embedUrl: `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0&mute=1&playsinline=1` };
+    if (ytId) {
+      const isShorts = /\/shorts\//i.test(url);
+      const embedUrl = `https://www.youtube-nocookie.com/embed/${ytId}?playsinline=1&rel=0`;
+      return { type: 'youtube', id: ytId, embedUrl, isShorts };
+    }
+
+    // ── Vimeo ───────────────────────────────────────────────────────────────
     const vimId = getVimeoId(url);
-    if (vimId) return { type: 'vimeo', id: vimId, embedUrl: `https://player.vimeo.com/video/${vimId}?autoplay=1&muted=1&playsinline=1` };
-    // Detect direct video file URLs broadly:
-    // - explicit extension (.mp4, .webm, .ogg, .mov)
-    // - Firebase Storage URLs (firebasestorage.googleapis.com)
-    // - Cloudinary video URLs
-    // - Any URL with a video MIME hint
+    if (vimId) return {
+      type: 'vimeo',
+      id: vimId,
+      embedUrl: `https://player.vimeo.com/video/${vimId}?autoplay=1&muted=1&playsinline=1`,
+    };
+
+    // ── Direct video file (MP4, WebM, Firebase Storage, Cloudinary) ─────────
     const isDirect =
       /\.mp4(\?|$)/i.test(url) ||
       /\.webm(\?|$)/i.test(url) ||
@@ -608,6 +671,7 @@ const ProductDetails = () => {
       (url.includes('cloudinary.com') && url.includes('/video/')) ||
       url.includes('video/upload');
     if (isDirect) return { type: 'direct', embedUrl: url };
+
     return null;
   };
 
@@ -698,23 +762,38 @@ const ProductDetails = () => {
     }
   };
 
+  // FIX: previously, whenever ANY key in sizesObj matched a standard size
+  // (e.g. just "M"), the function returned ONLY the six standard sizes and
+  // silently dropped any non-standard keys also present (e.g. "Free Size",
+  // "XS", or a typo'd key). Now we always include every key actually present
+  // in sizesObj, ordered by the standard size list first, with anything else
+  // appended afterward instead of discarded.
   const getAvailableSizes = () => {
     if (!selectedColor || !selectedColor.sizes) return [];
     const sizesObj = selectedColor.sizes;
-    const standardSizes = ['S', 'M', 'L', 'XL', 'XXL', '3XL'];
     const keys = Object.keys(sizesObj);
-    const hasStandardSizes = keys.some(k => standardSizes.includes(k.toUpperCase()));
 
-    if (hasStandardSizes) {
-      return standardSizes.map(sz => ({
-        name: sz,
-        stock: Number(sizesObj[sz] || sizesObj[sz.toLowerCase()] || 0)
-      }));
-    }
-    return keys.map(k => ({
-      name: k,
-      stock: Number(sizesObj[k] || 0)
-    }));
+    const normalizedToOriginal = new Map();
+    keys.forEach(k => normalizedToOriginal.set(k.toUpperCase(), k));
+
+    const ordered = [];
+    const seen = new Set();
+
+    STANDARD_SIZES.forEach(sz => {
+      const originalKey = normalizedToOriginal.get(sz);
+      if (originalKey !== undefined) {
+        ordered.push({ name: originalKey, stock: Number(sizesObj[originalKey] || 0) });
+        seen.add(originalKey);
+      }
+    });
+
+    keys.forEach(k => {
+      if (!seen.has(k)) {
+        ordered.push({ name: k, stock: Number(sizesObj[k] || 0) });
+      }
+    });
+
+    return ordered;
   };
 
 
@@ -822,7 +901,7 @@ const ProductDetails = () => {
 
           {/* Left Column: Image Gallery */}
           <div className="lg:w-1/2 p-4 md:p-10 flex flex-col border-b lg:border-b-0 lg:border-r border-yellow-900/10">
-            <div 
+            <div
               className="relative aspect-[4/5] bg-black rounded-[2.5rem] overflow-hidden border border-white/5 group select-none"
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
@@ -917,9 +996,8 @@ const ProductDetails = () => {
                         setActiveMedia(idx);
                         if (isVideo) openVideoModal(item.url);
                       }}
-                      className={`relative w-20 h-20 rounded-2xl overflow-hidden border-2 flex-shrink-0 transition-all ${
-                        activeMedia === idx ? 'border-yellow-500 scale-105 shadow-md shadow-yellow-500/10' : 'border-white/5 opacity-40 hover:opacity-100'
-                      }`}
+                      className={`relative w-20 h-20 rounded-2xl overflow-hidden border-2 flex-shrink-0 transition-all ${activeMedia === idx ? 'border-yellow-500 scale-105 shadow-md shadow-yellow-500/10' : 'border-white/5 opacity-40 hover:opacity-100'
+                        }`}
                     >
                       {thumbSrc ? (
                         <LazyImage
@@ -1071,11 +1149,10 @@ const ProductDetails = () => {
                           key={`variant-${vName}-${idx}`}
                           type="button"
                           onClick={() => handleVariantChange(v)}
-                          className={`flex items-center gap-3 px-5 py-3 rounded-2xl border transition-all duration-300 ${
-                            isSelected
+                          className={`flex items-center gap-3 px-5 py-3 rounded-2xl border transition-all duration-300 ${isSelected
                               ? 'border-yellow-500 bg-yellow-500/10 text-white shadow-lg shadow-yellow-500/20'
                               : 'border-white/5 bg-gray-900/30 text-gray-400 hover:border-white/20 hover:text-white'
-                          }`}
+                            }`}
                         >
                           {/* Color dot swatch */}
                           <span
@@ -1116,13 +1193,12 @@ const ProductDetails = () => {
                               setSelectedSize(szObj.name);
                               setQuantity(1);
                             }}
-                            className={`px-6 py-3.5 rounded-xl border text-xs font-black uppercase tracking-widest transition-all duration-300 ${
-                              isSelected
+                            className={`px-6 py-3.5 rounded-xl border text-xs font-black uppercase tracking-widest transition-all duration-300 ${isSelected
                                 ? 'border-yellow-500 bg-yellow-500 text-black shadow-lg shadow-yellow-500/15'
                                 : isOutOfStock
                                   ? 'border-white/5 bg-gray-900/10 text-gray-700 cursor-not-allowed line-through opacity-30'
                                   : 'border-white/5 bg-gray-900/30 text-white hover:border-yellow-500/50 hover:bg-yellow-500/5'
-                            }`}
+                              }`}
                           >
                             {szObj.name}
                           </button>
@@ -1167,15 +1243,12 @@ const ProductDetails = () => {
                   type="button"
                   onClick={handleAddToCart}
                   disabled={isButtonDisabled()}
-                  className={`flex-1 flex justify-center items-center py-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-500 ${
-                    added
+                  className={`flex-1 flex justify-center items-center py-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-500 ${added
                       ? 'bg-white text-black font-black'
-                      : (product.variants && product.variants.length > 0 && !selectedColor)
-                        ? 'bg-transparent border border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/5 hover:border-yellow-500'
-                        : selectedVariantStock === 0
-                          ? 'bg-gray-900 text-gray-700 cursor-not-allowed'
-                          : 'bg-transparent border border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/5 hover:border-yellow-500'
-                  }`}
+                      : selectedVariantStock === 0 && selectedColor
+                        ? 'bg-gray-900 text-gray-700 cursor-not-allowed'
+                        : 'bg-transparent border border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/5 hover:border-yellow-500'
+                    }`}
                 >
                   {added ? 'Secured in Cart' : (product.variants && product.variants.length > 0 && !selectedColor) ? 'SELECT COLOR' : 'ADD TO CART'}
                 </button>
@@ -1184,13 +1257,10 @@ const ProductDetails = () => {
                   type="button"
                   onClick={handleBuyNow}
                   disabled={isBuyNowDisabled()}
-                  className={`flex-1 flex justify-center items-center py-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-500 ${
-                    (product.variants && product.variants.length > 0 && !selectedColor)
-                      ? 'bg-yellow-500 text-black shadow-2xl shadow-yellow-500/10 hover:scale-105 active:scale-95'
-                      : selectedVariantStock === 0
-                        ? 'bg-gray-900 text-gray-700 cursor-not-allowed'
-                        : 'bg-yellow-500 text-black shadow-2xl shadow-yellow-500/10 hover:scale-105 active:scale-95'
-                  }`}
+                  className={`flex-1 flex justify-center items-center py-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-500 ${selectedVariantStock === 0 && selectedColor
+                      ? 'bg-gray-900 text-gray-700 cursor-not-allowed'
+                      : 'bg-yellow-500 text-black shadow-2xl shadow-yellow-500/10 hover:scale-105 active:scale-95'
+                    }`}
                 >
                   {(product.variants && product.variants.length > 0 && !selectedColor) ? 'SELECT COLOR' : 'BUY NOW'}
                 </button>
@@ -1208,11 +1278,10 @@ const ProductDetails = () => {
                   <button
                     key={t.id}
                     onClick={() => setActiveTab(t.id)}
-                    className={`pb-4 px-6 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all duration-300 whitespace-nowrap ${
-                      activeTab === t.id
+                    className={`pb-4 px-6 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all duration-300 whitespace-nowrap ${activeTab === t.id
                         ? 'border-yellow-500 text-yellow-500'
                         : 'border-transparent text-gray-500 hover:text-white'
-                    }`}
+                      }`}
                   >
                     {t.label}
                   </button>
@@ -1437,13 +1506,22 @@ const ProductDetails = () => {
                 ))
               )}
             </div>
- 
+
             <div className="lg:col-span-1">
               <div className="bg-gray-900/50 p-10 rounded-[2.5rem] border border-yellow-900/20">
                 <h3 className="text-[10px] font-black text-white uppercase tracking-[0.4em] mb-10">
                   {userReview && !isEditingReview ? 'Your Review' : (userReview ? 'Edit Review' : 'Submit Review')}
                 </h3>
-                {eligibilityLoading ? (
+                {!currentUser?.uid ? (
+                  <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-yellow-500/5 border border-yellow-500/20 flex items-center justify-center text-yellow-500">
+                      <AlertCircle size={20} />
+                    </div>
+                    <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider leading-relaxed">
+                      Please sign in to write a review.
+                    </p>
+                  </div>
+                ) : eligibilityLoading ? (
                   <div className="flex flex-col items-center justify-center py-10 gap-3">
                     <Loader2 size={24} className="animate-spin text-yellow-500" />
                     <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Checking permissions...</p>
@@ -1569,15 +1647,12 @@ const ProductDetails = () => {
           type="button"
           onClick={handleAddToCart}
           disabled={isButtonDisabled()}
-          className={`flex-1 flex justify-center items-center py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
-            added
+          className={`flex-1 flex justify-center items-center py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${added
               ? 'bg-white text-black border border-white'
-              : (product.variants && product.variants.length > 0 && !selectedColor)
-                ? 'bg-black border border-yellow-500/30 text-yellow-500 active:bg-yellow-500/5'
-                : selectedVariantStock === 0
-                  ? 'bg-gray-900 text-gray-700 border border-gray-900 cursor-not-allowed'
-                  : 'bg-black border border-yellow-500/30 text-yellow-500 active:bg-yellow-500/5'
-          }`}
+              : selectedVariantStock === 0 && selectedColor
+                ? 'bg-gray-900 text-gray-700 border border-gray-900 cursor-not-allowed'
+                : 'bg-black border border-yellow-500/30 text-yellow-500 active:bg-yellow-500/5'
+            }`}
         >
           {added ? 'In Cart' : (product.variants && product.variants.length > 0 && !selectedColor) ? 'SELECT COLOR' : 'ADD TO CART'}
         </button>
@@ -1586,13 +1661,10 @@ const ProductDetails = () => {
           type="button"
           onClick={handleBuyNow}
           disabled={isBuyNowDisabled()}
-          className={`flex-1 flex justify-center items-center py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
-            (product.variants && product.variants.length > 0 && !selectedColor)
-              ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/10 active:bg-yellow-400'
-              : selectedVariantStock === 0
-                ? 'bg-gray-900 text-gray-700 cursor-not-allowed'
-                : 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/10 active:bg-yellow-400'
-          }`}
+          className={`flex-1 flex justify-center items-center py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${selectedVariantStock === 0 && selectedColor
+              ? 'bg-gray-900 text-gray-700 cursor-not-allowed'
+              : 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/10 active:bg-yellow-400'
+            }`}
         >
           {(product.variants && product.variants.length > 0 && !selectedColor) ? 'SELECT COLOR' : 'BUY NOW'}
         </button>
@@ -1653,11 +1725,14 @@ const ProductDetails = () => {
                   return (
                     <iframe
                       src={info.embedUrl}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      loading="lazy"
+                      // sandbox is required by Samsung Internet and some Android WebViews:
+                      // without it the browser blocks the iframe before it even loads.
+                      sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox allow-forms"
                       className="w-full h-full border-none"
                       title="Product Video"
-                      allow="autoplay; fullscreen; picture-in-picture"
-                      allowFullScreen
-                      referrerPolicy="no-referrer-when-downgrade"
                     />
                   );
                 } else if (info?.type === 'direct') {

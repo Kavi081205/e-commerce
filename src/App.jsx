@@ -145,7 +145,7 @@ function App() {
                       the loading guard here is unnecessary. */}
                   <Route
                     path="/admin-login"
-                    element={<AuthProvider><AdminLogin /></AuthProvider>}
+                    element={<AdminLogin />}
                   />
 
                   {/* Production admin-subdomain (admin.smkptraders.com):
@@ -161,11 +161,9 @@ function App() {
                   <Route
                     path="/admin/*"
                     element={
-                      <AuthProvider>
-                        <AdminRoute>
-                          <AdminLayout />
-                        </AdminRoute>
-                      </AuthProvider>
+                      <AdminRoute>
+                        <AdminLayout />
+                      </AdminRoute>
                     }
                   />
 

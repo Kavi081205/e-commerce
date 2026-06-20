@@ -1,8 +1,8 @@
-// StrictMode intentionally removed — it double-invokes effects which amplifies Firestore reads.
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
+import { AuthProvider } from './context/AuthContext';
 import './index.css';
 import App from './App.jsx';
 import FirebaseStatusBanner from './components/FirebaseStatusBanner.jsx';
@@ -55,13 +55,6 @@ function isQuotaError(error) {
   );
 }
 
-function dispatchQuotaEvent(error) {
-  if (typeof window !== 'undefined') {
-    console.warn('[Firebase] Quota exceeded — dispatching recovery event.');
-    window.dispatchEvent(new CustomEvent('firebase-quota-exceeded', { detail: error }));
-  }
-}
-
 // ── Step 3: React Query client with safe retry + global quota detection ────────
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -90,15 +83,21 @@ const queryClient = new QueryClient({
         return failureCount < 2;
       },
 
-      // Exponential backoff for transient errors, capped at 30 seconds
+      // Fractional backoff delay
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30_000),
     },
     mutations: {
-      // Writes should never auto-retry — duplicates are worse than failures
       retry: false,
     },
   },
 });
+
+function dispatchQuotaEvent(error) {
+  if (typeof window !== 'undefined') {
+    console.warn('[Firebase] Quota exceeded — dispatching recovery event.');
+    window.dispatchEvent(new CustomEvent('firebase-quota-exceeded', { detail: error }));
+  }
+}
 
 // ── Step 4: Render ─────────────────────────────────────────────────────────────
 const rootElement = document.getElementById('root');
@@ -113,9 +112,11 @@ createRoot(rootElement).render(
   <HelmetProvider>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <AuthProvider>
           {/* Global Firebase quota recovery banner */}
           <FirebaseStatusBanner />
           <App />
+        </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
   </HelmetProvider>,
