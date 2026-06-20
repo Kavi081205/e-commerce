@@ -143,11 +143,13 @@ const BannerCountdown = ({ offer, compact = false }) => {
 
   if (expired) {
     return (
-      <div className={`
-        inline-flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full border border-red-500/30 bg-red-900/20 text-red-400 text-[10px] sm:text-xs font-black uppercase tracking-wider select-none shadow-[0_0_15px_rgba(239,68,68,0.15)]
-      `}>
-        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
-        OFFER EXPIRED
+      <div className="flex items-center justify-center w-full py-2.5">
+        <div className={`
+          inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-red-500/30 bg-red-900/20 text-red-400 text-[9px] sm:text-[10px] font-black uppercase tracking-wider select-none shadow-[0_0_15px_rgba(239,68,68,0.15)]
+        `}>
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+          EXPIRED
+        </div>
       </div>
     );
   }
@@ -157,58 +159,64 @@ const BannerCountdown = ({ offer, compact = false }) => {
   const m = timeLeft.minutes.toString().padStart(2, '0');
   const s = timeLeft.seconds.toString().padStart(2, '0');
 
+  if (compact) {
+    return (
+      <div className="flex items-center justify-center w-full py-2.5 select-none font-mono tracking-wide">
+        <div className="flex items-center justify-center gap-1 sm:gap-1.5">
+          {/* Days Box */}
+          <div className="flex items-center justify-center font-black rounded-lg border border-yellow-500/35 bg-neutral-950/90 text-white w-[28px] h-[28px] sm:w-[34px] sm:h-[34px] text-[9px] sm:text-[11px] shadow-[0_0_8px_rgba(250,204,21,0.05)]">
+            {d}<span className="text-yellow-500 font-bold ml-0.5 text-[7px] sm:text-[9px]">D</span>
+          </div>
+
+          <span className="text-yellow-500/30 font-bold animate-pulse text-[9px] sm:text-[11px] flex items-center justify-center w-1.5 h-[28px] sm:h-[34px]">:</span>
+
+          {/* Hours Box */}
+          <div className="flex items-center justify-center font-black rounded-lg border border-yellow-500/35 bg-neutral-950/90 text-white w-[28px] h-[28px] sm:w-[34px] sm:h-[34px] text-[9px] sm:text-[11px] shadow-[0_0_8px_rgba(250,204,21,0.05)]">
+            {h}<span className="text-yellow-500 font-bold ml-0.5 text-[7px] sm:text-[9px]">H</span>
+          </div>
+
+          <span className="text-yellow-500/30 font-bold animate-pulse text-[9px] sm:text-[11px] flex items-center justify-center w-1.5 h-[28px] sm:h-[34px]">:</span>
+
+          {/* Minutes Box */}
+          <div className="flex items-center justify-center font-black rounded-lg border border-yellow-500/35 bg-neutral-950/90 text-white w-[28px] h-[28px] sm:w-[34px] sm:h-[34px] text-[9px] sm:text-[11px] shadow-[0_0_8px_rgba(250,204,21,0.05)]">
+            {m}<span className="text-yellow-500 font-bold ml-0.5 text-[7px] sm:text-[9px]">M</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={`
-      inline-flex flex-wrap items-center select-none font-mono tracking-wide
-      ${compact 
-        ? 'gap-1.5 sm:gap-2 text-[10px] py-1.5 px-3 sm:px-4 rounded-full bg-black/60 border border-yellow-500/20 shadow-[0_0_12px_rgba(250,204,21,0.08)]' 
-        : 'gap-3 sm:gap-4 text-xs sm:text-sm md:text-base py-3.5 px-6 rounded-full bg-black/80 border border-yellow-500/35 shadow-[0_0_24px_rgba(250,204,21,0.18)]'
-      }
-    `}>
-      <span className={`
-        font-black uppercase tracking-widest text-yellow-400 flex items-center gap-1.5
-        ${compact ? 'text-[8px] mr-0.5' : 'text-[10px] sm:text-xs mr-1'}
-      `}>
-        <Zap size={compact ? 10 : 13} className="text-yellow-500 fill-yellow-500 animate-pulse" />
+    <div className="inline-flex flex-wrap items-center select-none font-mono tracking-wide gap-3 sm:gap-4 text-xs sm:text-sm md:text-base py-3.5 px-6 rounded-full bg-black/80 border border-yellow-500/35 shadow-[0_0_24px_rgba(250,204,21,0.18)]">
+      <span className="font-black uppercase tracking-widest text-yellow-400 flex items-center gap-1.5 text-[10px] sm:text-xs mr-1">
+        <Zap size={13} className="text-yellow-500 fill-yellow-500 animate-pulse" />
         Ends In:
       </span>
 
-      <div className={`flex items-center ${compact ? 'gap-1' : 'gap-2'}`}>
+      <div className="flex items-center gap-2">
         {/* Days Box */}
-        <div className={`
-          flex items-center justify-center font-black rounded-lg border border-yellow-500/30 bg-neutral-950/90 text-white
-          ${compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-3 py-1.5 text-xs sm:text-sm min-w-[34px] sm:min-w-[42px] shadow-[0_0_8px_rgba(250,204,21,0.05)]'}
-        `}>
+        <div className="flex items-center justify-center font-black rounded-lg border border-yellow-500/30 bg-neutral-950/90 text-white px-3 py-1.5 text-xs sm:text-sm min-w-[34px] sm:min-w-[42px] shadow-[0_0_8px_rgba(250,204,21,0.05)]">
           {d}<span className="text-yellow-500 font-bold ml-0.5">D</span>
         </div>
 
         <span className="text-yellow-500/30 font-bold animate-pulse">:</span>
 
         {/* Hours Box */}
-        <div className={`
-          flex items-center justify-center font-black rounded-lg border border-yellow-500/30 bg-neutral-950/90 text-white
-          ${compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-3 py-1.5 text-xs sm:text-sm min-w-[34px] sm:min-w-[42px] shadow-[0_0_8px_rgba(250,204,21,0.05)]'}
-        `}>
+        <div className="flex items-center justify-center font-black rounded-lg border border-yellow-500/30 bg-neutral-950/90 text-white px-3 py-1.5 text-xs sm:text-sm min-w-[34px] sm:min-w-[42px] shadow-[0_0_8px_rgba(250,204,21,0.05)]">
           {h}<span className="text-yellow-500 font-bold ml-0.5">H</span>
         </div>
 
         <span className="text-yellow-500/30 font-bold animate-pulse">:</span>
 
         {/* Minutes Box */}
-        <div className={`
-          flex items-center justify-center font-black rounded-lg border border-yellow-500/30 bg-neutral-950/90 text-white
-          ${compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-3 py-1.5 text-xs sm:text-sm min-w-[34px] sm:min-w-[42px] shadow-[0_0_8px_rgba(250,204,21,0.05)]'}
-        `}>
+        <div className="flex items-center justify-center font-black rounded-lg border border-yellow-500/30 bg-neutral-950/90 text-white px-3 py-1.5 text-xs sm:text-sm min-w-[34px] sm:min-w-[42px] shadow-[0_0_8px_rgba(250,204,21,0.05)]">
           {m}<span className="text-yellow-500 font-bold ml-0.5">M</span>
         </div>
 
         <span className="text-yellow-500/30 font-bold animate-pulse">:</span>
 
         {/* Seconds Box */}
-        <div className={`
-          flex items-center justify-center font-black rounded-lg border border-yellow-500/30 bg-neutral-950/90 text-white
-          ${compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-3 py-1.5 text-xs sm:text-sm min-w-[34px] sm:min-w-[42px] shadow-[0_0_8px_rgba(250,204,21,0.05)]'}
-        `}>
+        <div className="flex items-center justify-center font-black rounded-lg border border-yellow-500/30 bg-neutral-950/90 text-white px-3 py-1.5 text-xs sm:text-sm min-w-[34px] sm:min-w-[42px] shadow-[0_0_8px_rgba(250,204,21,0.05)]">
           {s}<span className="text-yellow-500 font-bold ml-0.5">S</span>
         </div>
       </div>
@@ -702,7 +710,7 @@ const Home = () => {
               return (
                 <div
                   key={activeOffer.id}
-                  className="group bg-gray-900/40 backdrop-blur-xl rounded-xl sm:rounded-[1.5rem] border border-yellow-900/15 overflow-hidden shadow-xl hover:border-yellow-500/30 transition-all duration-300 flex flex-col"
+                  className="group bg-gray-900/40 backdrop-blur-xl rounded-xl sm:rounded-[1.5rem] border border-yellow-900/15 overflow-hidden shadow-xl hover:border-yellow-500/30 transition-all duration-300 flex flex-col min-h-[265px] xs:min-h-[285px] sm:min-h-[355px] lg:min-h-[380px] h-full"
                 >
                   {/* Product image */}
                   <div className="relative h-[100px] sm:h-[140px] lg:h-[160px] overflow-hidden bg-black flex-shrink-0">
@@ -724,19 +732,21 @@ const Home = () => {
                   </div>
 
                   {/* Card body */}
-                  <div className="p-2.5 sm:p-4 flex flex-col gap-1 sm:gap-2 flex-1">
-                    <h3 className="text-[9px] sm:text-xs font-black text-white uppercase tracking-wide line-clamp-2 leading-tight">
-                      {prod.name}
-                    </h3>
+                  <div className="p-2.5 sm:p-4 flex flex-col gap-1.5 sm:gap-2 flex-1 justify-between">
+                    <div>
+                      <h3 className="text-[9px] sm:text-xs font-black text-white uppercase tracking-wide line-clamp-2 leading-tight mb-1 sm:mb-2">
+                        {prod.name}
+                      </h3>
 
-                    {/* Prices */}
-                    <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
-                      <span className="text-sm sm:text-base font-black text-yellow-400">₹{salePrice.toLocaleString()}</span>
-                      <span className="text-[8px] sm:text-[10px] text-gray-500 line-through font-semibold">₹{originalPrice.toLocaleString()}</span>
+                      {/* Prices */}
+                      <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
+                        <span className="text-sm sm:text-base font-black text-yellow-400">₹{salePrice.toLocaleString()}</span>
+                        <span className="text-[8px] sm:text-[10px] text-gray-500 line-through font-semibold">₹{originalPrice.toLocaleString()}</span>
+                      </div>
                     </div>
 
                     {/* Individual countdown timer */}
-                    <div className="mt-0.5 sm:mt-1">
+                    <div className="py-2.5 my-auto flex items-center justify-center">
                       <BannerCountdown offer={activeOffer} compact={true} />
                     </div>
 
