@@ -18,6 +18,8 @@ import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firesto
 import { validatePhone, validatePincode, validateName } from '../utils/security';
 import { getProductById } from '../firebase/services';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
     if (window.Razorpay) {
@@ -36,9 +38,6 @@ const loadRazorpayScript = () => {
 const Checkout = () => {
   const { cart, getCartTotal, clearCart, removeFromCart } = useCart();
 
-  useEffect(() => {
-    loadRazorpayScript();
-  }, []);
   const { promoSettings } = usePromo();
   const { showToast } = useNotification();
   const navigate = useNavigate();
@@ -46,7 +45,7 @@ const Checkout = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [placedOrder, setPlacedOrder] = useState(null);
   const [checkoutStep, setCheckoutStep] = useState(1);
-  const [paymentMethod, setPaymentMethod] = useState('online'); // 'online' or 'cod'
+  const [paymentMethod, setPaymentMethod] = useState('online');
 
   const [addresses, setAddresses] = useState(() => {
     try {
@@ -498,8 +497,8 @@ const Checkout = () => {
         userEmail: 'unknown',
         createdAt: new Date(),
         status: 'ordered',
-        paymentMethod: paymentMethod === 'online' ? 'Razorpay' : 'COD',
-        paymentStatus: paymentMethod === 'online' ? 'Paid' : 'Pending',
+        paymentMethod: "Cash on Delivery",
+        paymentStatus: "Pending",
         orderStatus: 'ordered',
         customerDetails: {
           name: activeAddress.name,
@@ -592,77 +591,129 @@ const Checkout = () => {
       };
 
       if (paymentMethod === 'online') {
-        const isLoaded = await loadRazorpayScript();
-        if (!isLoaded || !window.Razorpay) {
-          showToast("Razorpay SDK failed to load. Please check your internet connection.", "error");
-          setLoading(false);
-          return;
+        const amountInPaise = Math.round(Math.max(0, finalTotal) * 100);
+        const requestUrl = `${API_BASE}/api/create-order`;
+        const requestBody = JSON.stringify({ amount: amountInPaise });
+        console.log('[Checkout] Request URL:', requestUrl);
+        console.log('[Checkout] Request Body:', requestBody);
+
+        const orderResponse = await fetch(requestUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: requestBody,
+        });
+
+        console.log('[Checkout] Response Status:', orderResponse.status);
+        const responseText = await orderResponse.text();
+        console.log('[Checkout] Response Body:', responseText);
+
+        if (!orderResponse.ok) {
+          let parsedError = responseText;
+          try {
+            const errJson = JSON.parse(responseText);
+            if (errJson.description) {
+              parsedError = `${errJson.message}: ${errJson.description} (Code: ${errJson.code})`;
+            } else {
+              parsedError = errJson.message || errJson.error || responseText;
+            }
+          } catch (_) {}
+          throw new Error(parsedError);
         }
 
+        const orderDataResult = JSON.parse(responseText);
+        if (!orderDataResult.success || !orderDataResult.order || !orderDataResult.order.id) {
+          throw new Error('Invalid response received from payment server');
+        }
+
+        const razorpayOrder = orderDataResult.order;
+        console.log('[Checkout] Razorpay order initialized:', razorpayOrder);
+
+        // Load Razorpay SDK Script
+        const isSDKLoaded = await loadRazorpayScript();
+        if (!isSDKLoaded) {
+          throw new Error('Failed to load Razorpay SDK. Please check your internet connection.');
+        }
+
+        // Step 6: Define options using ONLY the specified fields: key, amount, currency, order_id, name, description, prefill, theme, handler, modal
         const options = {
-          key: import.meta.env.VITE_RAZORPAY_KEY,
-          amount: Math.round(orderData.totalPrice * 100),
-          currency: "INR",
-          name: "SMKP TRADERS",
-          description: "Secure Payment",
-          image: "https://e-commerce-smkp-traders.vercel.app/logo.png",
+          key: import.meta.env.VITE_RAZORPAY_KEY_ID || '',
+          amount: Number(razorpayOrder.amount),
+          currency: String(razorpayOrder.currency || 'INR'),
+          order_id: String(razorpayOrder.id),
+          name: 'SMKP TRADERS',
+          description: 'E-Commerce Order Payment',
+          prefill: {
+            name: String(activeAddress.name),
+            contact: String(activeAddress.phone),
+            email: 'guest@smkptraders.com'
+          },
+          theme: {
+            color: '#eab308'
+          },
           handler: async function (response) {
-            setLoading(true);
             try {
-              // ── Verify payment signature server-side before creating order ──
-              let signatureValid = true; // Default true if no Razorpay order_id (client-only flow)
-              if (response.razorpay_order_id) {
+              setLoading(true);
+              console.log('[Checkout] Razorpay success response:', response);
+
+              const verifyUrl = `${API_BASE}/api/verify-payment`;
+              const verifyBody = JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+              });
+              console.log('[Checkout] Request URL:', verifyUrl);
+              console.log('[Checkout] Request Body:', verifyBody);
+
+              const verifyResponse = await fetch(verifyUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: verifyBody,
+              });
+
+              console.log('[Checkout] Response Status:', verifyResponse.status);
+              const verifyResponseText = await verifyResponse.text();
+              console.log('[Checkout] Response Body:', verifyResponseText);
+
+              if (!verifyResponse.ok) {
+                let parsedError = verifyResponseText;
                 try {
-                  const verifyRes = await fetch('/api/verify-payment', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      razorpay_payment_id: response.razorpay_payment_id,
-                      razorpay_order_id:   response.razorpay_order_id,
-                      razorpay_signature:  response.razorpay_signature,
-                    }),
-                  });
-                  const verifyData = await verifyRes.json();
-                  signatureValid = verifyData.verified === true;
-                } catch (verifyErr) {
-                  console.warn('Payment verification API unavailable — proceeding with payment_id only.', verifyErr.message);
-                  // If the API is not deployed yet, allow the order (fail-open for now)
-                  signatureValid = true;
-                }
+                  const errJson = JSON.parse(verifyResponseText);
+                  parsedError = errJson.message || errJson.error || verifyResponseText;
+                } catch (_) {}
+                throw new Error(parsedError);
               }
 
-              if (!signatureValid) {
-                showToast('Payment verification failed. Please contact support with your payment ID: ' + response.razorpay_payment_id, 'error');
-                setLoading(false);
-                return;
-              }
+              const verifyData = JSON.parse(verifyResponseText);
+              console.log('[Checkout] Signature verification result:', verifyData);
 
-              showToast("Payment Successful", "success");
-              const onlineOrderData = {
-                ...orderData,
-                paymentId: response.razorpay_payment_id,
-                paymentStatus: "Paid",
-                paymentMethod: "Razorpay"
-              };
-              await executeOrderCreation(onlineOrderData);
-            } catch (err) {
-              console.error("Checkout order creation error:", err);
-              showToast("Payment was successful, but we failed to record your order. Please contact support.", "error");
+              if (verifyData && verifyData.success) {
+                // Step 8: Only AFTER successful verification, save order to Firebase, generate invoice, etc.
+                const enrichedOrderData = {
+                  ...orderData,
+                  paymentMethod: 'Online Payment (Razorpay)',
+                  paymentStatus: 'Paid',
+                  razorpayOrderId: response.razorpay_order_id,
+                  razorpayPaymentId: response.razorpay_payment_id,
+                };
+                await executeOrderCreation(enrichedOrderData);
+              } else {
+                throw new Error(verifyData.error || 'Payment verification failed');
+              }
+            } catch (verificationError) {
+              console.error('[Checkout] Signature verification failed:', verificationError);
+              showToast(verificationError.message || 'Signature verification failed. Order not placed.', 'error');
             } finally {
               setLoading(false);
             }
           },
-          prefill: {
-            name: activeAddress.name,
-            email: 'unknown',
-            contact: activeAddress.phone,
-          },
-          theme: {
-            color: "#eab308",
-          },
           modal: {
             ondismiss: function () {
               setLoading(false);
+              showToast('Payment window closed.', 'error');
             }
           }
         };
@@ -682,9 +733,7 @@ const Checkout = () => {
       }
       setLoading(false);
     } finally {
-      if (paymentMethod === 'cod') {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   };
 
@@ -1033,7 +1082,7 @@ const Checkout = () => {
                       <div
                         onClick={() => setPaymentMethod('online')}
                         className={`bg-black/40 border-2 rounded-2xl p-4 flex items-start gap-4 cursor-pointer transition-all ${paymentMethod === 'online'
-                            ? 'border-yellow-500 shadow-[0_0_16px_rgba(234,179,8,0.1)]'
+                            ? 'border-yellow-500 bg-yellow-500/5 shadow-[0_0_16px_rgba(234,179,8,0.1)]'
                             : 'border-white/5 hover:border-white/10'
                           }`}
                       >
@@ -1059,7 +1108,7 @@ const Checkout = () => {
                       <div
                         onClick={() => setPaymentMethod('cod')}
                         className={`bg-black/40 border-2 rounded-2xl p-4 flex items-start gap-4 cursor-pointer transition-all ${paymentMethod === 'cod'
-                            ? 'border-yellow-500 shadow-[0_0_16px_rgba(234,179,8,0.1)]'
+                            ? 'border-yellow-500 bg-yellow-500/5 shadow-[0_0_16px_rgba(234,179,8,0.1)]'
                             : 'border-white/5 hover:border-white/10'
                           }`}
                       >
@@ -1114,7 +1163,7 @@ const Checkout = () => {
                     </p>
                   </div>
 
-                  {/* Desktop Place Order / Pay Online */}
+                  {/* Desktop Place Order */}
                   <button
                     onClick={placeOrder}
                     disabled={loading || (!selectedAddressId && !showNewAddressForm)}

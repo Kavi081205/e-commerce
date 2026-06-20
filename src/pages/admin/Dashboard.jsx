@@ -200,7 +200,10 @@ const Dashboard = () => {
         };
       });
 
-      const codOrdersCount = activeDocs.filter(o => o.paymentMethod?.toUpperCase() === 'COD').length;
+      const codOrdersCount = activeDocs.filter(o => {
+        const pm = o.paymentMethod?.toUpperCase();
+        return pm === 'COD' || pm === 'CASH ON DELIVERY';
+      }).length;
       const onlineOrdersCount = activeDocs.filter(o => o.paymentMethod?.toUpperCase() === 'ONLINE').length;
       const paidOrdersCount = activeDocs.filter(o => o.paymentStatus?.toLowerCase() === 'paid').length;
       const pendingPaymentsCount = activeDocs.filter(o => o.paymentStatus?.toLowerCase() === 'pending' || o.paymentStatus?.toLowerCase() === 'unpaid').length;
