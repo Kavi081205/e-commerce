@@ -182,7 +182,7 @@ const ProductDetails = () => {
   const [isZooming, setIsZooming] = useState(false);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [modalVideoUrl, setModalVideoUrl] = useState('');
-  const [videoError, setVideoError] = useState(null);
+  const [videoError, setVideoError] = useState(false);
 
   const [selectedColor, setSelectedColor] = useState(null);
   const [selectedSize, setSelectedSize] = useState('');
@@ -633,21 +633,20 @@ const ProductDetails = () => {
 
   const openVideoModal = (url) => {
     if (!url) {
-      setVideoError('No video available for this product.');
-      setVideoModalOpen(true);
+      console.warn("No video URL provided to openVideoModal");
       return;
     }
     const mp4Url = getMp4VideoUrl(url);
     console.log("Opening Video Modal with URL (MP4 requested):", mp4Url);
     setModalVideoUrl(mp4Url);
-    setVideoError(null);
+    setVideoError(false);
     setVideoModalOpen(true);
   };
 
   const closeVideoModal = () => {
     setVideoModalOpen(false);
     setModalVideoUrl('');
-    setVideoError(null);
+    setVideoError(false);
   };
 
   const getMediaItems = () => {
@@ -1597,21 +1596,7 @@ const ProductDetails = () => {
               <X size={16} />
             </button>
 
-            {videoError ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-8 text-center gap-4 rounded-3xl">
-                <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500">
-                  <AlertCircle size={22} />
-                </div>
-                <h3 className="text-white font-black text-xs uppercase tracking-widest">Unable to Play Video</h3>
-                <p className="text-gray-400 text-xs max-w-md leading-relaxed">{videoError}</p>
-                <button
-                  onClick={closeVideoModal}
-                  className="mt-2 px-6 py-2.5 rounded-xl bg-white text-black font-black text-[9px] uppercase tracking-widest hover:bg-yellow-500 transition-all"
-                >
-                  Close Player
-                </button>
-              </div>
-            ) : modalVideoUrl ? (
+            {modalVideoUrl && (
               <video
                 key={modalVideoUrl}
                 src={modalVideoUrl}
@@ -1620,17 +1605,41 @@ const ProductDetails = () => {
                 playsInline
                 preload="metadata"
                 crossOrigin="anonymous"
-                className="w-full h-full object-contain rounded-3xl"
-                onLoadedData={() => console.log('Video Event: onLoadedData succeeded for URL:', modalVideoUrl)}
-                onCanPlay={() => console.log('Video Event: onCanPlay succeeded for URL:', modalVideoUrl)}
+                className={`w-full h-full object-contain rounded-3xl ${videoError ? 'hidden' : 'block'}`}
+                onLoadedData={() => {
+                  console.log('Video Event: onLoadedData succeeded for URL:', modalVideoUrl);
+                  setVideoError(false);
+                }}
+                onCanPlay={() => {
+                  console.log('Video Event: onCanPlay succeeded for URL:', modalVideoUrl);
+                  setVideoError(false);
+                }}
                 onError={(e) => {
                   console.error('Video Event: onError failed for URL:', modalVideoUrl, e);
-                  setVideoError('Video playback failed. The format may not be supported by your browser.');
+                  setVideoError(true);
                 }}
               >
                 Your browser does not support HTML5 video.
               </video>
-            ) : null}
+            )}
+
+            {videoError && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-8 text-center gap-4 rounded-3xl z-10">
+                <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500">
+                  <AlertCircle size={22} />
+                </div>
+                <h3 className="text-white font-black text-xs uppercase tracking-widest">Unable to Play Video</h3>
+                <p className="text-gray-400 text-xs max-w-md leading-relaxed">
+                  Video playback failed. The format may not be supported by your browser.
+                </p>
+                <button
+                  onClick={closeVideoModal}
+                  className="mt-2 px-6 py-2.5 rounded-xl bg-white text-black font-black text-[9px] uppercase tracking-widest hover:bg-yellow-500 transition-all"
+                >
+                  Close Player
+                </button>
+              </div>
+            )}
           </div>
           <p className="absolute bottom-6 text-[10px] font-black uppercase tracking-[0.3em] text-white/30">
             Click outside to close
