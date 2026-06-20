@@ -1,20 +1,17 @@
 import React, { createContext, useState, useEffect, useRef, useContext, useCallback, useMemo } from 'react';
 import {
-  getAuth,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
   setPersistence,
-  browserLocalPersistence
+  browserLocalPersistence,
+  getRedirectResult
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase';
-import app from '../firebase';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 import { logAuthEvent } from '../utils/analytics';
 import { logAdminAction, logSuccessfulLogin, logLogout } from '../utils/activityLog';
 import { clearLoginAttempts } from '../utils/security';
-
-const auth = getAuth(app);
 
 // ─── Admin email (public — used only for role-checking, not for auth bypass) ──
 const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL || 'kaviyarasanmurugan78@gmail.com').toLowerCase().trim();
@@ -27,16 +24,11 @@ const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-  const [currentUser, setCurrentUser]   = useState(null);
-  const [loading, setLoading]           = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // Inactivity timer ref — only active for admin sessions
   const inactivityTimer = useRef(null);
-
-  // Keep Firebase session alive across page reloads.
-  useEffect(() => {
-    setPersistence(auth, browserLocalPersistence).catch(console.error);
-  }, []);
 
   // ── Inactivity Auto-Logout ──────────────────────────────────────────────────
   // Resets on any user interaction. If 30 minutes pass with no activity, admin is signed out.
@@ -64,89 +56,186 @@ export const AuthProvider = ({ children }) => {
   }, [resetInactivityTimer]);
 
   // ── Firebase Auth listener ──────────────────────────────────────────────────
-  useEffect(() => {
-    let stopInactivity     = null;
+  const syncedUid = useRef(null);
 
-    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-      // Clean up previous inactivity watcher.
-      if (stopInactivity)     { stopInactivity();     stopInactivity     = null; }
-      if (inactivityTimer.current) { clearTimeout(inactivityTimer.current); }
-
-      if (!user) {
-        setCurrentUser(null);
-        setLoading(false);
-        return;
-      }
-
+  const syncProfileData = useCallback(async (user) => {
+    console.log('[AuthContext] Starting Firestore profile sync for user:', user.email);
+    const userRef = doc(db, 'users', user.uid);
+    try {
+      const docSnap = await getDoc(userRef);
+      let userData = docSnap.data();
       const isAdminUser = user.email?.toLowerCase().trim() === ADMIN_EMAIL;
 
-      // Start inactivity watcher for admin sessions only
       if (isAdminUser) {
-        stopInactivity = startInactivityWatch();
-      }
-
-      const userRef = doc(db, 'users', user.uid);
-
-      try {
-        const docSnap = await getDoc(userRef);
-        let userData = docSnap.data();
-
-        // Auto-provision admin Firestore document when admin email signs in via Firebase.
-        if (isAdminUser) {
-          const needsProvisioning = !docSnap.exists() || userData?.role !== 'admin' || !userData?.isAdmin;
-          if (needsProvisioning) {
-            const adminData = {
-              uid:          user.uid,
-              email:        user.email,
-              displayName:  user.displayName || 'Admin',
-              role:         'admin',
-              isAdmin:      true,
-              lastLoginAt:  new Date().toISOString(),
-              lastDevice:   typeof navigator !== 'undefined' ? navigator.userAgent : null,
-              createdAt:    userData?.createdAt || new Date().toISOString(),
+        const needsProvisioning = !docSnap.exists() || userData?.role !== 'admin' || !userData?.isAdmin;
+        if (needsProvisioning) {
+          const adminData = {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName || 'Admin',
+            role: 'admin',
+            isAdmin: true,
+            createdAt: userData?.createdAt || new Date().toISOString(),
+            lastLoginAt: new Date().toISOString(),
+            lastDevice: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+          };
+          await setDoc(userRef, adminData, { merge: true });
+          userData = { ...userData, ...adminData };
+          console.log('[AuthContext] Provisioned new admin doc in Firestore');
+        } else {
+          // Task 7: Only update lastLoginAt and lastDevice if changed or older than 15 mins
+          const nowDevice = typeof navigator !== 'undefined' ? navigator.userAgent : null;
+          const lastLoginTime = userData?.lastLoginAt ? new Date(userData.lastLoginAt).getTime() : 0;
+          if (userData?.lastDevice !== nowDevice || (Date.now() - lastLoginTime) > 15 * 60 * 1000) {
+            const updates = {
+              lastLoginAt: new Date().toISOString(),
+              lastDevice: nowDevice,
             };
-            await setDoc(userRef, adminData, { merge: true });
-            userData = { ...userData, ...adminData };
-          } else {
-            // Update last login info on admin session start (once per session/refresh, not looped)
-            const lastLoginAt = new Date().toISOString();
-            const lastDevice = typeof navigator !== 'undefined' ? navigator.userAgent : null;
-            await setDoc(userRef, { lastLoginAt, lastDevice }, { merge: true });
-            userData = { ...userData, lastLoginAt, lastDevice };
+            await setDoc(userRef, updates, { merge: true });
+            userData = { ...userData, ...updates };
+            console.log('[AuthContext] Updated admin lastLoginAt in Firestore');
           }
         }
-
-        if (docSnap.exists() || isAdminUser) {
-          setCurrentUser({ ...user, ...userData });
-          setLoading(false);
-          logAuthEvent('login');
-        } else {
-          // New customer — create profile with role 'customer' (NEVER 'admin').
+      } else {
+        // Customer user
+        if (!docSnap.exists()) {
           const initialData = {
-            uid:         user.uid,
-            email:       user.email || '',
+            uid: user.uid,
+            email: user.email || '',
             displayName: user.displayName || user.email?.split('@')[0] || 'User',
-            createdAt:   new Date().toISOString(),
-            role:        'customer',
+            createdAt: new Date().toISOString(),
+            role: 'customer',
           };
           await setDoc(userRef, initialData, { merge: true });
-          setCurrentUser({ ...user, ...initialData });
-          setLoading(false);
-          logAuthEvent('sign_up');
+          userData = { ...userData, ...initialData };
+          console.log('[AuthContext] Created new customer doc in Firestore');
+        } else {
+          // Task 7: Only update returning user details if there is actual change
+          const newName = userData?.name || user.displayName || user.email?.split('@')[0] || 'User';
+          const newEmail = userData?.email || user.email || '';
+          const lastLoginTime = userData?.lastLogin ? new Date(userData.lastLogin).getTime() : 0;
+          if (userData?.name !== newName || userData?.email !== newEmail || (Date.now() - lastLoginTime) > 15 * 60 * 1000) {
+            const updates = {
+              name: newName,
+              email: newEmail,
+              lastLogin: new Date().toISOString(),
+            };
+            await setDoc(userRef, updates, { merge: true });
+            userData = { ...userData, ...updates };
+            console.log('[AuthContext] Updated customer details in Firestore');
+          }
+        }
+      }
+
+      logAuthEvent('login');
+      console.log('[AuthContext] Profile sync complete for:', user.email);
+      return userData;
+    } catch (err) {
+      console.error('[AuthContext] Profile sync error:', err);
+      return null;
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    let unsubscribe = null;
+
+    const init = async () => {
+      try {
+        console.log('[Auth] Setting persistence...');
+        await setPersistence(auth, browserLocalPersistence);
+
+        console.log('[Auth] Checking getRedirectResult...');
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          console.log('[Auth] Redirect completed');
         }
       } catch (err) {
-        console.error('AuthContext: Profile sync error:', err);
-        setCurrentUser({ ...user, role: 'customer' });
-        setLoading(false);
+        console.error('[Auth] Error during initialization:', err);
       }
-    });
+
+      if (!active) return;
+
+      console.log('[Auth] Registering onAuthStateChanged...');
+      unsubscribe = onAuthStateChanged(auth, async (user) => {
+        console.log('[Auth] Firebase user detected:', user?.email || 'null');
+
+        if (!user) {
+          syncedUid.current = null;
+          setCurrentUser(null);
+          console.log('[Auth] loading=false');
+          setLoading(false);
+          return;
+        }
+
+        // Avoid duplicate syncs if user hasn't changed
+        if (syncedUid.current === user.uid) {
+          console.log('[Auth] loading=false');
+          setLoading(false);
+          return;
+        }
+        syncedUid.current = user.uid;
+
+        // Ensure loading state remains/sets to true while we sync with Firestore
+        setLoading(true);
+
+        try {
+          // Wait until Firestore finishes (ensuring customer doc exists and lastLogin is updated)
+          const userData = await syncProfileData(user);
+          console.log('[Auth] Firestore sync completed');
+
+          // Build a plain object instead of storing the Firebase User class directly
+          const plainUser = {
+            uid:           user.uid,
+            email:         user.email,
+            displayName:   user.displayName || userData?.displayName || userData?.name || user.email?.split('@')[0] || 'User',
+            photoURL:      user.photoURL || userData?.photoURL || null,
+            emailVerified: user.emailVerified,
+            ...userData
+          };
+
+          setCurrentUser(plainUser);
+          console.log('[Auth] currentUser updated');
+          console.log('[Auth] loading=false');
+          setLoading(false);
+          console.log('[Auth] Navigate Home');
+        } catch (err) {
+          console.error('[AuthContext] Error syncing profile in onAuthStateChanged:', err);
+          // Fallback to Firebase user state as a plain object if Firestore fails
+          const plainUser = {
+            uid:           user.uid,
+            email:         user.email,
+            displayName:   user.displayName || user.email?.split('@')[0] || 'User',
+            photoURL:      user.photoURL || null,
+            emailVerified: user.emailVerified
+          };
+          setCurrentUser(plainUser);
+          console.log('[Auth] currentUser updated');
+          console.log('[Auth] loading=false');
+          setLoading(false);
+        }
+      });
+    };
+
+    init();
 
     return () => {
-      unsubscribeAuth();
-      if (stopInactivity)     stopInactivity();
-      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+      active = false;
+      if (unsubscribe) unsubscribe();
     };
-  }, [startInactivityWatch]);
+  }, [syncProfileData]);
+
+  // ── Inactivity Auto-Logout Watcher for Admin ───────────────────────────────
+  useEffect(() => {
+    if (!currentUser) return;
+    const isAdminUser = currentUser.email?.toLowerCase().trim() === ADMIN_EMAIL;
+    if (!isAdminUser) return;
+
+    const stopWatch = startInactivityWatch();
+    return () => {
+      stopWatch();
+    };
+  }, [currentUser, startInactivityWatch]);
 
   // ── Admin Login via Firebase Auth (no plain-text password in bundle) ─────────
   /**
@@ -172,12 +261,31 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true };
     } catch (err) {
+      console.error('Admin Auth failed details - Code:', err.code, 'Message:', err.message, 'Error object:', err);
       const code = err.code || '';
       let message = 'Invalid email or password. Please check your credentials.';
-      if (code === 'auth/too-many-requests') {
-        message = 'Too many failed attempts. Firebase has temporarily blocked this account.';
+      if (code === 'auth/user-not-found') {
+        message = 'No account found with this email.';
+      } else if (code === 'auth/wrong-password') {
+        message = 'Incorrect password. Please try again.';
+      } else if (code === 'auth/invalid-credential') {
+        message = 'Invalid email or password.';
+      } else if (code === 'auth/invalid-email') {
+        message = 'Please enter a valid email address.';
+      } else if (code === 'auth/too-many-requests') {
+        message = 'Too many failed attempts. Please wait a moment and try again.';
       } else if (code === 'auth/network-request-failed') {
         message = 'Network error. Please check your internet connection.';
+      } else {
+        const cleanMsg = err.message
+          ?.replace('Firebase: ', '')
+          .replace(/\s*\(auth\/[^)]+\)\.?/, '')
+          ?.trim();
+        if (cleanMsg && cleanMsg !== 'Error') {
+          message = cleanMsg;
+        } else {
+          message = `Authentication failed (${code || 'unknown'}). Please check your credentials.`;
+        }
       }
       return { success: false, message };
     }
@@ -187,7 +295,7 @@ export const AuthProvider = ({ children }) => {
   const adminLogout = useCallback(async () => {
     const uid = auth.currentUser?.uid;
     if (uid) await logLogout(uid, 'manual');
-    try { await signOut(auth); } catch (_) {}
+    try { await signOut(auth); } catch (_) { }
   }, []);
 
   const login = useCallback((email, password) =>
@@ -206,8 +314,13 @@ export const AuthProvider = ({ children }) => {
     setCurrentUser(prev => prev ? { ...prev, ...data } : null);
   }, []);
 
-  // isAdmin: true when the Firebase user's Firestore document has role='admin'.
-  const isAdmin = currentUser?.role === 'admin' || currentUser?.isAdmin === true;
+  // isAdmin: true when the Firebase user's Firestore document has role='admin' OR email matches ADMIN_EMAIL.
+  // This prevents race conditions during async Firestore profile loading.
+  const isAdmin = useMemo(() => {
+    if (!currentUser) return false;
+    const isEmailAdmin = currentUser.email?.toLowerCase().trim() === ADMIN_EMAIL;
+    return currentUser.role === 'admin' || currentUser.isAdmin === true || isEmailAdmin;
+  }, [currentUser]);
 
   // adminSession is kept for backwards compatibility with AdminRoute guard in App.jsx
   const adminSession = isAdmin;

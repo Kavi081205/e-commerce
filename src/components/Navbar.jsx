@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
-  ShoppingCart, Heart, Menu, X, User, Search
+  ShoppingCart, Heart, Menu, X, Search
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
 import { db } from '../firebase';
 import { collection, query, limit, getDocs, orderBy } from 'firebase/firestore';
@@ -23,12 +22,13 @@ const useDebounce = (value, delay = 300) => {
 /* ─── Search Input (shared between desktop + mobile) ─────────────────────── */
 const SearchInput = ({ id, value, onChange, onFocus, onBlur }) => (
   <div className="relative w-full">
+    <label htmlFor={id} className="sr-only">Search products</label>
     <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
       <Search size={14} className="text-gray-600" />
     </div>
     <input
       id={id}
-      name={id || 'search'}
+      name={id}
       type="search"
       autoComplete="off"
       value={value}
@@ -58,30 +58,7 @@ const SuggestionDropdown = ({ suggestions, handleProductClick }) => (
   </div>
 );
 
-const getShortName = (user) => {
-  if (!user) return '';
-  if (user.displayName) {
-    return user.displayName.trim().split(/\s+/)[0];
-  }
-  if (user.email) {
-    return user.email.split('@')[0];
-  }
-  return 'User';
-};
 
-const getInitials = (user) => {
-  if (!user) return 'U';
-  if (user.displayName) {
-    const parts = user.displayName.trim().split(/\s+/);
-    if (parts.length > 0 && parts[0]) {
-      return parts[0][0].toUpperCase();
-    }
-  }
-  if (user.email) {
-    return user.email[0].toUpperCase();
-  }
-  return 'U';
-};
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* Customer-only Navbar — never shows admin links.                             */
@@ -89,7 +66,6 @@ const getInitials = (user) => {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 const Navbar = () => {
   const { getCartCount, bump } = useCart();
-  const { currentUser, logout, isAdmin } = useAuth();
   const { wishlistItems } = useWishlist();
   const navigate = useNavigate();
 
@@ -97,11 +73,6 @@ const Navbar = () => {
   const [search, setSearch] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [imgFailed, setImgFailed] = useState(false);
-
-  useEffect(() => {
-    setImgFailed(false);
-  }, [currentUser?.uid]);
 
   const debouncedSearch = useDebounce(search, 320);
   const searchRef = useRef(null);
@@ -149,14 +120,7 @@ const Navbar = () => {
     setMobileOpen(false);
   }, []);
 
-  const handleLogout = useCallback(async () => {
-    setMobileOpen(false);
-    try { await logout(); navigate('/'); } catch (err) { console.error(err); }
-  }, [logout, navigate]);
 
-  const handleProfileClick = useCallback(() => {
-    navigate('/profile');
-  }, [navigate]);
 
   const handleProductClick = (product) => {
     const productId = product.id || product.docId || product._id || product.uid;
@@ -219,6 +183,16 @@ const Navbar = () => {
                 <> Products <span className={underline(isActive)} /> </>
               )}
             </NavLink>
+            <NavLink to="/about" end className={navCls}>
+              {({ isActive }) => (
+                <> About Us <span className={underline(isActive)} /> </>
+              )}
+            </NavLink>
+            <NavLink to="/my-orders" end className={navCls}>
+              {({ isActive }) => (
+                <> My Orders <span className={underline(isActive)} /> </>
+              )}
+            </NavLink>
 
             <div className="flex items-center gap-6 pl-8 border-l border-yellow-900/30">
               <Link
@@ -254,60 +228,7 @@ const Navbar = () => {
               </Link>
             </div>
 
-            <div className="flex items-center gap-6">
-              {currentUser ? (
-                <>
-                  {isAdmin && (
-                    <Link
-                      to="/admin"
-                      className="text-[10px] font-black uppercase tracking-widest text-yellow-500 hover:text-white transition-colors"
-                    >
-                      Dashboard
-                    </Link>
-                  )}
-                  <button
-                    onClick={handleProfileClick}
-                    className="flex items-center gap-2.5 group focus:outline-none"
-                    aria-label="Profile"
-                  >
-                    {currentUser.photoURL && !imgFailed ? (
-                      <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-yellow-500/30 group-hover:border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.1)] group-hover:shadow-[0_0_15px_rgba(234,179,8,0.3)] transition-all duration-300 flex items-center justify-center bg-slate-950">
-                        <img
-                          src={currentUser.photoURL}
-                          alt={currentUser.displayName || 'Profile'}
-                          className="w-full h-full object-cover"
-                          onError={() => setImgFailed(true)}
-                        />
-                      </div>
-                    ) : currentUser.photoURL && imgFailed ? (
-                      <div className="w-9 h-9 rounded-full bg-slate-950 flex items-center justify-center text-yellow-500 border-2 border-yellow-500/30 group-hover:border-yellow-500 group-hover:bg-yellow-500/10 shadow-[0_0_10px_rgba(234,179,8,0.1)] group-hover:shadow-[0_0_15px_rgba(234,179,8,0.3)] transition-all duration-300">
-                        <User size={16} className="text-yellow-500" />
-                      </div>
-                    ) : (
-                      <div className="w-9 h-9 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500 font-black text-xs border-2 border-yellow-500/30 group-hover:border-yellow-500 group-hover:bg-yellow-500/20 shadow-[0_0_10px_rgba(234,179,8,0.1)] group-hover:shadow-[0_0_15px_rgba(234,179,8,0.3)] transition-all duration-300">
-                        {getInitials(currentUser)}
-                      </div>
-                    )}
-                    <span className="hidden lg:inline text-xs font-black text-gray-300 group-hover:text-yellow-500 uppercase tracking-widest transition-colors duration-300">
-                      {getShortName(currentUser)}
-                    </span>
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-yellow-500 transition-colors"
-                  >
-                    Exit
-                  </button>
-                </>
-              ) : (
-                <Link
-                  to="/login"
-                  className="text-[10px] font-black uppercase tracking-widest text-yellow-500 border border-yellow-500/40 hover:bg-yellow-500 hover:text-black px-6 py-2.5 rounded-full transition-all hover:shadow-[0_0_20px_rgba(250,204,21,0.2)]"
-                >
-                  Login
-                </Link>
-              )}
-            </div>
+
           </div>
         </div>
 
@@ -353,42 +274,7 @@ const Navbar = () => {
                   </span>
                 )}
               </Link>
-              {currentUser ? (
-                <button
-                  onClick={handleProfileClick}
-                  className="flex items-center gap-1.5 group focus:outline-none animate-fadeIn"
-                  aria-label="Profile"
-                >
-                  {currentUser.photoURL && !imgFailed ? (
-                    <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-yellow-500/30 shadow-[0_0_5px_rgba(234,179,8,0.1)] transition-all duration-300 flex items-center justify-center bg-slate-950">
-                      <img
-                        src={currentUser.photoURL}
-                        alt={currentUser.displayName || 'Profile'}
-                        className="w-full h-full object-cover"
-                        onError={() => setImgFailed(true)}
-                      />
-                    </div>
-                  ) : currentUser.photoURL && imgFailed ? (
-                    <div className="w-8 h-8 rounded-full bg-slate-950 flex items-center justify-center text-yellow-500 border-2 border-yellow-500/30 shadow-[0_0_5px_rgba(234,179,8,0.1)] transition-all duration-300">
-                      <User size={14} className="text-yellow-500" />
-                    </div>
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500 font-black text-[10px] border-2 border-yellow-500/30 transition-all duration-300">
-                      {getInitials(currentUser)}
-                    </div>
-                  )}
-                  <span className="text-[10px] font-black text-gray-300 uppercase tracking-wider max-w-[60px] truncate">
-                    {getShortName(currentUser)}
-                  </span>
-                </button>
-              ) : (
-                <Link
-                  to="/login"
-                  className="text-[9px] font-black uppercase tracking-widest text-yellow-500 border border-yellow-500/30 px-3 py-1.5 rounded-full hover:bg-yellow-500 hover:text-black transition-all"
-                >
-                  Login
-                </Link>
-              )}
+
             </div>
           </div>
 
@@ -423,67 +309,15 @@ const Navbar = () => {
           <NavLink to="/products" end onClick={() => setMobileOpen(false)} className={mobileCls}>
             Products
           </NavLink>
-          <div className="pt-4 border-t border-yellow-900/10 space-y-4">
-            {currentUser ? (
-              <>
-                <div className="flex items-center gap-4 pb-4 border-b border-yellow-900/10">
-                  {currentUser.photoURL && !imgFailed ? (
-                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-yellow-500/30 flex items-center justify-center bg-slate-950">
-                      <img
-                        src={currentUser.photoURL}
-                        alt={currentUser.displayName || 'Profile'}
-                        className="w-full h-full object-cover"
-                        onError={() => setImgFailed(true)}
-                      />
-                    </div>
-                  ) : currentUser.photoURL && imgFailed ? (
-                    <div className="w-12 h-12 rounded-full bg-slate-950 flex items-center justify-center text-yellow-500 border-2 border-yellow-500/30">
-                      <User size={20} className="text-yellow-500" />
-                    </div>
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500 font-black text-base border-2 border-yellow-500/30">
-                      {getInitials(currentUser)}
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-black text-white uppercase tracking-wider truncate">{currentUser.displayName || 'User'}</p>
-                    <p className="text-[10px] text-gray-500 font-medium tracking-wide truncate">{currentUser.email}</p>
-                  </div>
-                </div>
-
-                {isAdmin && (
-                  <Link
-                    to="/admin"
-                    onClick={() => setMobileOpen(false)}
-                    className="block w-full py-3 bg-yellow-500 text-black text-center font-black uppercase tracking-widest rounded-xl text-xs"
-                  >
-                    Dashboard
-                  </Link>
-                )}
-                <Link
-                  to="/profile"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 text-gray-400 font-bold uppercase tracking-widest text-xs py-2"
-                >
-                  <User size={16} /> Account
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-3 text-red-500 font-bold uppercase tracking-widest text-xs py-2 w-full text-left"
-                >
-                  <X size={16} /> Sign Out
-                </button>
-              </>
-            ) : (
-              <Link
-                to="/login"
-                onClick={() => setMobileOpen(false)}
-                className="block w-full py-3 bg-yellow-500 text-black text-center font-black uppercase tracking-widest rounded-xl text-xs"
-              >
-                Login
-              </Link>
-            )}
-          </div>
+          <NavLink to="/about" end onClick={() => setMobileOpen(false)} className={mobileCls}>
+            About Us
+          </NavLink>
+          <NavLink to="/my-orders" end onClick={() => setMobileOpen(false)} className={mobileCls}>
+            My Orders
+          </NavLink>
+          <NavLink to="/my-complaints" end onClick={() => setMobileOpen(false)} className={mobileCls}>
+            My Complaints
+          </NavLink>
         </div>
       </div>
     </nav>

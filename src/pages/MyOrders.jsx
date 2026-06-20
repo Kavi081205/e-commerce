@@ -1,331 +1,244 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { collection, query, where, orderBy, limit, startAfter, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
-import { useAuth } from '../context/AuthContext';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Loader2, PackageSearch, ShoppingBag, Clock, CheckCircle2, Truck, Package, ChevronDown, ChevronUp, Download, MapPin, CreditCard } from 'lucide-react';
-import PageHeader from '../components/PageHeader';
-import { OrderSkeleton } from '../components/Skeleton';
-import { generateInvoice } from '../utils/invoiceGenerator';
-import OrderTracker from '../components/OrderTracker';
-import { getOptimizedImage } from '../utils/cloudinary';
-
-const ORDERS_PER_PAGE = 3;
+import { db } from '../firebase';
+import { collection, query, orderBy, getDocs, where } from 'firebase/firestore';
+import { Package, AlertCircle, CheckCircle2, Truck, Clock, ChevronDown, ChevronUp, ShoppingBag, MessageSquarePlus } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import ComplaintForm from '../components/ComplaintForm';
 
 const STATUS_CONFIG = {
-  ordered: { color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20', label: 'Ordered' },
-  processing: { color: 'bg-blue-500/10 text-blue-500 border-blue-500/20', label: 'Processing' },
-  shipped: { color: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20', label: 'Shipped' },
-  delivered: { color: 'bg-green-500/10 text-green-500 border-green-500/20', label: 'Delivered' },
-  cancelled: { color: 'bg-red-500/10 text-red-500 border-red-500/20', label: 'Cancelled' }
+  delivered: { label: 'Delivered', color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/30', icon: CheckCircle2 },
+  shipped: { label: 'Shipped', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/30', icon: Truck },
+  processing: { label: 'Processing', color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/30', icon: Clock },
+  ordered: { label: 'Ordered', color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/30', icon: Package },
+  cancelled: { label: 'Cancelled', color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/30', icon: AlertCircle },
 };
 
-const MyOrders = () => {
-  const { currentUser } = useAuth();
+const getStatusConfig = (status) =>
+  STATUS_CONFIG[status?.toLowerCase()] || STATUS_CONFIG.ordered;
+
+export default function MyOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const lastDocRef = useRef(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [expandedOrders, setExpandedOrders] = useState({});
+  const [expandedId, setExpandedId] = useState(null);
+  const [phone, setPhone] = useState('');
+  const [phoneInput, setPhoneInput] = useState('');
+  const [searched, setSearched] = useState(false);
+  const [complaintOrder, setComplaintOrder] = useState(null); // order for complaint modal
 
-  const toggleExpand = (orderId) => {
-    setExpandedOrders(prev => ({
-      ...prev,
-      [orderId]: !prev[orderId]
-    }));
-  };
-
-  const fetchOrders = useCallback(async (isLoadMore = false) => {
-    if (!currentUser?.uid) return;
-
-    if (isLoadMore) setLoadingMore(true);
-    else {
-      setLoading(true);
-      lastDocRef.current = null;
-    }
-
+  const searchOrders = async (e) => {
+    e.preventDefault();
+    if (!phoneInput.trim()) return;
+    setLoading(true);
+    setSearched(true);
     try {
-      let q = query(
+      const cleanPhone = phoneInput.replace(/\D/g, '').slice(-10);
+      setPhone(cleanPhone);
+      const q = query(
         collection(db, 'orders'),
-        where('userId', '==', currentUser.uid),
-        orderBy('createdAt', 'desc'),
-        limit(ORDERS_PER_PAGE)
+        where('phone', '==', cleanPhone),
+        orderBy('createdAt', 'desc')
       );
-
-      if (isLoadMore && lastDocRef.current) {
-        q = query(
+      const snap = await getDocs(q);
+      if (snap.empty) {
+        // Try alternate field
+        const q2 = query(
           collection(db, 'orders'),
-          where('userId', '==', currentUser.uid),
-          orderBy('createdAt', 'desc'),
-          startAfter(lastDocRef.current),
-          limit(ORDERS_PER_PAGE)
+          where('customerPhone', '==', cleanPhone),
+          orderBy('createdAt', 'desc')
         );
-      }
-
-      const snapshot = await getDocs(q);
-      const newOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-      if (isLoadMore) {
-        setOrders(prev => [...prev, ...newOrders]);
+        const snap2 = await getDocs(q2);
+        setOrders(snap2.docs.map(d => ({ id: d.id, ...d.data() })));
       } else {
-        setOrders(newOrders);
+        setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       }
-
-      lastDocRef.current = snapshot.docs[snapshot.docs.length - 1] || null;
-      setHasMore(snapshot.docs.length === ORDERS_PER_PAGE);
-    } catch (error) {
-      console.error("Error fetching orders:", error);
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+      setOrders([]);
     } finally {
       setLoading(false);
-      setLoadingMore(false);
     }
-  }, [currentUser?.uid]);
+  };
 
-  useEffect(() => {
-    fetchOrders();
-  }, [currentUser?.uid, fetchOrders]);
-
-  if (loading) {
-    return (
-      <div className="bg-black min-h-screen">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 space-y-12">
-          <PageHeader title="My Orders" breadcrumbs={[{ label: 'My Orders', path: '/my-orders' }]} />
-          {[...Array(3)].map((_, i) => <OrderSkeleton key={`order-skeleton-${i}`} />)}
-        </div>
-      </div>
-    );
-  }
+  const formatDate = (ts) => {
+    if (!ts) return '—';
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
 
   return (
-    <div className="bg-black min-h-screen text-left pb-24 lg:pb-16">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
-        <PageHeader
-          title="My Orders"
-          breadcrumbs={[{ label: 'My Orders', path: '/my-orders' }]}
-        />
+    <div className="min-h-screen bg-black text-white px-4 py-16">
+      <div className="max-w-3xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <p className="text-yellow-500 text-[9px] font-black uppercase tracking-[0.5em] mb-3">
+            Order History
+          </p>
+          <h1 className="text-4xl font-black uppercase tracking-tighter mb-3">My Orders</h1>
+          <p className="text-gray-500 text-sm">Enter your phone number to view your orders</p>
+        </div>
 
-        {orders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 lg:py-32 bg-neutral-900/30 rounded-3xl border border-yellow-900/10 text-center shadow-2xl">
-            <div className="w-20 h-20 bg-yellow-500/5 text-yellow-500 rounded-full flex items-center justify-center mb-6 border border-yellow-500/20">
-              <PackageSearch size={36} strokeWidth={1} />
-            </div>
-            <h2 className="text-xl lg:text-2xl font-black text-white mb-3 uppercase tracking-tighter">No Orders Found</h2>
-            <p className="text-gray-600 font-medium mb-8 max-w-sm uppercase text-[9px] tracking-[0.2em]">
-              You haven't placed any orders yet. Start shopping to see your orders here.
-            </p>
-            <Link
-              to="/products"
-              className="bg-white text-black font-black py-3.5 px-10 rounded-full transition-all hover:bg-yellow-500 active:scale-95 uppercase tracking-[0.2em] text-[9px]"
-            >
-              Explore Collection
-            </Link>
+        {/* Phone Search */}
+        <form onSubmit={searchOrders} className="flex gap-3 mb-10">
+          <label htmlFor="my-orders-phone" className="sr-only">Phone Number</label>
+          <input
+            id="my-orders-phone"
+            name="phone"
+            type="tel"
+            autoComplete="tel"
+            value={phoneInput}
+            onChange={e => setPhoneInput(e.target.value)}
+            placeholder="Enter your phone number"
+            className="flex-1 bg-gray-900 border border-gray-800 rounded-2xl px-5 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-yellow-500 transition-colors"
+          />
+          <button
+            type="submit"
+            className="bg-yellow-500 text-black px-6 py-4 rounded-2xl font-black uppercase tracking-wider text-sm hover:bg-yellow-400 transition-all active:scale-95"
+          >
+            Search
+          </button>
+        </form>
+
+        {/* Results */}
+        {loading && searched && (
+          <div className="flex items-center justify-center py-20">
+            <div className="w-8 h-8 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : (
-          <div className="space-y-4 lg:space-y-6 mt-6 lg:mt-8">
-            {orders.map((order) => {
-              const safeId = order.id || '';
-              const isExpanded = !!expandedOrders[order.id];
-              const statusKey = (order.status || 'ordered').toLowerCase();
-              const statusCfg = STATUS_CONFIG[statusKey] || STATUS_CONFIG.ordered;
-              
-              const formattedDate = order.createdAt?.toDate
-                ? order.createdAt.toDate().toLocaleDateString('en-IN', {
-                    day: 'numeric', month: 'short', year: 'numeric'
-                  })
-                : 'Recent';
+        )}
 
-              return (
-                <div
-                  key={order.id}
-                  className="bg-neutral-900/40 backdrop-blur-xl rounded-xl border border-neutral-800 overflow-hidden shadow-xl hover:border-neutral-700 transition-all duration-300"
-                >
-                  {/* Order Overview Header */}
-                  <div className="flex items-center justify-between gap-4 px-4 py-4 md:px-6 bg-neutral-950/60 border-b border-neutral-800/80">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] md:text-xs font-black text-neutral-100">
-                          {formattedDate}
-                        </span>
-                        <span className="text-neutral-600 text-xs">•</span>
-                        <span className="text-[9px] md:text-[10px] font-mono font-semibold text-neutral-500 tracking-wider">
-                          #{safeId.slice(-8).toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${statusCfg.color}`}>
-                          {statusCfg.label}
-                        </span>
-                      </div>
-                    </div>
+        {!loading && searched && orders.length === 0 && (
+          <div className="text-center py-20 text-gray-600">
+            <ShoppingBag size={48} className="mx-auto mb-4 opacity-30" />
+            <p className="font-bold text-lg">No orders found</p>
+            <p className="text-sm mt-2">Try a different phone number or <Link to="/products" className="text-yellow-500 underline">shop now</Link></p>
+          </div>
+        )}
 
-                    <div className="text-right">
-                      <p className="text-[8px] font-black text-neutral-500 uppercase tracking-widest mb-0.5">Total Amount</p>
-                      <p className="font-black gold-text text-base md:text-lg tracking-tight">
-                        ₹{(order.totalPrice || 0).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
+        <div className="space-y-4">
+          {orders.map(order => {
+            const cfg = getStatusConfig(order.status || order.orderStatus);
+            const Icon = cfg.icon;
+            const isExpanded = expandedId === order.id;
+            const isDelivered = (order.status || order.orderStatus || '').toLowerCase() === 'delivered';
+            const items = order.items || order.orderedItems || [];
+            const shortId = order.id.slice(-8).toUpperCase();
 
-                  {/* Order Items List (Flipkart-style vertical stack) */}
-                  <div className="divide-y divide-neutral-800/60 px-4 md:px-6">
-                    {order.items?.map((item, idx) => (
-                      <div key={item.id || item.productId || `order-item-${idx}`} className="flex items-center gap-4 py-4">
-                        <div className="w-14 h-14 md:w-16 md:h-16 bg-neutral-950 rounded-lg overflow-hidden flex-shrink-0 border border-neutral-800">
-                          {item.image ? (
-                            <img
-                              src={getOptimizedImage(item.image, 'thumbnail')}
-                              alt={item.name}
-                              loading="lazy"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-neutral-700">
-                              <ShoppingBag size={20} />
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0 space-y-1">
-                          <h4 className="font-black text-neutral-200 truncate text-[11px] md:text-xs uppercase tracking-wider">
-                            {item.name}
-                          </h4>
-                          
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[8px] md:text-[9px] text-neutral-400 uppercase tracking-wide">
-                            {item.color && (
-                              <span>
-                                Color: <strong className="text-neutral-200">{typeof item.color === 'object' ? item.color.name : item.color}</strong>
-                              </span>
-                            )}
-                            {item.size && (
-                              <span>
-                                Size: <strong className="text-neutral-200">{item.size}</strong>
-                              </span>
-                            )}
-                            <span>
-                              Qty: <strong className="text-neutral-200">{item.quantity || 0}</strong>
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="text-right pl-2">
-                          <p className="font-black text-neutral-200 text-xs md:text-sm">
-                            ₹{((item.effectivePrice || item.price || 0) * (item.quantity || 0)).toLocaleString()}
-                          </p>
-                          {item.quantity > 1 && (
-                            <p className="text-[8px] text-neutral-500 font-medium mt-0.5">
-                              (₹{(item.effectivePrice || item.price || 0).toLocaleString()} each)
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Expanded Tracker & Details */}
-                  {isExpanded && (
-                    <div className="bg-neutral-950/40 border-t border-neutral-800/80 px-4 py-5 md:px-6 md:py-6 space-y-6">
-                      {/* Timeline */}
-                      {statusKey !== 'cancelled' && (
-                        <div className="pb-4 border-b border-neutral-800/60">
-                          <p className="text-[8px] font-black text-neutral-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                            <Clock size={12} className="text-yellow-500" />
-                            Delivery Status Timeline
-                          </p>
-                          <OrderTracker currentStatus={order.status || 'ordered'} />
-                        </div>
-                      )}
-
-                      {/* Details Info Grid */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-[10px] md:text-xs">
-                        {/* Delivery Address */}
-                        <div className="space-y-2">
-                          <p className="text-[8px] font-black text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
-                            <MapPin size={12} className="text-yellow-500" />
-                            Delivery Destination
-                          </p>
-                          <div className="p-3 bg-neutral-950/80 rounded-lg border border-neutral-800/60 text-neutral-300 space-y-1 font-medium leading-relaxed">
-                            <p className="font-bold text-neutral-100 uppercase tracking-wide text-[10px]">{order.name}</p>
-                            <p className="text-neutral-400">{order.address}</p>
-                          </div>
-                        </div>
-
-                        {/* Payment Info & Reference */}
-                        <div className="space-y-2">
-                          <p className="text-[8px] font-black text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
-                            <CreditCard size={12} className="text-yellow-500" />
-                            Payment Details
-                          </p>
-                          <div className="p-3 bg-neutral-950/80 rounded-lg border border-neutral-800/60 text-neutral-300 space-y-2">
-                            <div className="flex justify-between items-center">
-                              <span className="text-neutral-500 uppercase text-[9px] tracking-wider">Method</span>
-                              <span className="font-bold text-neutral-200 uppercase tracking-wider">{order.paymentMethod || 'COD'}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-neutral-500 uppercase text-[9px] tracking-wider">Status</span>
-                              <span className={`font-bold uppercase tracking-wider ${
-                                (order.paymentStatus || 'Pending').toLowerCase() === 'paid' ? 'text-green-500' : 'text-amber-500'
-                              }`}>
-                                {order.paymentStatus || 'Pending'}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center pt-1.5 border-t border-neutral-800/60">
-                              <span className="text-neutral-500 uppercase text-[9px] tracking-wider">Order Reference ID</span>
-                              <span className="font-mono text-neutral-400 select-all font-semibold uppercase">{safeId}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Card Footer Actions */}
-                  <div className="flex items-center justify-between gap-4 px-4 py-3 md:px-6 bg-neutral-950/40 border-t border-neutral-800/80">
-                    <button
-                      type="button"
-                      onClick={() => toggleExpand(order.id)}
-                      className="flex items-center gap-1.5 text-neutral-400 hover:text-yellow-500 font-black uppercase tracking-wider text-[9px] transition-colors py-1"
-                    >
-                      {isExpanded ? (
-                        <>Hide Details <ChevronUp size={14} /></>
-                      ) : (
-                        <>Track Order & Details <ChevronDown size={14} /></>
-                      )}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => generateInvoice(order)}
-                      aria-label="Download invoice"
-                      className="flex items-center gap-1.5 bg-neutral-800 hover:bg-yellow-500 text-neutral-300 hover:text-black font-black uppercase tracking-widest text-[8px] py-2 px-3 md:px-4 rounded transition-all duration-200 shadow-md active:scale-95"
-                    >
-                      <Download size={12} />
-                      Invoice
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-
-            {hasMore && (
-              <div className="pt-4 pb-8 flex justify-center">
+            return (
+              <motion.div
+                key={order.id}
+                layout
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden"
+              >
+                {/* Order Header */}
                 <button
-                  onClick={() => fetchOrders(true)}
-                  disabled={loadingMore}
-                  className="group flex items-center gap-3 bg-neutral-900/30 border border-neutral-800 hover:border-yellow-500 text-neutral-400 hover:text-yellow-500 font-black px-10 py-4 rounded-full transition-all active:scale-95 disabled:opacity-50 uppercase tracking-[0.4em] text-[8px]"
+                  type="button"
+                  onClick={() => setExpandedId(isExpanded ? null : order.id)}
+                  className="w-full flex items-center justify-between p-5 text-left hover:bg-gray-800/50 transition-colors"
                 >
-                  {loadingMore ? (
-                    <><Loader2 size={14} className="animate-spin" /> Loading...</>
-                  ) : (
-                    <>Load More <ChevronDown size={14} className="group-hover:translate-y-0.5 transition-transform" /></>
-                  )}
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className={`p-2.5 rounded-xl border ${cfg.bg} shrink-0`}>
+                      <Icon size={18} className={cfg.color} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-black text-white text-sm">#{shortId}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{formatDate(order.createdAt)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 shrink-0">
+                    <div className="text-right hidden sm:block">
+                      <p className="text-yellow-400 font-black">₹{(order.totalPrice || 0).toLocaleString()}</p>
+                      <span className={`text-[10px] font-bold uppercase ${cfg.color}`}>{cfg.label}</span>
+                    </div>
+                    {isExpanded ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
+                  </div>
                 </button>
-              </div>
-            )}
+
+                {/* Expanded Details */}
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-5 pb-5 border-t border-gray-800 pt-4 space-y-4">
+                        {/* Items */}
+                        <div>
+                          <p className="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-3">Items Ordered</p>
+                          <div className="space-y-2">
+                            {items.map((item, i) => (
+                              <div key={i} className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3">
+                                {item.image && (
+                                  <img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-bold text-white truncate">{item.name || item.productName}</p>
+                                  <p className="text-xs text-gray-500">Qty: {item.quantity || 1} · ₹{item.effectivePrice || item.price || 0}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Address */}
+                        {order.address && (
+                          <div>
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">Delivery Address</p>
+                            <p className="text-sm text-gray-300">{order.address}, {order.city}, {order.state} - {order.pincode}</p>
+                          </div>
+                        )}
+
+                        {/* Summary */}
+                        <div className="flex items-center justify-between bg-gray-800/40 rounded-xl p-3">
+                          <div className="text-xs text-gray-500">Total</div>
+                          <div className="font-black text-yellow-400">₹{(order.totalPrice || 0).toLocaleString()}</div>
+                        </div>
+
+                        {/* Raise Complaint — only for delivered orders */}
+                        {isDelivered && (
+                          <button
+                            type="button"
+                            onClick={() => setComplaintOrder(order)}
+                            className="w-full flex items-center justify-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-all rounded-xl py-3 font-bold text-sm"
+                          >
+                            <MessageSquarePlus size={16} />
+                            Raise a Complaint
+                          </button>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Track complaints link */}
+        {searched && orders.length > 0 && (
+          <div className="mt-8 text-center">
+            <Link
+              to="/my-complaints"
+              className="text-yellow-500 text-sm font-bold underline underline-offset-4 hover:text-yellow-400 transition-colors"
+            >
+              View My Complaints →
+            </Link>
           </div>
         )}
       </div>
+
+      {/* Complaint Modal */}
+      {complaintOrder && (
+        <ComplaintForm
+          order={complaintOrder}
+          customerPhone={phone}
+          onClose={() => setComplaintOrder(null)}
+        />
+      )}
     </div>
   );
-};
-
-export default MyOrders;
+}

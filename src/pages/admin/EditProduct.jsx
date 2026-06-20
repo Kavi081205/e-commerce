@@ -536,9 +536,9 @@ const EditProduct = () => {
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
-                  <label htmlFor="prod-name" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Product Name</label>
+                  <label htmlFor="name" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Product Name</label>
                   <input
-                    id="prod-name" type="text" name="name" autoComplete="off"
+                    id="name" type="text" name="name" autoComplete="off"
                     value={formData.name} onChange={handleChange}
                     placeholder="e.g. Premium Wireless Headphones"
                     className={`w-full bg-slate-950 border rounded-xl py-4 px-5 text-white font-medium focus:ring-4 outline-none transition-all ${errors.name ? 'border-red-500 focus:ring-red-500/10' : 'border-yellow-900/20 focus:ring-yellow-500/10 focus:border-yellow-500'}`}
@@ -547,9 +547,9 @@ const EditProduct = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="prod-price" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Price (₹)</label>
+                  <label htmlFor="price" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Price (₹)</label>
                   <input
-                    id="prod-price" type="number" name="price" autoComplete="off"
+                    id="price" type="number" name="price" autoComplete="off"
                     value={formData.price} onChange={handleChange} placeholder="2999"
                     className={`w-full bg-slate-950 border rounded-xl py-4 px-5 text-white font-medium focus:ring-4 outline-none transition-all ${errors.price ? 'border-red-500 focus:ring-red-500/10' : 'border-yellow-900/20 focus:ring-yellow-500/10 focus:border-yellow-500'}`}
                   />
@@ -557,9 +557,9 @@ const EditProduct = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="prod-cost" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Cost Price (₹)</label>
+                  <label htmlFor="costPrice" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Cost Price (₹)</label>
                   <input
-                    id="prod-cost"
+                    id="costPrice"
                     type="number"
                     name="costPrice"
                     value={formData.costPrice || ""}
@@ -571,9 +571,9 @@ const EditProduct = () => {
                 </div>
 
                 <div>
-                    <label htmlFor="prod-stock" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Total Stock (Admin Entry)</label>
+                    <label htmlFor="stock" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Total Stock (Admin Entry)</label>
                     <input
-                      id="prod-stock" type="number" name="stock" autoComplete="off"
+                      id="stock" type="number" name="stock" autoComplete="off"
                       value={hasVariants ? variants.reduce((sum, v) => sum + (formData.category === 'sarees' ? Number(v.stock || 0) : (v.enableSizes ? Object.values(v.sizes || {}).reduce((s, qty) => s + Number(qty), 0) : Number(v.stock || 0))), 0) : formData.stock}
                       onChange={handleChange} placeholder="50" min="0"
                       disabled={hasVariants}
@@ -594,9 +594,9 @@ const EditProduct = () => {
                  </div>
 
                 <div>
-                  <label htmlFor="prod-category" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Category</label>
+                  <label htmlFor="category" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Category</label>
                   <select
-                    id="prod-category" name="category" autoComplete="off"
+                    id="category" name="category" autoComplete="off"
                     value={formData.category} onChange={handleChange}
                     className={`w-full bg-slate-950 border rounded-xl py-4 px-5 text-white font-medium focus:ring-4 outline-none transition-all appearance-none ${errors.category ? 'border-red-500 focus:ring-red-500/10' : 'border-yellow-900/20 focus:ring-yellow-500/10 focus:border-yellow-500'}`}
                   >
@@ -609,9 +609,9 @@ const EditProduct = () => {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label htmlFor="prod-video" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Video URL (Optional)</label>
+                  <label htmlFor="video" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Video URL (Optional)</label>
                   <input
-                    id="prod-video" type="url" name="video" autoComplete="url"
+                    id="video" type="url" name="video" autoComplete="url"
                     value={formData.video} onChange={handleChange}
                     placeholder="https://example.com/video.mp4"
                     className="w-full bg-slate-950 border border-yellow-900/20 rounded-xl py-4 px-5 text-white font-medium focus:ring-4 focus:ring-yellow-500/10 focus:border-yellow-500 outline-none transition-all"
@@ -652,12 +652,12 @@ const EditProduct = () => {
                   </div>
 
                   <div className="relative">
-                    <label htmlFor="prod-image" className="sr-only">Product Image URL</label>
+                    <label htmlFor="image" className="sr-only">Product Image URL</label>
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                       <ImageIcon size={18} className="text-gray-400" aria-hidden="true" />
                     </div>
                     <input
-                      id="prod-image" type="url" name="image" autoComplete="url"
+                      id="image" type="url" name="image" autoComplete="url"
                       value={formData.image} onChange={handleChange}
                       placeholder="https://images.unsplash.com/..."
                       disabled={file}
@@ -669,9 +669,9 @@ const EditProduct = () => {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label htmlFor="prod-description" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Description</label>
+                  <label htmlFor="description" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Description</label>
                   <textarea
-                    id="prod-description" name="description" autoComplete="off"
+                    id="description" name="description" autoComplete="off"
                     rows="4" value={formData.description} onChange={handleChange}
                     placeholder="Describe the product features and specifications..."
                     className={`w-full bg-slate-950 border rounded-xl py-4 px-5 text-white font-medium focus:ring-4 outline-none transition-all resize-none ${errors.description ? 'border-red-500 focus:ring-red-500/10' : 'border-yellow-900/20 focus:ring-yellow-500/10 focus:border-yellow-500'}`}
@@ -700,13 +700,13 @@ const EditProduct = () => {
 
               {/* Variant Manager UI */}
               {hasVariants && (
-                <div className="space-y-8 p-8 bg-slate-950/30 border border-yellow-900/10 rounded-3xl mb-8">
-                  <div className="flex justify-between items-center pb-4 border-b border-yellow-900/10">
+                <div className="space-y-6 sm:space-y-8 p-4 sm:p-8 bg-slate-950/30 border border-yellow-900/10 rounded-3xl mb-8">
+                  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 pb-4 border-b border-yellow-900/10">
                     <h3 className="text-xs font-black text-white uppercase tracking-widest">Variant Manager</h3>
                     <button
                       type="button"
                       onClick={handleAddVariantColor}
-                      className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
+                      className="w-full sm:w-auto px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
                     >
                       + Add Color
                     </button>
@@ -729,7 +729,7 @@ const EditProduct = () => {
                     const tempUrl = tempUrls[colorIdx] || '';
 
                     return (
-                      <div key={colorIdx} className="p-6 bg-gray-900/50 border border-white/5 rounded-2xl relative">
+                      <div key={colorIdx} className="p-4 sm:p-6 bg-gray-900/50 border border-white/5 rounded-2xl relative">
                         {/* Remove button at top right */}
                         <button
                           type="button"
@@ -745,7 +745,7 @@ const EditProduct = () => {
                           {/* 1. Color Name */}
                           <div>
                             <label htmlFor={`variant-color-name-${colorIdx}`} className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Color Name</label>
-                            <div className="flex gap-3 items-center">
+                            <div className="flex flex-col sm:flex-row gap-3">
                               <input
                                 id={`variant-color-name-${colorIdx}`}
                                 name={`variantColorName-${colorIdx}`}
@@ -753,10 +753,10 @@ const EditProduct = () => {
                                 value={v.colorName}
                                 onChange={(e) => handleUpdateVariantColorField(colorIdx, 'colorName', e.target.value)}
                                 placeholder="e.g. Red, Teal, Blue, Pink"
-                                className="flex-1 bg-slate-950 border border-yellow-900/20 rounded-xl p-3 text-xs font-medium text-white outline-none focus:border-yellow-500"
+                                className="w-full bg-slate-950 border border-yellow-900/20 rounded-xl p-3 text-xs font-medium text-white outline-none focus:border-yellow-500"
                               />
                               {v.colorName.trim() && (
-                                <div className="flex items-center gap-2 bg-slate-950 p-2 rounded-xl border border-white/5">
+                                <div className="flex items-center justify-between sm:justify-start gap-2 bg-slate-950 p-2.5 rounded-xl border border-white/5 w-full sm:w-auto">
                                   <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Auto Color:</span>
                                   <div 
                                     className="w-6 h-6 rounded-full border border-white/20 shadow-md transition-all duration-300" 
@@ -852,7 +852,7 @@ const EditProduct = () => {
                                 {v.enableSizes ? (
                                   <div className="space-y-3 bg-slate-950/40 p-4 rounded-xl border border-white/5">
                                     <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Add Sizes & Stock</p>
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-col sm:flex-row gap-2">
                                       <label htmlFor={`variant-size-${colorIdx}`} className="sr-only">Variant Size</label>
                                       <input
                                         id={`variant-size-${colorIdx}`}
@@ -864,7 +864,7 @@ const EditProduct = () => {
                                           [colorIdx]: { ...prev[colorIdx], size: e.target.value }
                                         }))}
                                         placeholder="Size (e.g. S, M, L)"
-                                        className="flex-1 bg-slate-950 border border-yellow-900/20 rounded-lg p-2 text-xs text-white outline-none focus:border-yellow-500"
+                                        className="w-full bg-slate-950 border border-yellow-900/20 rounded-lg p-2 text-xs text-white outline-none focus:border-yellow-500"
                                       />
                                       <label htmlFor={`variant-stock-input-${colorIdx}`} className="sr-only">Variant Stock Qty</label>
                                       <input
@@ -877,7 +877,7 @@ const EditProduct = () => {
                                           [colorIdx]: { ...prev[colorIdx], stock: e.target.value }
                                         }))}
                                         placeholder="Qty"
-                                        className="w-20 bg-slate-950 border border-yellow-900/20 rounded-lg p-2 text-xs text-white outline-none focus:border-yellow-500"
+                                        className="w-full sm:w-20 bg-slate-950 border border-yellow-900/20 rounded-lg p-2 text-xs text-white outline-none focus:border-yellow-500"
                                       />
                                       <button
                                         type="button"
@@ -888,7 +888,7 @@ const EditProduct = () => {
                                             [colorIdx]: { size: '', stock: '' }
                                           }));
                                         }}
-                                        className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all"
+                                        className="w-full sm:w-auto px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all"
                                       >
                                         + Add
                                       </button>
@@ -987,7 +987,7 @@ const EditProduct = () => {
                                 {/* Image URL fallback */}
                                 <div>
                                   <label htmlFor={`variant-image-url-${colorIdx}`} className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Or Paste Image URL</label>
-                                  <div className="flex gap-2">
+                                  <div className="flex flex-col sm:flex-row gap-2">
                                     <input
                                       id={`variant-image-url-${colorIdx}`}
                                       name={`variantImageUrl-${colorIdx}`}
@@ -995,7 +995,7 @@ const EditProduct = () => {
                                       value={tempUrl}
                                       onChange={(e) => setTempUrls(prev => ({ ...prev, [colorIdx]: e.target.value }))}
                                       placeholder="https://example.com/image.jpg"
-                                      className="flex-1 bg-slate-950 border border-yellow-900/10 rounded-lg p-2 text-xs text-white outline-none focus:border-yellow-500"
+                                      className="w-full bg-slate-950 border border-yellow-900/10 rounded-lg p-2 text-xs text-white outline-none focus:border-yellow-500"
                                     />
                                     <button
                                       type="button"
@@ -1003,7 +1003,7 @@ const EditProduct = () => {
                                         handleAddVariantImageUrl(colorIdx, tempUrl);
                                         setTempUrls(prev => ({ ...prev, [colorIdx]: '' }));
                                       }}
-                                      className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white text-[9px] font-black uppercase tracking-widest rounded-lg transition-all"
+                                      className="w-full sm:w-auto px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white text-[9px] font-black uppercase tracking-widest rounded-lg transition-all"
                                     >
                                       Add URL
                                     </button>
@@ -1022,17 +1022,17 @@ const EditProduct = () => {
             </div>
           )}
 
-              <div className="pt-6 flex gap-4">
+              <div className="pt-6 flex flex-col sm:flex-row gap-3">
                 <button
                   type="submit" disabled={isSaving}
-                  className="flex-1 bg-yellow-600 hover:bg-yellow-700 disabled:bg-yellow-400 text-white font-black uppercase tracking-widest py-4 px-8 rounded-xl transition-all shadow-lg shadow-yellow-600/20 active:scale-95 flex items-center justify-center gap-2"
+                  className="w-full sm:flex-1 bg-yellow-600 hover:bg-yellow-700 disabled:bg-yellow-400 text-white font-black uppercase tracking-widest py-4 px-8 rounded-xl transition-all shadow-lg shadow-yellow-600/20 active:scale-95 flex items-center justify-center gap-2"
                 >
                   {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
                   {isSaving ? 'Updating...' : 'Update Product'}
                 </button>
                 <button
                   type="button" onClick={() => navigate('/admin/products')}
-                  className="bg-gray-800 hover:bg-gray-700 text-gray-400 font-black uppercase tracking-widest py-4 px-8 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto bg-gray-800 hover:bg-gray-700 text-gray-400 font-black uppercase tracking-widest py-4 px-8 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
                   <X size={20} /> Cancel
                 </button>

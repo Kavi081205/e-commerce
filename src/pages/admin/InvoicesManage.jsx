@@ -5,7 +5,32 @@ import { getOptimizedImage } from '../../utils/cloudinary';
 import { InvoicePrintView } from '../../components/PrintViews';
 import { FileText, Download, Printer, Search, Loader2, X, Eye, Phone, Mail, MapPin, Truck } from 'lucide-react';
 
-const GSTIN = "33IMVPM1670M1Z9";
+/** Logo with automatic fallback badge for the invoice modal */
+const BrandLogoModal = () => {
+  const [err, setErr] = useState(false);
+  if (err) {
+    return (
+      <svg width="48" height="48" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" aria-label="SMKP TRADERS logo">
+        <circle cx="28" cy="28" r="28" fill="#D4AF37" />
+        <circle cx="28" cy="28" r="24" fill="#0f0f0f" />
+        <text x="28" y="33" textAnchor="middle" fontFamily="Helvetica,Arial,sans-serif" fontWeight="900" fontSize="13" fill="#D4AF37" letterSpacing="1">SMKP</text>
+      </svg>
+    );
+  }
+  return (
+    <img
+      src="/logo.png"
+      alt="SMKP TRADERS Logo"
+      width={48}
+      height={48}
+      onError={() => setErr(true)}
+      style={{ width: 48, height: 48, objectFit: 'contain', flexShrink: 0 }}
+    />
+  );
+};
+
+
+
 
 const InvoicesManage = () => {
   const [invoices, setInvoices] = useState([]);
@@ -21,8 +46,7 @@ const InvoicesManage = () => {
     email: "kaviyarasanmurugan78@gmail.com",
     address: "Pommalappatti",
     state: "Tamil Nadu",
-    country: "India",
-    gstin: GSTIN
+    country: "India"
   });
 
   // Courier Notes editing state
@@ -71,8 +95,7 @@ const InvoicesManage = () => {
             email: settingsData.email || "kaviyarasanmurugan78@gmail.com",
             address: settingsData.address || "Pommalappatti",
             state: settingsData.state || "Tamil Nadu",
-            country: settingsData.country || "India",
-            gstin: settingsData.gstin || GSTIN
+            country: settingsData.country || "India"
           });
         }
       } catch (error) {
@@ -159,7 +182,7 @@ const InvoicesManage = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-12">
         <div>
           <h1 className="text-3xl font-black text-white tracking-tight">Invoice Repository</h1>
-          <p className="text-gray-500 text-sm font-medium">Verify, audit, print, and download generated tax invoices</p>
+          <p className="text-gray-500 text-sm font-medium">Verify, audit, print, and download generated retail invoices</p>
         </div>
       </div>
 
@@ -352,36 +375,45 @@ const InvoicesManage = () => {
             <div className="flex-1 overflow-y-auto p-6 sm:p-10 space-y-6">
               
               {/* Actual Printable Invoice Sheet */}
-              <div id="invoice-print-sheet" className="p-8 border border-gray-100 rounded-3xl space-y-8 print-bg-white print-text-black">
-                {/* Logo & Corporate Title */}
-                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                  <div>
-                    <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase print-text-dark">
-                      {getSenderDetails(selectedInvoice).name}
-                    </h3>
-                    <p className="text-xs text-gray-500 mt-1 print-text-dark font-medium">
-                      Owner: {getSenderDetails(selectedInvoice).ownerName}
-                    </p>
-                    <p className="text-[10px] text-gray-400 mt-0.5 print-text-dark font-medium">
-                      GSTIN: {getSenderDetails(selectedInvoice).gstin}
-                    </p>
+              <div id="invoice-print-sheet" className="border border-gray-100 rounded-3xl overflow-hidden space-y-0 print-bg-white print-text-black">
+                {/* ── Branded Header ── */}
+                <div className="bg-[#0f0f0f] text-white px-6 py-4 flex items-center justify-between print:bg-[#0f0f0f]">
+                  <div className="flex items-center gap-4">
+                    {/* Logo with fallback */}
+                    <BrandLogoModal />
+                    <div>
+                      <h3 className="text-lg font-black text-white uppercase tracking-tight">
+                        {getSenderDetails(selectedInvoice).name}
+                      </h3>
+                      <p className="text-[10px] font-semibold text-yellow-400 tracking-widest uppercase mt-0.5">
+                        Premium E-Commerce Store
+                      </p>
+                      <p className="text-[10px] text-gray-400 mt-1">
+                        Ph: {getSenderDetails(selectedInvoice).phone} &nbsp;|&nbsp; {getSenderDetails(selectedInvoice).email}
+                      </p>
+                      <p className="text-[10px] text-gray-400">
+                        {getSenderDetails(selectedInvoice).address}, {getSenderDetails(selectedInvoice).state}
+                      </p>
+                    </div>
                   </div>
-                  <div className="sm:text-right">
-                    <span className="px-3 py-1 bg-yellow-500/10 border border-yellow-500/30 text-yellow-700 rounded-full text-[9px] font-black uppercase tracking-widest print-border-dark print-text-dark">
-                      TAX INVOICE
+                  <div className="text-right flex-shrink-0">
+                    <span className="inline-block px-3 py-1 bg-yellow-500 text-[#0f0f0f] rounded text-[10px] font-black uppercase tracking-widest">
+                      RETAIL INVOICE
                     </span>
-                    <p className="text-xs font-mono font-bold text-slate-900 mt-3 print-text-dark">
-                      No: {selectedInvoice.invoiceNumber}
+                    <p className="text-xs font-mono font-bold text-white mt-3">
+                      {selectedInvoice.invoiceNumber}
                     </p>
-                    <p className="text-[10px] text-gray-400 mt-1 print-text-dark">
-                      Date: {new Date(selectedInvoice.invoiceDate).toLocaleString('en-IN', {
+                    <p className="text-[10px] text-gray-400 mt-1">
+                      {new Date(selectedInvoice.invoiceDate).toLocaleString('en-IN', {
                         day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
                       })}
                     </p>
                   </div>
                 </div>
+                {/* Gold accent stripe */}
+                <div className="h-1 bg-yellow-500 w-full" />
 
-                <hr className="border-gray-100 print-border-dark" />
+                <div className="p-8 space-y-6">
 
                 {/* Shipping Metadata Strip */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-2xl text-[10px] print-light-bg print-border-dark border border-gray-100">
@@ -498,9 +530,7 @@ const InvoicesManage = () => {
                       <tr className="border-b border-gray-200 text-gray-400 font-bold uppercase text-[9px] tracking-wider print-border-dark print-text-dark">
                         <th className="py-2.5">Item Details</th>
                         <th className="py-2.5 text-center">Qty</th>
-                        <th className="py-2.5 text-right">Taxable Val</th>
-                        <th className="py-2.5 text-right">Discount</th>
-                        <th className="py-2.5 text-right">GST (18%)</th>
+                        <th className="py-2.5 text-right">Unit Price</th>
                         <th className="py-2.5 text-right">Total</th>
                       </tr>
                     </thead>
@@ -508,8 +538,6 @@ const InvoicesManage = () => {
                       {selectedInvoice.items?.map((item, idx) => {
                         const qty = item.quantity || 1;
                         const eff = item.effectivePrice || item.price || 0;
-                        const orig = item.price || item.effectivePrice || 0;
-                        const disc = orig > eff ? (orig - eff) * qty : 0;
                         return (
                           <tr key={item.id || item.productId || `inv-item-${idx}`} className="print-text-dark">
                             <td className="py-3">
@@ -533,9 +561,7 @@ const InvoicesManage = () => {
                               </div>
                             </td>
                             <td className="py-3 text-center text-gray-600 print-text-dark font-medium">{qty}</td>
-                            <td className="py-3 text-right text-gray-600 print-text-dark font-mono">Rs.{(eff / 1.18).toFixed(2)}</td>
-                            <td className="py-3 text-right text-red-500 font-mono">-Rs.{(disc / 1.18).toFixed(2)}</td>
-                            <td className="py-3 text-right text-gray-600 print-text-dark font-mono">Rs.{(eff - (eff / 1.18)).toFixed(2)}</td>
+                            <td className="py-3 text-right text-gray-600 print-text-dark font-mono">Rs.{Number(eff).toFixed(2)}</td>
                             <td className="py-3 text-right font-bold text-gray-800 print-text-dark font-mono">Rs.{(eff * qty).toFixed(2)}</td>
                           </tr>
                         );
@@ -548,19 +574,11 @@ const InvoicesManage = () => {
                 <div className="flex justify-end pt-4">
                   <div className="w-72 space-y-2 text-xs">
                     <div className="flex justify-between text-gray-500 print-text-dark font-medium">
-                      <span>Taxable Subtotal:</span>
-                      <span className="font-mono">Rs.{((selectedInvoice.pricing?.grandTotal - selectedInvoice.pricing?.shipping + selectedInvoice.pricing?.couponDiscount) / 1.18).toFixed(2)}</span>
+                      <span>Subtotal:</span>
+                      <span className="font-mono">Rs.{selectedInvoice.items?.reduce((a, i) => a + (Number(i.effectivePrice || i.price || 0) * Number(i.quantity || 1)), 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-gray-500 print-text-dark font-medium">
-                      <span>CGST (9%):</span>
-                      <span className="font-mono">Rs.{((selectedInvoice.pricing?.grandTotal - selectedInvoice.pricing?.shipping + selectedInvoice.pricing?.couponDiscount - ((selectedInvoice.pricing?.grandTotal - selectedInvoice.pricing?.shipping + selectedInvoice.pricing?.couponDiscount) / 1.18)) / 2).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-gray-500 print-text-dark font-medium">
-                      <span>SGST (9%):</span>
-                      <span className="font-mono">Rs.{((selectedInvoice.pricing?.grandTotal - selectedInvoice.pricing?.shipping + selectedInvoice.pricing?.couponDiscount - ((selectedInvoice.pricing?.grandTotal - selectedInvoice.pricing?.shipping + selectedInvoice.pricing?.couponDiscount) / 1.18)) / 2).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-gray-500 print-text-dark font-medium">
-                      <span>Shipping Charges:</span>
+                      <span>Shipping Charge:</span>
                       <span className="font-mono">Rs.{(selectedInvoice.pricing?.shipping || 0).toFixed(2)}</span>
                     </div>
                     {selectedInvoice.pricing?.couponDiscount > 0 && (
@@ -576,14 +594,17 @@ const InvoicesManage = () => {
                   </div>
                 </div>
               </div>
+            </div>
 
               {/* Edit Courier Notes Panel (Hidden on actual print) */}
               <div className="mt-8 bg-gray-50 rounded-3xl p-6 border border-gray-150 space-y-4 no-print">
-                <h4 className="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                <label htmlFor="courier-notes" className="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
                   <Truck size={16} className="text-yellow-600" /> Edit Courier Instructions
-                </h4>
+                </label>
                 <p className="text-[10px] text-gray-500">Add instructions (e.g. courier routing, gate notes, time slots) to appear on the PDF download and printed copies.</p>
                 <textarea
+                  id="courier-notes"
+                  name="courierNotes"
                   value={courierNotes}
                   onChange={(e) => setCourierNotes(e.target.value)}
                   placeholder="e.g. Handle with care. Leave with neighbor if gate is locked."

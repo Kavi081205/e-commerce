@@ -75,6 +75,7 @@ const WebsiteLayout = () => {
             <nav aria-label="Footer navigation" className="flex items-center gap-6 text-sm">
               <Link to="/" className="hover:text-yellow-500 transition-colors">Home</Link>
               <Link to="/products" className="hover:text-yellow-500 transition-colors">Products</Link>
+              <Link to="/about" className="hover:text-yellow-500 transition-colors">About Us</Link>
               <Link to="/cart" className="hover:text-yellow-500 transition-colors">Cart</Link>
             </nav>
             {/* WhatsApp support */}
@@ -142,17 +143,6 @@ const WebsiteLayout = () => {
             <span>Wishlist</span>
           </NavLink>
 
-          <NavLink
-            to="/my-orders"
-            className={({ isActive }) =>
-              `flex flex-col items-center justify-center gap-1 text-[10px] font-black uppercase tracking-widest transition-all ${
-                isActive ? 'text-yellow-500 scale-105' : 'text-gray-500 hover:text-white'
-              }`
-            }
-          >
-            <Package size={18} />
-            <span>Orders</span>
-          </NavLink>
 
           <NavLink
             to="/cart"

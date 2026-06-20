@@ -3,43 +3,71 @@ import ErrorBoundary from './ErrorBoundary';
 import { Routes, Route, Navigate, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Package,
-  ShoppingCart, LogOut, Menu, X, Zap, IndianRupee, Tag, Layers, Settings as SettingsIcon
+  ShoppingCart, LogOut, Menu, X, Zap, IndianRupee, Tag, Layers,
+  Settings as SettingsIcon, MessageSquareWarning
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { PageSkeleton } from './Skeleton';
 import { lazyWithRetry } from '../utils/lazyWithRetry';
+import { getUnreadComplaintCount } from '../firebase/services';
 
 // Admin Sub-pages (lazy loaded)
-const Dashboard = lazyWithRetry(() => import('../pages/admin/Dashboard'));
-const ProductsManage = lazyWithRetry(() => import('../pages/admin/ProductsManage'));
-const AddProduct = lazyWithRetry(() => import('../pages/admin/AddProduct'));
-const EditProduct = lazyWithRetry(() => import('../pages/admin/EditProduct'));
-const OrdersManage = lazyWithRetry(() => import('../pages/admin/OrdersManage'));
-const InvoicesManage = lazyWithRetry(() => import('../pages/admin/InvoicesManage'));
-const Promotions = lazyWithRetry(() => import('../pages/admin/Promotions'));
-const Expenses = lazyWithRetry(() => import('../pages/admin/Expenses'));
-const AdvancedDashboard = lazyWithRetry(() => import('../pages/admin/AdvancedDashboard'));
-const SetupAdmin = lazyWithRetry(() => import('../pages/admin/SetupAdmin'));
-const CouponsManage = lazyWithRetry(() => import('../pages/admin/CouponsManage'));
-const CategoryManage = lazyWithRetry(() => import('../pages/admin/CategoryManage'));
-const Settings = lazyWithRetry(() => import('../pages/admin/Settings'));
-
-const navigation = [
-  { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, exact: true },
-  { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
-  { name: 'Products', href: '/admin/products', icon: Package },
-  { name: 'Categories', href: '/admin/categories', icon: Layers },
-  { name: 'Coupons', href: '/admin/coupons', icon: Tag },
-  { name: 'Promotions', href: '/admin/promotions', icon: Zap },
-  { name: 'Expenses', href: '/admin/expenses', icon: IndianRupee },
-  { name: 'Settings', href: '/admin/settings', icon: SettingsIcon },
-];
+const Dashboard           = lazyWithRetry(() => import('../pages/admin/Dashboard'));
+const ProductsManage      = lazyWithRetry(() => import('../pages/admin/ProductsManage'));
+const AddProduct          = lazyWithRetry(() => import('../pages/admin/AddProduct'));
+const EditProduct         = lazyWithRetry(() => import('../pages/admin/EditProduct'));
+const OrdersManage        = lazyWithRetry(() => import('../pages/admin/OrdersManage'));
+const InvoicesManage      = lazyWithRetry(() => import('../pages/admin/InvoicesManage'));
+const Promotions          = lazyWithRetry(() => import('../pages/admin/Promotions'));
+const Expenses            = lazyWithRetry(() => import('../pages/admin/Expenses'));
+const AdvancedDashboard   = lazyWithRetry(() => import('../pages/admin/AdvancedDashboard'));
+const SetupAdmin          = lazyWithRetry(() => import('../pages/admin/SetupAdmin'));
+const CouponsManage       = lazyWithRetry(() => import('../pages/admin/CouponsManage'));
+const CategoryManage      = lazyWithRetry(() => import('../pages/admin/CategoryManage'));
+const Settings            = lazyWithRetry(() => import('../pages/admin/Settings'));
+const ComplaintsManage    = lazyWithRetry(() => import('../pages/admin/ComplaintsManage'));
 
 const AdminLayout = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const location = useLocation();
-  const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen]           = useState(false);
+  const [unreadComplaints, setUnreadComplaints] = useState(0);
+  const location  = useLocation();
+  const navigate  = useNavigate();
   const { logout, currentUser, isAdmin } = useAuth();
+
+  // Fetch unread complaint count on mount and every 60s
+  useEffect(() => {
+    const fetchCount = async () => {
+      const count = await getUnreadComplaintCount();
+      setUnreadComplaints(count);
+    };
+    fetchCount();
+    const interval = setInterval(fetchCount, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Reset badge when visiting complaints page
+  useEffect(() => {
+    if (location.pathname.includes('/admin/complaints')) {
+      setUnreadComplaints(0);
+    }
+  }, [location.pathname]);
+
+  const navigation = [
+    { name: 'Dashboard',   href: '/admin',             icon: LayoutDashboard, exact: true },
+    { name: 'Orders',      href: '/admin/orders',      icon: ShoppingCart },
+    { name: 'Products',    href: '/admin/products',    icon: Package },
+    { name: 'Categories',  href: '/admin/categories',  icon: Layers },
+    { name: 'Coupons',     href: '/admin/coupons',     icon: Tag },
+    { name: 'Promotions',  href: '/admin/promotions',  icon: Zap },
+    { name: 'Expenses',    href: '/admin/expenses',    icon: IndianRupee },
+    {
+      name: 'Complaints',
+      href: '/admin/complaints',
+      icon: MessageSquareWarning,
+      badge: unreadComplaints > 0 ? unreadComplaints : null
+    },
+    { name: 'Settings',    href: '/admin/settings',    icon: SettingsIcon },
+  ];
 
   // ✅ Exact match for Dashboard, prefix match for all others
   const isActive = (item) =>
@@ -56,7 +84,7 @@ const AdminLayout = () => {
     }
   };
 
-  // Auto-logout if admin access is revoked (covers both local session and Firebase role).
+  // Auto-logout if admin access is revoked
   useEffect(() => {
     if (!isAdmin) {
       handleLogout();
@@ -90,11 +118,9 @@ const AdminLayout = () => {
         {/* Sidebar Header */}
         <div className="flex items-center justify-between h-20 px-6 border-b border-yellow-900/20 shrink-0">
           <div className="flex items-center gap-3">
-            {/* ✅ Descriptive alt text */}
             <img src="/logo.png" alt="SMKP Traders" className="w-8 h-8 object-contain rounded-lg" />
             <span className="text-lg font-black tracking-widest uppercase">SMKP Admin</span>
           </div>
-          {/* ✅ type="button" — prevents accidental form submission */}
           <button
             type="button"
             className="lg:hidden text-gray-400 hover:text-white transition-colors"
@@ -107,7 +133,6 @@ const AdminLayout = () => {
 
         {/* Nav Links */}
         <nav className="flex-1 overflow-y-auto px-4 py-8 space-y-2" aria-label="Admin navigation">
-          {/* ✅ Stable key (href), no optional chaining on hardcoded constants */}
           {navigation.map((item) => {
             const active = isActive(item);
             const Icon = item.icon;
@@ -118,15 +143,23 @@ const AdminLayout = () => {
                 onClick={closeSidebar}
                 aria-current={active ? 'page' : undefined}
                 className={`flex items-center px-4 py-3 rounded-xl transition-all duration-200 group ${active
-                    ? 'bg-yellow-500 text-white shadow-lg shadow-yellow-500/20'
-                    : 'text-gray-400 hover:bg-yellow-500/10 hover:text-yellow-400'
-                  }`}
+                  ? 'bg-yellow-500 text-white shadow-lg shadow-yellow-500/20'
+                  : 'text-gray-400 hover:bg-yellow-500/10 hover:text-yellow-400'
+                }`}
               >
                 <Icon
                   size={20}
                   className={`mr-3 shrink-0 ${active ? 'text-white' : 'group-hover:text-yellow-400'}`}
                 />
-                <span className="font-semibold">{item.name}</span>
+                <span className="font-semibold flex-1">{item.name}</span>
+                {/* Notification badge */}
+                {item.badge && (
+                  <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-black min-w-[18px] text-center ${
+                    active ? 'bg-white text-yellow-600' : 'bg-red-500 text-white'
+                  }`}>
+                    {item.badge > 9 ? '9+' : item.badge}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -162,6 +195,20 @@ const AdminLayout = () => {
           <div className="flex-1" />
 
           <div className="flex items-center gap-4">
+            {/* Complaint notification bell */}
+            {unreadComplaints > 0 && (
+              <Link
+                to="/admin/complaints"
+                className="relative flex items-center justify-center w-10 h-10 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 hover:bg-red-500/20 transition-all"
+                title={`${unreadComplaints} new complaint(s)`}
+              >
+                <MessageSquareWarning size={18} />
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5">
+                  {unreadComplaints > 9 ? '9+' : unreadComplaints}
+                </span>
+              </Link>
+            )}
+
             <div className="text-right hidden sm:block">
               <p className="text-sm font-bold text-white leading-none">
                 {currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Admin'}
@@ -195,6 +242,7 @@ const AdminLayout = () => {
                 <Route path="advanced-dashboard" element={<AdvancedDashboard />} />
                 <Route path="setup" element={<SetupAdmin />} />
                 <Route path="settings" element={<Settings />} />
+                <Route path="complaints" element={<ComplaintsManage />} />
                 <Route path="*" element={<Navigate to="/admin" replace />} />
               </Routes>
             </Suspense>

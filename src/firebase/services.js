@@ -391,6 +391,7 @@ export const createOrder = async (orderData) => {
         phone: orderData.phone,
         items: orderData.items,
         totalPrice: orderData.totalPrice,
+        profit: Number(orderData.profit || 0),
         subtotal: orderData.subtotal,
         couponCode: orderData.couponCode || null,
         couponDiscount: Number(orderData.couponDiscount || 0),
@@ -689,9 +690,6 @@ export const saveInvoice = async (orderId, orderData) => {
     const deliveryCharge = orderData.deliveryCharge || 0;
     const totalPrice = orderData.totalPrice || 0;
     
-    const subtotalExclGST = subtotal / 1.18;
-    const gstAmount = subtotal - subtotalExclGST;
-    
     // Convert timestamp
     let formattedDate = new Date().toISOString();
     if (orderData.createdAt) {
@@ -712,8 +710,7 @@ export const saveInvoice = async (orderId, orderData) => {
       email: "kaviyarasanmurugan78@gmail.com",
       address: "Pommalappatti",
       state: "Tamil Nadu",
-      country: "India",
-      gstin: "33IMVPM1670M1Z9"
+      country: "India"
     };
 
     try {
@@ -726,8 +723,7 @@ export const saveInvoice = async (orderId, orderData) => {
           email: storeDetails.email || businessDetails.email,
           address: storeDetails.address || businessDetails.address,
           state: storeDetails.state || businessDetails.state,
-          country: storeDetails.country || businessDetails.country,
-          gstin: storeDetails.gstin || businessDetails.gstin
+          country: storeDetails.country || businessDetails.country
         };
       }
     } catch (e) {
@@ -761,11 +757,10 @@ export const saveInvoice = async (orderId, orderData) => {
         discount: Number(item.price || 0) > Number(item.effectivePrice || 0) ? (Number(item.price) - Number(item.effectivePrice)) : 0
       })),
       pricing: {
-        subtotal: subtotalExclGST,
+        subtotal: subtotal,
         discount: items.reduce((acc, item) => acc + (Number(item.price || 0) > Number(item.effectivePrice || 0) ? (Number(item.price) - Number(item.effectivePrice)) * Number(item.quantity || 1) : 0), 0),
         couponDiscount: Number(orderData.couponDiscount || 0),
         shipping: deliveryCharge,
-        gst: gstAmount,
         grandTotal: totalPrice
       },
       createdAt: serverTimestamp()
@@ -801,5 +796,128 @@ export const getInvoiceById = async (orderId) => {
   } catch (error) {
     console.error("Error getting invoice by id:", error);
     throw error;
+  }
+};
+
+// -----------------------------------------------------------------------------
+//  COMPLAINT SERVICES
+// -----------------------------------------------------------------------------
+
+export const submitComplaint = async (complaintData) => {
+  try {
+    const complaintsRef = collection(db, 'complaints');
+    const docRef = await addDoc(complaintsRef, {
+      ...complaintData,
+      status: 'New',
+      priority: 'Medium',
+      adminNotes: '',
+      adminReply: '',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    await createComplaintNotification(docRef.id, complaintData);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error submitting complaint:', error);
+    throw error;
+  }
+};
+
+export const getComplaintsByUser = async (identifier) => {
+  try {
+    const q = query(
+      collection(db, 'complaints'),
+      where('customerPhone', '==', identifier),
+      orderBy('createdAt', 'desc')
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (error) {
+    console.error('Error fetching user complaints:', error);
+    return [];
+  }
+};
+
+export const getAllComplaints = async () => {
+  try {
+    const q = query(collection(db, 'complaints'), orderBy('createdAt', 'desc'));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (error) {
+    console.error('Error fetching all complaints:', error);
+    return [];
+  }
+};
+
+export const getComplaintById = async (complaintId) => {
+  try {
+    const docRef = doc(db, 'complaints', complaintId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) return { id: docSnap.id, ...docSnap.data() };
+    return null;
+  } catch (error) {
+    console.error('Error fetching complaint:', error);
+    return null;
+  }
+};
+
+export const updateComplaint = async (complaintId, updates) => {
+  try {
+    const docRef = doc(db, 'complaints', complaintId);
+    await updateDoc(docRef, { ...updates, updatedAt: serverTimestamp() });
+  } catch (error) {
+    console.error('Error updating complaint:', error);
+    throw error;
+  }
+};
+
+export const createComplaintNotification = async (complaintId, complaintData) => {
+  try {
+    const notifRef = collection(db, 'adminNotifications');
+    const message = `New Complaint from ${complaintData.customerName || 'Customer'}\nOrder: #${(complaintData.orderId || '').slice(-8).toUpperCase()}\nType: ${complaintData.complaintType || 'General'}\nDetails: ${(complaintData.description || '').slice(0, 120)}`;
+    await addDoc(notifRef, {
+      type: 'complaint',
+      complaintId,
+      orderId: complaintData.orderId || '',
+      customerName: complaintData.customerName || '',
+      customerPhone: complaintData.customerPhone || '',
+      complaintType: complaintData.complaintType || '',
+      message,
+      read: false,
+      createdAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error creating complaint notification:', error);
+  }
+};
+
+export const getUnreadComplaintCount = async () => {
+  try {
+    const q = query(
+      collection(db, 'adminNotifications'),
+      where('type', '==', 'complaint'),
+      where('read', '==', false)
+    );
+    const snap = await getDocs(q);
+    return snap.size;
+  } catch (error) {
+    console.error('Error fetching notification count:', error);
+    return 0;
+  }
+};
+
+export const markComplaintNotificationsRead = async () => {
+  try {
+    const q = query(
+      collection(db, 'adminNotifications'),
+      where('type', '==', 'complaint'),
+      where('read', '==', false)
+    );
+    const snap = await getDocs(q);
+    const batch = writeBatch(db);
+    snap.docs.forEach(d => batch.update(d.ref, { read: true }));
+    await batch.commit();
+  } catch (error) {
+    console.error('Error marking notifications read:', error);
   }
 };

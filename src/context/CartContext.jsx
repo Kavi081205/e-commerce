@@ -1,7 +1,8 @@
 import React, { createContext, useState, useEffect, useContext, useCallback, useMemo } from 'react';
 import { usePromo } from './PromoContext';
 import { getEffectivePrice } from '../utils/pricing';
-import { getProductById } from '../firebase/services';
+import { db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 const CartContext = createContext();
 
@@ -64,32 +65,52 @@ export const CartProvider = ({ children }) => {
   useEffect(() => {
     const validateAndCleanupCart = async () => {
       if (cart.length === 0) return;
-      console.log("[Cart Startup Validation] Starting validation of cart items:", cart.map(i => i.id));
-      
+      console.log('[Cart Startup Validation] Starting validation:', cart.map(i => i.id));
+
       const validItems = [];
       let changed = false;
 
       for (const item of cart) {
         const id = item.id;
         const productId = item.productId || id.split('_')[0];
-        console.log(`[Cart Startup Validation] Querying cached product: ${productId}`);
+        console.log(`[Cart Startup Validation] Checking product: ${productId}`);
         try {
-          const productData = await getProductById(productId);
-          
-          if (productData) {
-            validItems.push({
-              ...item,
-              ...productData,
-              id: id,
-              productId: productId
-            });
-          } else {
-            console.warn(`[Cart Startup Validation] Product ${productId} not found in Firestore. Removing from cart.`);
+          const docRef = doc(db, 'products', productId);
+          const docSnap = await getDoc(docRef);
+
+          if (!docSnap.exists()) {
+            console.warn(`[Cart Startup Validation] Product ${productId} deleted — removing from cart.`);
             changed = true;
+            continue;
           }
+
+          const data = docSnap.data();
+          // Check all inactive/deleted/hidden flags
+          if (
+            data.deleted === true ||
+            data.isActive === false ||
+            data.hidden === true ||
+            data.visibility === false ||
+            data.status === 'inactive' ||
+            data.status === 'deleted'
+          ) {
+            console.warn(`[Cart Startup Validation] Product ${productId} is inactive — removing from cart.`);
+            changed = true;
+            continue;
+          }
+
+          // Valid — update volatile fields
+          validItems.push({
+            ...item,
+            name:          data.name          ?? item.name,
+            price:         data.price         ?? item.price,
+            originalPrice: data.originalPrice ?? item.originalPrice,
+            image:         data.image         ?? item.image,
+            stock:         data.stock         ?? item.stock,
+          });
         } catch (err) {
-          console.error(`[Cart Startup Validation] Failed to query product ${productId}:`, err);
-          // Keep item on network/permission error to prevent aggressive user cart loss
+          console.error(`[Cart Startup Validation] Network error for ${productId} — keeping item:`, err);
+          // Keep item on network/permission error — don't aggressively remove
           validItems.push(item);
         }
       }
@@ -101,6 +122,7 @@ export const CartProvider = ({ children }) => {
 
     validateAndCleanupCart();
   }, []);
+
 
   const addToCart = useCallback((product, color = '', size = '', quantity = 1) => {
     let productId = product?.id || product?.productId || product?.docId || product?._id || product?.uid;

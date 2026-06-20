@@ -2,16 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Lock, Mail, ShieldCheck, Loader2, Eye, EyeOff, AlertTriangle, Clock } from 'lucide-react';
-import { getAuth, signOut } from 'firebase/auth';
-import app from '../../firebase';
+import { signOut } from 'firebase/auth';
+import { auth } from '../../firebase';
 import {
   checkLoginRateLimit,
   recordFailedLogin,
   formatLockoutTime,
 } from '../../utils/security';
 import { logFailedLogin, logSecurityEvent } from '../../utils/activityLog';
-
-const auth = getAuth(app);
 
 const AdminLogin = () => {
   const navigate = useNavigate();

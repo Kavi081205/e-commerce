@@ -380,10 +380,12 @@ const CategoryManage = () => {
             <div className="space-y-5">
               {/* Name */}
               <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                <label htmlFor="cat-add-name" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
                   Category Name *
                 </label>
                 <input
+                  id="cat-add-name"
+                  name="name"
                   type="text"
                   value={addForm.name}
                   onChange={handleAddNameChange}
@@ -394,14 +396,17 @@ const CategoryManage = () => {
               </div>
               {/* Slug (auto) */}
               <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                <label htmlFor="cat-add-slug" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
                   Slug (auto-generated)
                 </label>
                 <input
+                  id="cat-add-slug"
+                  name="slug"
                   type="text"
                   value={addForm.slug}
                   onChange={e => setAddForm(prev => ({ ...prev, slug: e.target.value }))}
                   placeholder="e.g. sarees"
+                  autoComplete="off"
                   className="w-full bg-slate-950/50 border border-yellow-900/10 rounded-xl p-4 text-yellow-500/70 font-mono text-sm outline-none"
                 />
                 <p className="text-[10px] text-gray-600 mt-1.5 font-medium">
@@ -526,20 +531,26 @@ const CategoryManage = () => {
                   <div className="p-5 space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Name</label>
+                        <label htmlFor={`cat-edit-name-${cat.id}`} className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Name</label>
                         <input
+                          id={`cat-edit-name-${cat.id}`}
+                          name="name"
                           type="text"
                           value={editForm.name}
                           onChange={handleEditNameChange}
+                          autoComplete="off"
                           className="w-full bg-slate-950 border border-yellow-900/20 focus:border-yellow-500 rounded-lg p-3 text-white text-sm font-medium outline-none transition-all"
                         />
                       </div>
                       <div>
-                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Slug</label>
+                        <label htmlFor={`cat-edit-slug-${cat.id}`} className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Slug</label>
                         <input
+                          id={`cat-edit-slug-${cat.id}`}
+                          name="slug"
                           type="text"
                           value={editForm.slug}
                           onChange={e => setEditForm(prev => ({ ...prev, slug: e.target.value }))}
+                          autoComplete="off"
                           className="w-full bg-slate-950/50 border border-yellow-900/10 rounded-lg p-3 text-yellow-500/70 font-mono text-sm outline-none"
                         />
                       </div>

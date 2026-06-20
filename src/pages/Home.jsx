@@ -14,6 +14,7 @@ import { usePromo } from '../context/PromoContext';
 import { getEffectivePrice } from '../utils/pricing';
 import { getOptimizedImage, getHDImage } from '../utils/cloudinary';
 import ProductRating from '../components/ProductRating';
+import { useValidatedProducts } from '../hooks/useValidatedProducts';
 
 /* ─────────────────────────────────────────────────────────────────
    STATIC DATA (non-category)
@@ -364,17 +365,21 @@ const Home = () => {
   const { promoSettings } = usePromo();
   const { categories, catLoading, productCounts } = useDynamicCategories();
 
-  // Local recently viewed state
-  const [recentlyViewed, setRecentlyViewed] = useState([]);
+  // Recently Viewed — raw list from localStorage (just IDs + cached fields)
+  const [rawRecentlyViewed, setRawRecentlyViewed] = useState([]);
 
   useEffect(() => {
     try {
       const list = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
-      setRecentlyViewed(list);
+      setRawRecentlyViewed(Array.isArray(list) ? list : []);
     } catch (e) {
-      console.error(e);
+      console.error('recentlyViewed parse error:', e);
+      setRawRecentlyViewed([]);
     }
   }, []);
+
+  // Validate each recently-viewed product against Firestore (removes deleted/inactive)
+  const { validItems: recentlyViewed } = useValidatedProducts('recentlyViewed', rawRecentlyViewed);
 
   const bannerIds = promoSettings?.bannerProductIds || [];
   const bannerIdsKey = JSON.stringify(bannerIds);
@@ -653,7 +658,7 @@ const Home = () => {
                 <button
                   key={`slide-dot-${idx}`}
                   onClick={() => setCurrentIndex(idx)}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${safeIndex === idx ? 'w-7 bg-yellow-500' : 'w-1.5 bg-gray-700'}`}
+                  className={`h-1.5 min-h-0 rounded-full transition-all duration-300 ${safeIndex === idx ? 'w-7 bg-yellow-500' : 'w-1.5 bg-gray-700'}`}
                   aria-label={`Slide ${idx + 1}`}
                 />
               ))}

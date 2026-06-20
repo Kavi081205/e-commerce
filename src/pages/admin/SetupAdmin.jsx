@@ -6,13 +6,10 @@
  */
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { auth, db } from '../../firebase';
 import { ShieldCheck, AlertCircle, CheckCircle, Loader2, Info } from 'lucide-react';
-
-// fix #1: use getAuth() with no argument — relies on default Firebase app
-const auth = getAuth();
 
 const SetupAdmin = () => {
   const [user, setUser] = useState(null);

@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@ta
 import { HelmetProvider } from 'react-helmet-async';
 import './index.css';
 import App from './App.jsx';
-import { AuthProvider } from './context/AuthContext';
 import FirebaseStatusBanner from './components/FirebaseStatusBanner.jsx';
 
 // ── Step 1: Clear stale Firebase IndexedDB / localStorage cache ────────────────
@@ -114,11 +113,9 @@ createRoot(rootElement).render(
   <HelmetProvider>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AuthProvider>
           {/* Global Firebase quota recovery banner */}
           <FirebaseStatusBanner />
           <App />
-        </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
   </HelmetProvider>,

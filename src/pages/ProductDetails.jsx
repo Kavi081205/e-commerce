@@ -5,7 +5,6 @@ import { ShoppingCart, Check, Loader2, AlertCircle, Star, Play, X, Minus, Plus }
 import PageHeader from '../components/PageHeader';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePromo } from '../context/PromoContext';
-import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { getEffectivePrice } from '../utils/pricing';
 import { getOptimizedImage, getHDImage } from '../utils/cloudinary';
@@ -96,7 +95,7 @@ const ProductDetails = () => {
   const { id } = useParams();
   const productId = id;
   const currentProductId = id;
-  const { currentUser } = useAuth();
+  const currentUser = null;
   const { showToast } = useNotification();
   const toast = {
     success: (msg) => showToast(msg, 'success'),
@@ -129,7 +128,21 @@ const ProductDetails = () => {
         const productRef = doc(db, 'products', id);
         const docSnap = await getDoc(productRef);
         if (docSnap.exists()) {
-          setProduct({ id: docSnap.id, ...docSnap.data() });
+          const data = docSnap.data();
+          if (
+            data.deleted === true ||
+            data.isActive === false ||
+            data.hidden === true ||
+            data.visibility === false ||
+            data.status === 'inactive' ||
+            data.status === 'deleted'
+          ) {
+            setProduct(null);
+            setIsError(true);
+            setError(new Error("Product not found"));
+          } else {
+            setProduct({ id: docSnap.id, ...data });
+          }
         } else {
           setProduct(null);
           setIsError(true);
@@ -155,6 +168,7 @@ const ProductDetails = () => {
   const [modalVideoUrl, setModalVideoUrl] = useState('');
   const [videoLoading, setVideoLoading] = useState(false);
   const [videoError, setVideoError] = useState(null);
+  const isVerticalVideo = modalVideoUrl && (modalVideoUrl.includes('/shorts/') || modalVideoUrl.includes('vertical'));
 
   const [selectedColor, setSelectedColor] = useState(null);
   const [selectedSize, setSelectedSize] = useState('');
@@ -358,12 +372,20 @@ const ProductDetails = () => {
         const q = query(
           collection(db, 'products'),
           where('category', '==', product.category),
-          limit(5)
+          limit(10) // fetch more to account for filters
         );
         const snapshot = await getDocs(q);
         const list = snapshot.docs
           .map(d => ({ id: d.id, ...d.data() }))
-          .filter(p => p.id !== id)
+          .filter(p => {
+            if (p.id === id) return false;
+            if (p.deleted === true) return false;
+            if (p.isActive === false) return false;
+            if (p.hidden === true) return false;
+            if (p.visibility === false) return false;
+            if (p.status === 'inactive' || p.status === 'deleted') return false;
+            return true;
+          })
           .slice(0, 4);
         setRelatedProducts(list);
       } catch (err) {
@@ -557,12 +579,19 @@ const ProductDetails = () => {
     return match ? match[1] : null;
   };
 
+  const getVideoMimeType = (url) => {
+    if (!url) return 'video/mp4';
+    if (url.includes('.webm')) return 'video/webm';
+    if (url.includes('.ogg')) return 'video/ogg';
+    return 'video/mp4';
+  };
+
   const getVideoType = (url) => {
     if (!url) return null;
     const ytId = getYoutubeId(url);
-    if (ytId) return { type: 'youtube', id: ytId, embedUrl: `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0` };
+    if (ytId) return { type: 'youtube', id: ytId, embedUrl: `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0&mute=1&playsinline=1` };
     const vimId = getVimeoId(url);
-    if (vimId) return { type: 'vimeo', id: vimId, embedUrl: `https://player.vimeo.com/video/${vimId}?autoplay=1` };
+    if (vimId) return { type: 'vimeo', id: vimId, embedUrl: `https://player.vimeo.com/video/${vimId}?autoplay=1&muted=1&playsinline=1` };
     const isDirect = url.includes('.mp4') || url.includes('.webm') || url.includes('.ogg') || 
                      url.includes('firebasestorage.googleapis.com') || 
                      url.match(/\.mp4(?:\?|$)/i);
@@ -1461,9 +1490,9 @@ const ProductDetails = () => {
                   ) : (
                     <form onSubmit={handleReviewSubmit} className="space-y-8">
                       <div className="space-y-3">
-                        <label htmlFor="review-product" className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Product</label>
+                        <label htmlFor="reviewProduct" className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Product</label>
                         <input
-                          id="review-product"
+                          id="reviewProduct"
                           name="reviewProduct"
                           readOnly
                           value={product?.name || ''}
@@ -1471,9 +1500,9 @@ const ProductDetails = () => {
                         />
                       </div>
                       <div className="space-y-3">
-                        <label htmlFor="review-name" className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Your Name</label>
+                        <label htmlFor="reviewName" className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Your Name</label>
                         <input
-                          id="review-name"
+                          id="reviewName"
                           name="reviewName"
                           required
                           value={reviewForm.userName}
@@ -1500,9 +1529,9 @@ const ProductDetails = () => {
                         </div>
                       </div>
                       <div className="space-y-3">
-                        <label htmlFor="review-comment" className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Review</label>
+                        <label htmlFor="reviewComment" className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Review</label>
                         <textarea
-                          id="review-comment"
+                          id="reviewComment"
                           name="reviewComment"
                           required
                           rows="4"
@@ -1598,7 +1627,11 @@ const ProductDetails = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-              className="relative w-full max-w-4xl aspect-video bg-black rounded-3xl overflow-hidden border border-yellow-900/30 shadow-2xl shadow-yellow-500/10"
+              className={
+                isVerticalVideo
+                  ? "relative w-full max-w-[min(380px,85vw)] aspect-[9/16] max-h-[70vh] bg-black rounded-2xl overflow-hidden border border-yellow-900/30 shadow-2xl shadow-yellow-500/10 md:w-full md:max-w-4xl md:aspect-video md:max-h-none md:rounded-3xl flex items-center justify-center"
+                  : "relative w-full max-w-4xl aspect-video bg-black rounded-3xl overflow-hidden border border-yellow-900/30 shadow-2xl shadow-yellow-500/10"
+              }
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close button */}
@@ -1644,17 +1677,21 @@ const ProductDetails = () => {
                 } else if (info?.type === 'direct') {
                   return (
                     <video
-                      src={info.embedUrl}
                       className="w-full h-full object-contain"
                       controls
                       autoPlay
+                      muted
+                      loop
                       playsInline
                       webkit-playsinline="true"
                       onError={(e) => {
                         console.error('[Video Player] Direct video player source error:', e);
                         setVideoError('The video playback failed. The format may not be supported or is corrupted.');
                       }}
-                    />
+                    >
+                      <source src={info.embedUrl} type={getVideoMimeType(info.embedUrl)} />
+                      Your browser does not support the video tag.
+                    </video>
                   );
                 } else {
                   return (

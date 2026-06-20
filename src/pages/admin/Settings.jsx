@@ -174,127 +174,143 @@ const Settings = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {/* Business Name */}
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                <label htmlFor="settings-name" className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                   <Store size={12} className="text-yellow-500" /> Store / Business Name
                 </label>
                 <input
+                  id="settings-name"
                   type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="e.g. SMKP TRADERS"
                   required
+                  autoComplete="organization"
                   className="bg-slate-950/60 border border-yellow-900/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-500 transition-colors"
                 />
               </div>
 
               {/* Owner Name */}
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                <label htmlFor="settings-ownerName" className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                   <User size={12} className="text-yellow-500" /> Owner Name
                 </label>
                 <input
+                  id="settings-ownerName"
                   type="text"
                   name="ownerName"
                   value={formData.ownerName}
                   onChange={handleChange}
                   placeholder="e.g. Kaviyarasan Murugan"
                   required
+                  autoComplete="name"
                   className="bg-slate-950/60 border border-yellow-900/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-500 transition-colors"
                 />
               </div>
 
               {/* Phone */}
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                <label htmlFor="settings-phone" className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                   <Phone size={12} className="text-yellow-500" /> Support Phone
                 </label>
                 <input
+                  id="settings-phone"
                   type="text"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="e.g. 9677417185"
                   required
+                  autoComplete="tel"
                   className="bg-slate-950/60 border border-yellow-900/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-500 transition-colors"
                 />
               </div>
 
               {/* Email */}
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                <label htmlFor="settings-email" className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                   <Mail size={12} className="text-yellow-500" /> Support Email
                 </label>
                 <input
+                  id="settings-email"
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="e.g. email@example.com"
                   required
+                  autoComplete="email"
                   className="bg-slate-950/60 border border-yellow-900/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-500 transition-colors"
                 />
               </div>
 
               {/* Address */}
               <div className="sm:col-span-2 flex flex-col gap-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                <label htmlFor="settings-address" className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                   <MapPin size={12} className="text-yellow-500" /> Street / Local Area Address
                 </label>
                 <input
+                  id="settings-address"
                   type="text"
                   name="address"
                   value={formData.address}
                   onChange={handleChange}
                   placeholder="e.g. Pommalappatti"
                   required
+                  autoComplete="street-address"
                   className="bg-slate-950/60 border border-yellow-900/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-500 transition-colors"
                 />
               </div>
 
               {/* State */}
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                <label htmlFor="settings-state" className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                   State / Territory
                 </label>
                 <input
+                  id="settings-state"
                   type="text"
                   name="state"
                   value={formData.state}
                   onChange={handleChange}
                   placeholder="e.g. Tamil Nadu"
                   required
+                  autoComplete="address-level1"
                   className="bg-slate-950/60 border border-yellow-900/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-500 transition-colors"
                 />
               </div>
 
               {/* Country */}
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                <label htmlFor="settings-country" className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                   Country
                 </label>
                 <input
+                  id="settings-country"
                   type="text"
                   name="country"
                   value={formData.country}
                   onChange={handleChange}
                   placeholder="e.g. India"
                   required
+                  autoComplete="country"
                   className="bg-slate-950/60 border border-yellow-900/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-500 transition-colors"
                 />
               </div>
 
               {/* GSTIN */}
               <div className="sm:col-span-2 flex flex-col gap-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                <label htmlFor="settings-gstin" className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                   <FileText size={12} className="text-yellow-500" /> GSTIN Number (Tax Registry)
                 </label>
                 <input
+                  id="settings-gstin"
                   type="text"
                   name="gstin"
                   value={formData.gstin}
                   onChange={handleChange}
                   placeholder="e.g. 33IMVPM1670M1Z9"
+                  autoComplete="off"
                   className="bg-slate-950/60 border border-yellow-900/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-500 transition-colors uppercase font-mono"
                 />
               </div>

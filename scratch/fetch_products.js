@@ -9,10 +9,8 @@ async function run() {
     }
     console.log(`Found ${data.documents.length} products:`);
     for (const doc of data.documents) {
-      const name = doc.fields?.name?.stringValue || doc.fields?.title?.stringValue || 'Unnamed';
-      const id = doc.name.split('/').pop();
-      const video = doc.fields?.video?.stringValue || doc.fields?.videoUrl?.stringValue || null;
-      console.log(`- ID: ${id} | Name: ${name} | Video: ${video}`);
+      console.log(`--- Product ${doc.name.split('/').pop()} ---`);
+      console.log(JSON.stringify(doc.fields, null, 2));
     }
   } catch (err) {
     console.error('Error fetching products:', err);

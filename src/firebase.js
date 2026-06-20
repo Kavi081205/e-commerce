@@ -10,6 +10,7 @@
  */
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
 import { getFirestore, initializeFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getAnalytics, isSupported } from 'firebase/analytics';
@@ -27,6 +28,8 @@ const firebaseConfig = {
 
 // ── Singleton guard: reuse existing app on HMR / module re-evaluation ──────────
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+
+const auth = getAuth(app);
 
 // ── Firestore: optimized init ──────────────────────────────────────────────────
 // initializeFirestore() throws if called more than once for the same app.
@@ -68,5 +71,5 @@ isSupported()
   })
   .catch(() => { /* silently skip if not supported */ });
 
-export { db, storage, analytics, performance };
+export { auth, db, storage, analytics, performance };
 export default app;

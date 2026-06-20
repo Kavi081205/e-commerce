@@ -147,6 +147,7 @@ const CouponsManage = () => {
                 value={form.code}
                 onChange={handleChange}
                 required
+                autoComplete="off"
                 placeholder="e.g. SAVE100"
                 className="w-full bg-black/50 border border-yellow-900/30 text-white rounded-xl px-4 py-3 text-sm font-black uppercase tracking-widest outline-none focus:border-yellow-500 transition-all"
               />
@@ -209,7 +210,7 @@ const CouponsManage = () => {
             </div>
             <div className="space-y-2 flex flex-col justify-end">
               <label htmlFor="coupon-active" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</label>
-              <label htmlFor="coupon-active" className="flex items-center gap-3 cursor-pointer bg-black/30 border border-yellow-900/20 rounded-xl px-4 py-3">
+              <div className="flex items-center gap-3 cursor-pointer bg-black/30 border border-yellow-900/20 rounded-xl px-4 py-3">
                 <input
                   id="coupon-active"
                   type="checkbox"
@@ -221,7 +222,7 @@ const CouponsManage = () => {
                 <span className="text-sm font-black text-white uppercase tracking-widest">
                   {form.isActive ? 'Active' : 'Disabled'}
                 </span>
-              </label>
+              </div>
             </div>
             <div className="md:col-span-2 lg:col-span-3 flex justify-end">
               <button

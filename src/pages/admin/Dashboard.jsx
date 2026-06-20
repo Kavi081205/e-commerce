@@ -1,25 +1,67 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '../../firebase';
 import { collection, getDocs, getCountFromServer, query, orderBy, limit, where } from 'firebase/firestore';
-import { DollarSign, ShoppingBag, TrendingUp, Users, ArrowUpRight, Loader2, Wallet, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { DollarSign, ShoppingBag, TrendingUp, Users, ArrowUpRight, Loader2, Wallet, CheckCircle, Clock, AlertTriangle, MessageSquareWarning } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { StatSkeleton } from '../../components/Skeleton';
+import { getDeliveryCharge } from '../../firebase/services';
+import { getUnreadComplaintCount } from '../../firebase/services';
 import { getOptimizedImage } from '../../utils/cloudinary';
 import {
   XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, AreaChart, Area
 } from 'recharts';
 
-const calculateOrderProfit = (order) => {
-  if (order.profit != null) return Number(order.profit);
-  const items = order.items || order.products || [];
-  return items.reduce((acc, item) => {
+const calculateOrderProfit = (order, productsCostMap = {}) => {
+  // 2. Do not read a stored profit field unless it actually exists and is a valid number
+  if (order.profit !== undefined && order.profit !== null) {
+    return Number(order.profit);
+  }
+
+  // 3. Calculate profit dynamically for every order
+  const items = order.items || order.products || order.orderedItems || [];
+  const itemProfitSum = items.reduce((acc, item) => {
+    // sellingPrice corresponds to effectivePrice
     const sellingPrice = Number(item.effectivePrice ?? item.price ?? 0);
-    const costPrice = Number(item.cost ?? item.costPrice ?? sellingPrice);
+    // purchasePrice / costPrice corresponds to costPrice
+    const costPrice = Number(item.costPrice ?? item.cost ?? productsCostMap[item.productId] ?? sellingPrice);
     const quantity = Number(item.quantity ?? item.qty ?? 1);
     return acc + (sellingPrice - costPrice) * quantity;
   }, 0);
+
+  const discount = Number(order.couponDiscount || 0);
+  const shipping = Number(order.deliveryCharge || 0);
+
+  // Requirement 5: If shipping is paid by the seller:
+  // Profit = ((Selling Price * Qty) - (Purchase Cost * Qty)) - Shipping - Discount
+  // Shipping is paid by the seller if deliveryCharge is 0
+  let shippingCost = 0;
+  if (shipping === 0 && order.pincode) {
+    const zoneDetails = getDeliveryCharge(order.pincode);
+    shippingCost = Number(zoneDetails?.charge || 0);
+  }
+
+  const calculatedProfit = itemProfitSum - shippingCost - discount;
+
+  // 7. Add console logs: Order ID, Selling Price, Purchase Cost, Quantity, Calculated Profit
+  console.log(`[calculateOrderProfit] Order ID: ${order.id}`);
+  items.forEach(item => {
+    const sPrice = Number(item.effectivePrice ?? item.price ?? 0);
+    const cPrice = Number(item.costPrice ?? item.cost ?? productsCostMap[item.productId] ?? sPrice);
+    const qty = Number(item.quantity ?? item.qty ?? 1);
+    const p = (sPrice - cPrice) * qty;
+    console.log(`  - Item: ${item.name || item.productName || item.productId}`);
+    console.log(`    Selling Price: ₹${sPrice}`);
+    console.log(`    Purchase Cost: ₹${cPrice}`);
+    console.log(`    Quantity: ${qty}`);
+    console.log(`    Calculated Profit: ₹${p}`);
+  });
+  console.log(`  Order-level Discount: ₹${discount}`);
+  console.log(`  Order-level Shipping Cost: ₹${shippingCost}`);
+  console.log(`  Total Calculated Order Profit: ₹${calculatedProfit}`);
+
+  return calculatedProfit;
 };
 
 const formatCurrency = (value) => `₹${Number(value).toLocaleString()}`;
@@ -69,6 +111,7 @@ const Dashboard = () => {
   const [outOfStockProducts, setOutOfStockProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [complaintCount, setComplaintCount] = useState(0);
 
   const { currentUser, isAdmin } = useAuth();
 
@@ -112,6 +155,20 @@ const Dashboard = () => {
       const expensesSnap = await getDocs(collection(db, 'expenses'));
       setTotalExpenses(expensesSnap.docs.reduce((a, d) => a + (Number(d.data().amount) || 0), 0));
 
+      // 6. Fetch complaint count
+      try {
+        const cCount = await getUnreadComplaintCount();
+        setComplaintCount(cCount);
+      } catch (e) { /* non-critical */ }
+
+      // Fetch all products to resolve costPrice for dynamic profit calculations
+      const allProductsSnap = await getDocs(collection(db, 'products'));
+      const productsCostMap = {};
+      allProductsSnap.docs.forEach(d => {
+        const data = d.data();
+        productsCostMap[d.id] = Number(data.costPrice ?? data.cost ?? data.price ?? 0);
+      });
+
       // 6. Fetch orders (one-time getDocs, not onSnapshot)
       const ordersQuery = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
       const ordersSnap = await getDocs(ordersQuery);
@@ -121,9 +178,12 @@ const Dashboard = () => {
         createdAt: d.data().createdAt?.toDate ? d.data().createdAt.toDate() : new Date(d.data().createdAt)
       }));
 
+      // Filter out cancelled orders from calculations
+      const activeDocs = docs.filter(o => o.status?.toLowerCase() !== 'cancelled');
+
       // Calculate order statistics
       const todayStr = new Date().toISOString().split('T')[0];
-      const todayDocs = docs.filter(o => o.createdAt.toISOString().split('T')[0] === todayStr);
+      const todayDocs = activeDocs.filter(o => o.createdAt.toISOString().split('T')[0] === todayStr);
 
       const last7Days = [...Array(7)].map((_, i) => {
         const d = new Date();
@@ -132,27 +192,27 @@ const Dashboard = () => {
       }).reverse();
 
       const chartData = last7Days.map(date => {
-        const dayDocs = docs.filter(o => o.createdAt.toISOString().split('T')[0] === date);
+        const dayDocs = activeDocs.filter(o => o.createdAt.toISOString().split('T')[0] === date);
         return {
           date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           revenue: dayDocs.reduce((a, o) => a + (Number(o.totalPrice) || 0), 0),
-          profit: dayDocs.reduce((a, o) => a + calculateOrderProfit(o), 0)
+          profit: dayDocs.reduce((a, o) => a + calculateOrderProfit(o, productsCostMap), 0)
         };
       });
 
-      const codOrdersCount = docs.filter(o => o.paymentMethod?.toUpperCase() === 'COD').length;
-      const onlineOrdersCount = docs.filter(o => o.paymentMethod?.toUpperCase() === 'ONLINE').length;
-      const paidOrdersCount = docs.filter(o => o.paymentStatus?.toLowerCase() === 'paid').length;
-      const pendingPaymentsCount = docs.filter(o => o.paymentStatus?.toLowerCase() === 'pending' || o.paymentStatus?.toLowerCase() === 'unpaid').length;
-      const pendingPaymentsValue = docs.filter(o => o.paymentStatus?.toLowerCase() === 'pending' || o.paymentStatus?.toLowerCase() === 'unpaid').reduce((a, o) => a + (Number(o.totalPrice) || 0), 0);
+      const codOrdersCount = activeDocs.filter(o => o.paymentMethod?.toUpperCase() === 'COD').length;
+      const onlineOrdersCount = activeDocs.filter(o => o.paymentMethod?.toUpperCase() === 'ONLINE').length;
+      const paidOrdersCount = activeDocs.filter(o => o.paymentStatus?.toLowerCase() === 'paid').length;
+      const pendingPaymentsCount = activeDocs.filter(o => o.paymentStatus?.toLowerCase() === 'pending' || o.paymentStatus?.toLowerCase() === 'unpaid').length;
+      const pendingPaymentsValue = activeDocs.filter(o => o.paymentStatus?.toLowerCase() === 'pending' || o.paymentStatus?.toLowerCase() === 'unpaid').reduce((a, o) => a + (Number(o.totalPrice) || 0), 0);
 
       setOrderStats({
-        totalSales: docs.reduce((a, o) => a + (Number(o.totalPrice) || 0), 0),
-        grossProfit: docs.reduce((a, o) => a + calculateOrderProfit(o), 0),
+        totalSales: activeDocs.reduce((a, o) => a + (Number(o.totalPrice) || 0), 0),
+        grossProfit: activeDocs.reduce((a, o) => a + calculateOrderProfit(o, productsCostMap), 0),
         todaySales: todayDocs.reduce((a, o) => a + (Number(o.totalPrice) || 0), 0),
-        todayProfit: todayDocs.reduce((a, o) => a + calculateOrderProfit(o), 0),
+        todayProfit: todayDocs.reduce((a, o) => a + calculateOrderProfit(o, productsCostMap), 0),
         todayOrders: todayDocs.length,
-        totalOrders: docs.length,
+        totalOrders: activeDocs.length,
         codOrdersCount,
         onlineOrdersCount,
         paidOrdersCount,
@@ -205,13 +265,16 @@ const Dashboard = () => {
       return;
     }
 
+    const todayProfitPct = orderStats.todaySales > 0 ? ((orderStats.todayProfit / orderStats.todaySales) * 100).toFixed(1) : '0.0';
+
     const date = new Date().toLocaleDateString('en-IN');
     const message =
       `📊 *SMKP TRADERS DAILY REPORT*\n\n` +
       `📅 *Date:* ${date}\n\n` +
       `📦 *Orders:* ${orderStats.todayOrders}\n` +
       `💰 *Sales:* ₹${orderStats.todaySales.toLocaleString()}\n` +
-      `📈 *Profit:* ₹${orderStats.todayProfit.toLocaleString()}\n\n` +
+      `📈 *Profit:* ₹${orderStats.todayProfit.toLocaleString()}\n` +
+      `📊 *Profit %:* ${todayProfitPct}%\n\n` +
       `Keep pushing! 🚀`;
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
@@ -278,6 +341,22 @@ const Dashboard = () => {
         <StatCard title="Paid Orders" value={orderStats.paidOrdersCount || 0} icon={CheckCircle} color="bg-green-500" />
         <StatCard title="Pending Payments" value={formatCurrency(orderStats.pendingPaymentsValue || 0)} icon={Clock} color="bg-red-500" trend={`${orderStats.pendingPaymentsCount || 0} Orders`} />
       </div>
+
+      {/* Complaints Quick Link */}
+      {complaintCount > 0 && (
+        <Link to="/admin/complaints">
+          <div className="mb-6 bg-red-500/10 border border-red-500/30 rounded-2xl px-5 py-4 flex items-center justify-between hover:bg-red-500/20 transition-all">
+            <div className="flex items-center gap-3">
+              <MessageSquareWarning size={20} className="text-red-400" />
+              <div>
+                <p className="text-sm font-black text-red-400">{complaintCount} New Complaint{complaintCount > 1 ? 's' : ''} Awaiting Review</p>
+                <p className="text-xs text-gray-500">Click to manage customer complaints</p>
+              </div>
+            </div>
+            <ArrowUpRight size={16} className="text-red-400" />
+          </div>
+        </Link>
+      )}
 
       {/* Analytics Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 mb-10">
@@ -447,6 +526,32 @@ const Dashboard = () => {
           <div className="bg-gradient-to-br from-gray-900 to-slate-900 rounded-2xl shadow-xl p-8 text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-3xl -mr-16 -mt-16" />
             <h2 className="text-xl font-black uppercase tracking-widest mb-6 relative z-10">Quick Actions</h2>
+            
+            {/* Daily stats summary display */}
+            <div className="space-y-3 mb-6 relative z-10 bg-black/40 p-4 rounded-2xl border border-yellow-500/10">
+              <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest mb-2 pb-1 border-b border-yellow-500/10">Daily Report Summary</p>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-gray-400 font-bold uppercase tracking-wider">Orders:</span>
+                <span className="font-black text-white">{orderStats.todayOrders}</span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-gray-400 font-bold uppercase tracking-wider">Sales:</span>
+                <span className="font-black text-white">₹{orderStats.todaySales.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-gray-400 font-bold uppercase tracking-wider">Profit:</span>
+                <span className={`font-black ${orderStats.todayProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  ₹{orderStats.todayProfit.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-gray-400 font-bold uppercase tracking-wider">Profit %:</span>
+                <span className={`font-black ${orderStats.todayProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {orderStats.todaySales > 0 ? ((orderStats.todayProfit / orderStats.todaySales) * 100).toFixed(1) : '0.0'}%
+                </span>
+              </div>
+            </div>
+
             <div className="space-y-4 relative z-10">
               <Link to="/admin/products" className="flex items-center justify-between w-full p-4 bg-gray-900/5 hover:bg-gray-900/10 border border-white/10 rounded-xl transition-all group">
                 <span className="font-bold text-sm tracking-wide">Manage Products</span>

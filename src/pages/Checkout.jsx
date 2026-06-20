@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
 import { Loader2, ShieldCheck, MapPin, Plus, Home, Briefcase, Trash2, Smartphone, Tag, X, ChevronRight, CreditCard, Package, CheckCircle2, Edit2 } from 'lucide-react';
 import { createOrder, getDeliveryCharge, saveInvoice } from '../firebase/services';
 import PageHeader from '../components/PageHeader';
@@ -19,10 +18,28 @@ import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firesto
 import { validatePhone, validatePincode, validateName } from '../utils/security';
 import { getProductById } from '../firebase/services';
 
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 const Checkout = () => {
   const { cart, getCartTotal, clearCart, removeFromCart } = useCart();
+
+  useEffect(() => {
+    loadRazorpayScript();
+  }, []);
   const { promoSettings } = usePromo();
-  const { currentUser, updateProfile } = useAuth();
   const { showToast } = useNotification();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -31,8 +48,17 @@ const Checkout = () => {
   const [checkoutStep, setCheckoutStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState('online'); // 'online' or 'cod'
 
-  const [addresses, setAddresses] = useState(currentUser?.addresses || []);
-  const [selectedAddressId, setSelectedAddressId] = useState(currentUser?.defaultAddressId || null);
+  const [addresses, setAddresses] = useState(() => {
+    try {
+      const stored = localStorage.getItem('guest_addresses');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [selectedAddressId, setSelectedAddressId] = useState(() => {
+    return localStorage.getItem('guest_defaultAddressId') || null;
+  });
   const [showNewAddressForm, setShowNewAddressForm] = useState(addresses.length === 0);
   const [addressToDelete, setAddressToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -58,15 +84,7 @@ const Checkout = () => {
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
 
-  const addressesKey = useMemo(() => JSON.stringify(currentUser?.addresses || []), [currentUser?.addresses]);
-  useEffect(() => {
-    if (currentUser?.addresses) {
-      setAddresses(currentUser.addresses);
-      if (!selectedAddressId && currentUser.addresses.length > 0) {
-        setSelectedAddressId(currentUser.defaultAddressId || currentUser.addresses[0].id);
-      }
-    }
-  }, [addressesKey, currentUser?.defaultAddressId, selectedAddressId]);
+
 
   useEffect(() => {
     const item = localStorage.getItem('buyNow');
@@ -184,10 +202,9 @@ const Checkout = () => {
     const newAddress = { ...formData, id: Date.now().toString() };
     const updatedAddresses = [...addresses, newAddress];
     try {
-      await updateProfile({
-        addresses: updatedAddresses,
-        defaultAddressId: selectedAddressId || newAddress.id
-      });
+      const nextDefaultId = selectedAddressId || newAddress.id;
+      localStorage.setItem('guest_addresses', JSON.stringify(updatedAddresses));
+      localStorage.setItem('guest_defaultAddressId', nextDefaultId);
       setAddresses(updatedAddresses);
       setSelectedAddressId(newAddress.id);
       setShowNewAddressForm(false);
@@ -220,14 +237,17 @@ const Checkout = () => {
 
     const updatedAddresses = addresses.filter(a => a.id !== id);
     try {
-      const nextDefaultId = currentUser?.defaultAddressId === id
+      const storedDefaultId = localStorage.getItem('guest_defaultAddressId');
+      const nextDefaultId = storedDefaultId === id
         ? (updatedAddresses[0]?.id || null)
-        : currentUser?.defaultAddressId;
+        : storedDefaultId;
 
-      await updateProfile({
-        addresses: updatedAddresses,
-        defaultAddressId: nextDefaultId || null
-      });
+      localStorage.setItem('guest_addresses', JSON.stringify(updatedAddresses));
+      if (nextDefaultId) {
+        localStorage.setItem('guest_defaultAddressId', nextDefaultId);
+      } else {
+        localStorage.removeItem('guest_defaultAddressId');
+      }
 
       setAddresses(updatedAddresses);
 
@@ -254,7 +274,7 @@ const Checkout = () => {
       setFormData(prev => ({ ...prev, pincode: code }));
       if (code.length === 6) {
         try {
-          const response = await fetch(`https://api.postalpincode.in/pincode/${code}`, {
+          const response = await fetch(`https://api.apibharat.com/v1/pincode/${code}`, {
             method: 'GET',
             headers: { 'Accept': 'application/json' },
             mode: 'cors',
@@ -262,14 +282,14 @@ const Checkout = () => {
           if (!response.ok) {
             throw new Error(`Pincode API failed with status ${response.status}`);
           }
-          const data = await response.json();
-          if (data && data[0] && data[0].Status === "Success") {
-            const details = data[0].PostOffice[0];
+          const resJson = await response.json();
+          if (resJson && resJson.success && resJson.data) {
+            const details = resJson.data;
             setFormData(prev => ({
               ...prev,
-              city: `${details.District}, ${details.State}`
+              city: `${details.district}, ${details.state}`
             }));
-            showToast(`Location found: ${details.District}`, "success");
+            showToast(`Location found: ${details.district}`, "success");
           }
         } catch (error) {
           // Silently ignore pincode lookup failures — city can be entered manually
@@ -381,7 +401,11 @@ const Checkout = () => {
             doc(db, "products", productId)
           );
           if (productDoc.exists()) {
-            validItems.push(item);
+            const productData = productDoc.data();
+            validItems.push({
+              ...item,
+              costPrice: Number(productData.costPrice ?? productData.cost ?? productData.price ?? 0)
+            });
           } else {
             invalidProductIds.push(item.id);
           }
@@ -431,6 +455,7 @@ const Checkout = () => {
           image: item.image || '',
           price: Number(item.originalPrice ?? item.price ?? 0), // Store original price
           effectivePrice: sellingPrice, // Store the price it was sold at
+          costPrice: costPrice, // Store actual cost price
           profit: itemProfit,
           quantity: item.quantity || 1,
           color: item.color || '',
@@ -453,7 +478,7 @@ const Checkout = () => {
         landmark: activeAddress.landmark || '',
         district: activeAddress.district || parsedDistrict,
         state: activeAddress.state || parsedState,
-        userId: currentUser?.uid || 'guest',
+        userId: 'guest',
         items: enrichedItems,
         subtotal: subtotal,
         couponCode: couponData?.code || null,
@@ -462,8 +487,15 @@ const Checkout = () => {
         deliveryZone: deliveryZone || 'Standard Zone',
         estimatedDeliveryDays: deliveryDays || '--',
         totalPrice: Math.max(0, finalTotal),
-        profit: totalProfit,
-        userEmail: currentUser?.email || 'unknown',
+        profit: (() => {
+          let finalOrderProfit = totalProfit - couponDiscount;
+          if (deliveryCharge === 0 && activeAddress.pincode) {
+            const zoneDetails = getDeliveryCharge(activeAddress.pincode);
+            finalOrderProfit -= Number(zoneDetails?.charge || 0);
+          }
+          return finalOrderProfit;
+        })(),
+        userEmail: 'unknown',
         createdAt: new Date(),
         status: 'ordered',
         paymentMethod: paymentMethod === 'online' ? 'Razorpay' : 'COD',
@@ -472,7 +504,7 @@ const Checkout = () => {
         customerDetails: {
           name: activeAddress.name,
           phone: activeAddress.phone,
-          email: currentUser?.email || 'unknown',
+          email: 'unknown',
           address: activeAddress.address,
           district: activeAddress.district || parsedDistrict,
           state: activeAddress.state || parsedState,
@@ -498,25 +530,7 @@ const Checkout = () => {
       // ── Duplicate order guard ──────────────────────────────────────────────
       // Prevent accidental double-submission: reject if an identical order was
       // placed by this user within the last 60 seconds.
-      if (currentUser?.uid) {
-        const sixtySecondsAgo = new Date(Date.now() - 60_000);
-        const dupQuery = query(
-          collection(db, 'orders'),
-          where('userId', '==', currentUser.uid),
-          where('totalPrice', '==', Math.max(0, orderData.totalPrice)),
-        );
-        const dupSnap = await getDocs(dupQuery);
-        const isDuplicate = dupSnap.docs.some(d => {
-          const created = d.data().createdAt;
-          const createdDate = created?.toDate ? created.toDate() : new Date(created);
-          return createdDate > sixtySecondsAgo;
-        });
-        if (isDuplicate) {
-          showToast('This order was already placed. Check My Orders to avoid duplicates.', 'error');
-          setLoading(false);
-          return;
-        }
-      }
+      // Duplicate order check bypassed for Guest checkout
 
       const executeOrderCreation = async (payloadData) => {
         const finalOrderId = await createOrder(payloadData);
@@ -524,7 +538,7 @@ const Checkout = () => {
         // Log order creation to activity trail
         try {
           await logOrderEvent(finalOrderId, 'order_created', {
-            userId: currentUser?.uid,
+            userId: 'guest',
             totalPrice: payloadData.totalPrice,
             itemCount: payloadData.items?.length,
             paymentMethod: payloadData.paymentMethod,
@@ -578,8 +592,9 @@ const Checkout = () => {
       };
 
       if (paymentMethod === 'online') {
-        if (!window.Razorpay) {
-          showToast("Razorpay SDK failed to load. Please refresh the page.", "error");
+        const isLoaded = await loadRazorpayScript();
+        if (!isLoaded || !window.Razorpay) {
+          showToast("Razorpay SDK failed to load. Please check your internet connection.", "error");
           setLoading(false);
           return;
         }
@@ -639,7 +654,7 @@ const Checkout = () => {
           },
           prefill: {
             name: activeAddress.name,
-            email: currentUser?.email || 'unknown',
+            email: 'unknown',
             contact: activeAddress.phone,
           },
           theme: {

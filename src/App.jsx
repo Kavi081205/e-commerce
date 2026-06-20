@@ -1,6 +1,6 @@
-import { useState, useCallback, useRef, Suspense } from 'react';
+import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { lazyWithRetry } from './utils/lazyWithRetry';
 
 // UX Screens
@@ -22,13 +22,13 @@ const Cart = lazyWithRetry(() => import('./pages/Cart'));
 const Checkout = lazyWithRetry(() => import('./pages/Checkout'));
 const ThankYou = lazyWithRetry(() => import('./pages/ThankYou'));
 const OrderConfirmation = lazyWithRetry(() => import('./pages/OrderConfirmation'));
-const Profile = lazyWithRetry(() => import('./pages/Profile'));
 const Wishlist = lazyWithRetry(() => import('./pages/Wishlist'));
+const About = lazyWithRetry(() => import('./pages/About'));
+const MyOrders = lazyWithRetry(() => import('./pages/MyOrders'));
+const MyComplaints = lazyWithRetry(() => import('./pages/MyComplaints'));
 const NotFound = lazyWithRetry(() => import('./pages/NotFound'));
 const AdminLogin = lazyWithRetry(() => import('./pages/admin/AdminLogin'));
 const AdminLayout = lazyWithRetry(() => import('./components/AdminLayout'));
-const AuthSystem = lazyWithRetry(() => import('./components/AuthSystem'));
-const MyOrders = lazyWithRetry(() => import('./pages/MyOrders'));
 
 import { WishlistProvider } from './context/WishlistContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -46,18 +46,7 @@ const IS_ADMIN_DOMAIN =
   typeof window !== 'undefined' &&
   window.location.hostname.startsWith('admin.');
 
-// ─── Route Guards ─────────────────────────────────────────────────────────────
 
-// CustomerRoute: requires a logged-in non-admin user.
-// — Unauthenticated → /login
-// — Admin account   → /admin  (prevents admin session leaking into customer UI)
-const CustomerRoute = ({ children }) => {
-  const { currentUser, loading, isAdmin } = useAuth();
-  if (loading) return null;
-  if (!currentUser) return <Navigate to="/login" replace />;
-  if (isAdmin) return <Navigate to="/admin" replace />;
-  return children;
-};
 
 // AdminRoute: requires an active admin session.
 // Accepts EITHER a local adminSession (set by adminLogin direct-check)
@@ -66,37 +55,54 @@ const CustomerRoute = ({ children }) => {
 const AdminRoute = ({ children }) => {
   const { currentUser, loading, isAdmin, adminSession } = useAuth();
   const location = useLocation();
+  console.log('[AdminRoute] Check - Loading:', loading, 'User:', currentUser?.email, 'isAdmin:', isAdmin, 'adminSession:', adminSession);
 
   // Wait for AuthContext to finish resolving the Firebase Auth state.
-  if (loading) return null;
+  if (loading) {
+    console.log('[AdminRoute] Auth is loading, displaying LoadingScreen');
+    return <LoadingScreen onDone={() => {}} />;
+  }
 
   // Grant access if the local admin session is active OR Firebase user is admin.
   if (!isAdmin && !adminSession) {
+    console.log('[AdminRoute] Redirecting to /admin-login (Unauthorized access)');
     return <Navigate to="/admin-login" replace state={{ from: location }} />;
   }
 
+  console.log('[AdminRoute] Access granted for admin:', currentUser?.email || 'session-check');
   return children;
 };
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 function App() {
-  const { currentUser, loading, isAdmin } = useAuth();
-  const user = currentUser;
+  const authLoading = false;
 
   // Capture once on mount — avoids re-evaluating shouldShowSplash on re-renders
   const showSplash = useRef(shouldShowSplash()).current;
 
   // Phase: 'loading' → 'splash' (first visit only) → 'ready'
   const [phase, setPhase] = useState('loading');
+  const [loadingDone, setLoadingDone] = useState(false);
 
   const handleLoadingDone = useCallback(() => {
-    setPhase(showSplash ? 'splash' : 'ready');
-  }, [showSplash]);
+    console.log('[App] LoadingScreen visual animation timer completed.');
+    setLoadingDone(true);
+  }, []);
 
   const handleSplashDone = useCallback(() => {
+    console.log('[App] SplashScreen presentation completed.');
     setPhase('ready');
   }, []);
+
+  // Coordinated route mounting: wait for both LoadingScreen timer and Firebase Auth
+  useEffect(() => {
+    console.log('[App] Coordination check - loadingDone:', loadingDone, 'authLoading:', authLoading, 'phase:', phase);
+    if (loadingDone && !authLoading && phase === 'loading') {
+      console.log('[App] Transitioning phase from loading to:', showSplash ? 'splash' : 'ready');
+      setPhase(showSplash ? 'splash' : 'ready');
+    }
+  }, [loadingDone, authLoading, phase, showSplash]);
 
   return (
     <PromoProvider>
@@ -106,8 +112,8 @@ function App() {
           {phase === 'loading' && <LoadingScreen onDone={handleLoadingDone} />}
           {phase === 'splash' && <SplashScreen onDone={handleSplashDone} />}
 
-          {/* ✅ Routes only mount once the app is ready — prevents premature Firestore listeners */}
-          {phase === 'ready' && (
+          {/* ✅ Routes only mount once the app is ready and auth state has resolved */}
+          {phase === 'ready' && !authLoading && (
             <ErrorBoundary>
               <Suspense fallback={<PageSkeleton />}>
                 <Routes>
@@ -122,21 +128,13 @@ function App() {
                     <Route path="/cart" element={<Cart />} />
                     <Route path="/thank-you" element={<ThankYou />} />
                     <Route path="/order-confirmation" element={<OrderConfirmation />} />
-                    <Route
-                      path="/login"
-                      element={
-                        currentUser
-                          ? <Navigate to="/" replace />
-                          : <AuthSystem />
-                      }
-                    />
-                    <Route path="/checkout" element={<CustomerRoute><Checkout /></CustomerRoute>} />
-                    <Route path="/my-orders" element={<CustomerRoute><MyOrders /></CustomerRoute>} />
-                    <Route
-                      path="/profile"
-                      element={<Profile/>}
-                    />
-                    <Route path="/wishlist" element={<CustomerRoute><Wishlist /></CustomerRoute>} />
+                    <Route path="/login" element={<Navigate to="/" replace />} />
+                    <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/profile" element={<Navigate to="/" replace />} />
+                    <Route path="/wishlist" element={<Wishlist />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/my-orders" element={<MyOrders />} />
+                    <Route path="/my-complaints" element={<MyComplaints />} />
                     {/* 404 fallback — renders inside the store layout (keeps Navbar/Footer) */}
                     <Route path="*" element={<NotFound />} />
                   </Route>
@@ -147,7 +145,7 @@ function App() {
                       the loading guard here is unnecessary. */}
                   <Route
                     path="/admin-login"
-                    element={<AdminLogin />}
+                    element={<AuthProvider><AdminLogin /></AuthProvider>}
                   />
 
                   {/* Production admin-subdomain (admin.smkptraders.com):
@@ -163,9 +161,11 @@ function App() {
                   <Route
                     path="/admin/*"
                     element={
-                      <AdminRoute>
-                        <AdminLayout />
-                      </AdminRoute>
+                      <AuthProvider>
+                        <AdminRoute>
+                          <AdminLayout />
+                        </AdminRoute>
+                      </AuthProvider>
                     }
                   />
 
