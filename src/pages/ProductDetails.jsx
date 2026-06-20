@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -188,6 +188,18 @@ const ProductDetails = () => {
   const [selectedSize, setSelectedSize] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('details');
+
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (videoModalOpen && videoRef.current) {
+      console.log('Video Modal Opened: calling load() and play() on ref');
+      videoRef.current.load();
+      videoRef.current.play().catch((err) => {
+        console.warn('Video playback autoplay rejected/blocked:', err);
+      });
+    }
+  }, [videoModalOpen, modalVideoUrl]);
 
 
 
@@ -1585,7 +1597,7 @@ const ProductDetails = () => {
           onClick={closeVideoModal}
         >
           <div
-            className="relative w-full max-w-4xl aspect-video rounded-3xl bg-black overflow-hidden border border-white/10 shadow-2xl flex items-center justify-center"
+            className="relative w-full max-w-4xl max-h-[90vh] rounded-3xl bg-black overflow-hidden border border-white/10 shadow-2xl flex items-center justify-center"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}
@@ -1598,14 +1610,19 @@ const ProductDetails = () => {
 
             {modalVideoUrl && (
               <video
+                ref={videoRef}
                 key={modalVideoUrl}
                 src={modalVideoUrl}
                 controls
                 autoPlay
                 playsInline
+                controlsList="nodownload"
                 preload="metadata"
-                crossOrigin="anonymous"
-                className={`w-full h-full object-contain rounded-3xl ${videoError ? 'hidden' : 'block'}`}
+                disablePictureInPicture
+                webkit-playsinline="true"
+                muted={false}
+                loop={false}
+                className={`w-full max-h-[90vh] object-contain rounded-3xl ${videoError ? 'hidden' : 'block'}`}
                 onLoadedData={() => {
                   console.log('Video Event: onLoadedData succeeded for URL:', modalVideoUrl);
                   setVideoError(false);
@@ -1615,8 +1632,17 @@ const ProductDetails = () => {
                   setVideoError(false);
                 }}
                 onError={(e) => {
-                  console.error('Video Event: onError failed for URL:', modalVideoUrl, e);
-                  setVideoError(true);
+                  const video = e.currentTarget;
+                  if (video.error) {
+                    console.log("HTML5 Video Error code:", video.error.code);
+                    console.log("MediaError object:", video.error);
+                    // Only trigger videoError state if the error is fatal (code 3/decode or 4/src_not_supported)
+                    if (video.error.code === 3 || video.error.code === 4) {
+                      setVideoError(true);
+                    }
+                  } else {
+                    console.warn("Video onError event fired without an active video.error object");
+                  }
                 }}
               >
                 Your browser does not support HTML5 video.
