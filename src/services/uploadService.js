@@ -184,3 +184,126 @@ export const uploadImage = async (file, options = {}) => {
     }
   }
 };
+
+/**
+ * Uploads a video file directly to Cloudinary's video endpoint.
+ * Supports MP4, MOV, and WEBM formats up to 100 MB.
+ * Returns the secure_url string to save in Firestore as product.video.
+ *
+ * @param {File} file - The video file to upload
+ * @param {object} options
+ * @param {number} options.timeoutMs - Request timeout in ms (default: 120000 — 2 min for large videos)
+ * @returns {Promise<string>} Cloudinary secure_url
+ */
+export const uploadVideo = async (file, options = {}) => {
+  const timeoutMs = options.timeoutMs ?? 120000; // 2-minute timeout for large videos
+
+  console.group("Cloudinary Video Upload");
+
+  // 1. File presence check
+  if (!file) {
+    const err = new Error("No video file selected.");
+    console.error("Video Upload Error:", err.message);
+    console.groupEnd();
+    throw err;
+  }
+
+  console.log("Video File Details:", {
+    name: file.name,
+    type: file.type,
+    sizeBytes: file.size,
+    sizeMB: (file.size / (1024 * 1024)).toFixed(2)
+  });
+
+  // 2. Size validation — 100 MB max
+  const MAX_VIDEO_SIZE_MB = 100;
+  if (file.size > MAX_VIDEO_SIZE_MB * 1024 * 1024) {
+    const err = new Error(`Video file is too large. Maximum allowed size is ${MAX_VIDEO_SIZE_MB} MB. Your file is ${(file.size / (1024 * 1024)).toFixed(1)} MB.`);
+    console.error("Video Upload Error:", err.message);
+    console.groupEnd();
+    throw err;
+  }
+
+  // 3. Format validation — MP4, MOV, WEBM only
+  const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
+  const ALLOWED_EXTENSIONS = [".mp4", ".mov", ".webm"];
+  const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+  const isValidType = ALLOWED_VIDEO_TYPES.includes(file.type) || ALLOWED_EXTENSIONS.includes(ext);
+  if (!isValidType) {
+    const err = new Error(`Unsupported video format. Please upload an MP4, MOV, or WEBM file. Got: ${file.type || ext}`);
+    console.error("Video Upload Error:", err.message);
+    console.groupEnd();
+    throw err;
+  }
+
+  // 4. Build Cloudinary endpoint — /video/upload
+  const cloudName = CLOUDINARY_CLOUD_NAME || FALLBACK_CLOUD_NAME;
+  const uploadPreset = CLOUDINARY_UPLOAD_PRESET || FALLBACK_UPLOAD_PRESET;
+  const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`;
+
+  console.log("Video Upload Configuration:", { uploadUrl, uploadPreset });
+
+  // 5. Prepare FormData
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", uploadPreset);
+
+  // 6. Single-attempt upload (no retry — videos are large, retrying wastes bandwidth)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    console.log("Starting video upload to Cloudinary...");
+    const startTime = performance.now();
+
+    const res = await fetch(uploadUrl, {
+      method: "POST",
+      body: formData,
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    const durationMs = ((performance.now() - startTime) / 1000).toFixed(1);
+    console.log(`Video upload response received in ${durationMs}s. Status: ${res.status}`);
+
+    if (!res.ok) {
+      let errorData = null;
+      let responseText = "";
+      try {
+        responseText = await res.text();
+        errorData = JSON.parse(responseText);
+      } catch (_) { /* ignore */ }
+
+      const apiMsg = errorData?.error?.message || responseText || `HTTP ${res.status}`;
+      console.error("Cloudinary video upload failed:", apiMsg);
+
+      if (res.status === 401 || res.status === 403) {
+        throw new Error(`Unauthorized. Check your Cloudinary upload preset allows video uploads. Details: ${apiMsg}`);
+      }
+      throw new Error(`Video upload failed: ${apiMsg}`);
+    }
+
+    const data = await res.json();
+    console.log("Video Upload Success! secure_url:", data.secure_url);
+    console.groupEnd();
+    return data.secure_url;
+
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      const timeoutErr = new Error(`Video upload timed out after ${timeoutMs / 1000} seconds. Try a smaller file or check your connection.`);
+      console.error("Video Upload Error:", timeoutErr.message);
+      console.groupEnd();
+      throw timeoutErr;
+    }
+    if (err instanceof TypeError && err.message === "Failed to fetch") {
+      const netErr = new Error("Network error during video upload. Check your internet connection.");
+      console.error("Video Upload Error:", netErr.message);
+      console.groupEnd();
+      throw netErr;
+    }
+    console.error("Video Upload Error:", err.message);
+    console.groupEnd();
+    throw err;
+  }
+};

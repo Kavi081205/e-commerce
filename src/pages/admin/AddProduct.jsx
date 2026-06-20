@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { addProduct, uploadImage } from '../../firebase/services';
+import { addProduct, uploadImage, uploadVideo } from '../../firebase/services';
 import { db } from '../../firebase';
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import {
   Image as ImageIcon, UploadCloud, Loader2,
-  CheckCircle, AlertCircle, FilePlus
+  CheckCircle, AlertCircle, FilePlus, Video, X as XIcon
 } from 'lucide-react';
 import { getOptimizedImage } from '../../utils/cloudinary';
 
@@ -69,6 +69,8 @@ const AddProduct = () => {
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(''); // ✅ Managed object URL
+  const [videoFile, setVideoFile] = useState(null);
+  const [videoUploading, setVideoUploading] = useState(false);
   const [categories, setCategories] = useState([]);
 
   // Load active categories dynamically from Firestore
@@ -344,6 +346,22 @@ const AddProduct = () => {
         }
       }
 
+      // Upload video to Cloudinary if a video file was selected
+      let videoUrl = formData.video || '';
+      if (videoFile) {
+        setVideoUploading(true);
+        try {
+          videoUrl = await uploadVideo(videoFile);
+        } catch (vidErr) {
+          setError(`Video upload failed: ${vidErr.message}`);
+          setLoading(false);
+          setVideoUploading(false);
+          return;
+        } finally {
+          setVideoUploading(false);
+        }
+      }
+
       // Prepare variants with colors and correct stock/sizes mapping
       const preparedVariants = hasVariants ? variants.map(v => {
         let sizes = { ...(v.sizes || {}) };
@@ -380,7 +398,7 @@ const AddProduct = () => {
         description: formData.description.trim(),
         category: formData.category,
         image: imageUrl,
-        video: formData.video || '',
+        video: videoUrl,
         stock: totalStock,
         costPrice: Number(formData.costPrice),
         variants: hasVariants ? preparedVariants : [],
@@ -393,6 +411,7 @@ const AddProduct = () => {
         category: categories.length > 0 ? categories[0].slug : ''
       });
       setFile(null);
+      setVideoFile(null);
       setVariants([]);
       setHasVariants(false);
       setTimeout(() => setSuccess(''), 3000);
@@ -655,17 +674,73 @@ const AddProduct = () => {
                 </div>
               </div>
 
+              {/* ── Cloudinary Video Upload ──────────────────────────────── */}
               <div>
-                <label htmlFor="video" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">
-                  Video URL (Optional)
+                <p className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                  Upload Product Video <span className="text-gray-600 font-medium normal-case tracking-normal">(Optional)</span>
+                </p>
+
+                {/* Existing video URL preview */}
+                {formData.video && !videoFile && (
+                  <div className="flex items-center gap-3 mb-3 p-3 bg-green-500/10 border border-green-500/20 rounded-xl">
+                    <Video size={16} className="text-green-400 flex-shrink-0" />
+                    <p className="text-[10px] font-bold text-green-400 uppercase tracking-wider truncate flex-1">Video URL saved</p>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, video: '' }))}
+                      className="text-red-400 hover:text-red-300 transition-colors flex-shrink-0"
+                      title="Remove video"
+                    >
+                      <XIcon size={14} />
+                    </button>
+                  </div>
+                )}
+
+                <label
+                  htmlFor="video-upload"
+                  className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-[2rem] cursor-pointer transition-all ${
+                    videoFile
+                      ? 'border-yellow-500 bg-yellow-500/10'
+                      : 'border-yellow-900/20 bg-slate-950 hover:bg-gray-800 hover:border-yellow-400'
+                  }`}
+                >
+                  <input
+                    type="file"
+                    id="video-upload"
+                    name="video-upload"
+                    accept=".mp4,.mov,.webm,video/mp4,video/quicktime,video/webm"
+                    onChange={(e) => {
+                      const selected = e.target.files[0];
+                      if (selected) {
+                        setVideoFile(selected);
+                        setFormData(prev => ({ ...prev, video: '' }));
+                      }
+                    }}
+                    className="sr-only"
+                  />
+                  <Video className={`w-7 h-7 mb-2 ${videoFile ? 'text-yellow-500' : 'text-gray-400'}`} />
+                  <p className={`text-xs font-bold uppercase tracking-widest ${videoFile ? 'text-yellow-600' : 'text-gray-500'}`}>
+                    {videoUploading ? 'Uploading to Cloudinary...' : videoFile ? videoFile.name : 'Select Product Video'}
+                  </p>
+                  <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-tighter">MP4, MOV, WEBM · Max 100 MB</p>
                 </label>
-                <input
-                  id="video" type="url" name="video" autoComplete="url"
-                  value={formData.video} onChange={handleInputChange}
-                  placeholder="https://example.com/video.mp4"
-                  className="w-full bg-slate-950 border border-yellow-900/20 rounded-2xl focus:ring-4 focus:ring-yellow-500/10 focus:border-yellow-500 p-4 outline-none transition-all font-medium text-white"
-                />
-                <p className="mt-2 text-[10px] text-gray-400 font-medium italic">Supports MP4, YouTube, or direct video links.</p>
+
+                {/* Clear video file */}
+                {videoFile && !videoUploading && (
+                  <button
+                    type="button"
+                    onClick={() => setVideoFile(null)}
+                    className="mt-2 text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 transition-colors"
+                  >
+                    ✕ Remove video file
+                  </button>
+                )}
+                {videoUploading && (
+                  <div className="mt-2 flex items-center gap-2 text-yellow-500">
+                    <Loader2 size={14} className="animate-spin" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Uploading video...</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

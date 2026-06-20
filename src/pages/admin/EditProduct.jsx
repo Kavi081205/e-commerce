@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../../firebase';
 import { doc, getDoc, updateDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
-import { uploadImage } from '../../firebase/services';
-import { Save, X, Loader2, Image as ImageIcon, AlertCircle, FilePlus, CheckCircle, UploadCloud } from 'lucide-react';
+import { uploadImage, uploadVideo } from '../../firebase/services';
+import { Save, X, Loader2, Image as ImageIcon, AlertCircle, FilePlus, CheckCircle, UploadCloud, Video, X as XIcon } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import { getOptimizedImage } from '../../utils/cloudinary';
 
@@ -129,6 +129,8 @@ const EditProduct = () => {
   }, []);
 
   const [file, setFile] = useState(null);
+  const [videoFile, setVideoFile] = useState(null);
+  const [videoUploading, setVideoUploading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -390,6 +392,22 @@ const EditProduct = () => {
         }
       }
 
+      // Upload video to Cloudinary if a new video file was selected
+      let videoUrl = formData.video || '';
+      if (videoFile) {
+        setVideoUploading(true);
+        try {
+          videoUrl = await uploadVideo(videoFile);
+        } catch (vidErr) {
+          setError(`Video upload failed: ${vidErr.message}`);
+          setIsSaving(false);
+          setVideoUploading(false);
+          return;
+        } finally {
+          setVideoUploading(false);
+        }
+      }
+
       // Prepare variants with colors and correct stock/sizes mapping
       const preparedVariants = hasVariants ? variants.map(v => {
         let sizes = { ...(v.sizes || {}) };
@@ -424,16 +442,14 @@ const EditProduct = () => {
         name: formData.name || "",
         price: Number(formData.price) || 0,
         originalPrice: Number(formData.price) || 0,
-        stock: totalStock,   // exact value admin typed — never auto-modified
+        stock: totalStock,
         costPrice: Number(formData.costPrice),
-        // NOTE: 'cost' legacy field removed — use 'costPrice' everywhere
         category: formData.category || "Uncategorized",
-        video: formData.video || "",
+        video: videoUrl,
         description: formData.description || "No description",
         image: imageUrl || "",
         variants: hasVariants ? preparedVariants : [],
         hasVariants: hasVariants
-        // soldCount is NEVER touched here — only incremented by createOrder()
       });
 
       // Show success feedback
@@ -608,14 +624,79 @@ const EditProduct = () => {
                   {errors.category && <p className="text-red-500 text-[10px] font-bold uppercase tracking-wider mt-1.5 ml-1">{errors.category}</p>}
                 </div>
 
+                {/* ── Cloudinary Video Upload ────────────────────────── */}
                 <div className="md:col-span-2">
-                  <label htmlFor="video" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Video URL (Optional)</label>
-                  <input
-                    id="video" type="url" name="video" autoComplete="url"
-                    value={formData.video} onChange={handleChange}
-                    placeholder="https://example.com/video.mp4"
-                    className="w-full bg-slate-950 border border-yellow-900/20 rounded-xl py-4 px-5 text-white font-medium focus:ring-4 focus:ring-yellow-500/10 focus:border-yellow-500 outline-none transition-all"
-                  />
+                  <p className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                    Upload Product Video <span className="text-gray-600 font-medium normal-case tracking-normal">(Optional)</span>
+                  </p>
+
+                  {/* Existing video URL — show preview link + clear button */}
+                  {formData.video && !videoFile && (
+                    <div className="flex items-center gap-3 mb-3 p-3 bg-green-500/10 border border-green-500/20 rounded-xl">
+                      <Video size={16} className="text-green-400 flex-shrink-0" />
+                      <a
+                        href={formData.video}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] font-bold text-green-400 uppercase tracking-wider truncate flex-1 hover:text-green-300 transition-colors"
+                      >
+                        Current Video (click to preview)
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, video: '' }))}
+                        className="text-red-400 hover:text-red-300 transition-colors flex-shrink-0"
+                        title="Remove video"
+                      >
+                        <XIcon size={14} />
+                      </button>
+                    </div>
+                  )}
+
+                  <label
+                    htmlFor="video-upload"
+                    className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-[2rem] cursor-pointer transition-all ${
+                      videoFile
+                        ? 'border-yellow-500 bg-yellow-500/10'
+                        : 'border-yellow-900/20 bg-slate-950 hover:bg-gray-800 hover:border-yellow-400'
+                    }`}
+                  >
+                    <input
+                      type="file"
+                      id="video-upload"
+                      name="video-upload"
+                      accept=".mp4,.mov,.webm,video/mp4,video/quicktime,video/webm"
+                      onChange={(e) => {
+                        const selected = e.target.files[0];
+                        if (selected) {
+                          setVideoFile(selected);
+                          setFormData(prev => ({ ...prev, video: '' }));
+                        }
+                      }}
+                      className="sr-only"
+                    />
+                    <Video className={`w-7 h-7 mb-2 ${videoFile ? 'text-yellow-500' : 'text-gray-400'}`} />
+                    <p className={`text-xs font-bold uppercase tracking-widest ${videoFile ? 'text-yellow-600' : 'text-gray-500'}`}>
+                      {videoUploading ? 'Uploading to Cloudinary...' : videoFile ? videoFile.name : (formData.video ? 'Replace Video' : 'Select Product Video')}
+                    </p>
+                    <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-tighter">MP4, MOV, WEBM · Max 100 MB</p>
+                  </label>
+
+                  {videoFile && !videoUploading && (
+                    <button
+                      type="button"
+                      onClick={() => setVideoFile(null)}
+                      className="mt-2 text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 transition-colors"
+                    >
+                      ✕ Remove video file
+                    </button>
+                  )}
+                  {videoUploading && (
+                    <div className="mt-2 flex items-center gap-2 text-yellow-500">
+                      <Loader2 size={14} className="animate-spin" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Uploading video...</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="md:col-span-2">

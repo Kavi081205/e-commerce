@@ -18,7 +18,7 @@ import {
   runTransaction      // ✅ Added for atomic order creation
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { uploadImage as cloudinaryUpload } from '../services/uploadService';
+import { uploadImage as cloudinaryUpload, uploadVideo as cloudinaryVideoUpload } from '../services/uploadService';
 
 // --- In-Memory Query Cache & Loading Guards ---
 const queryCache = new Map();
@@ -204,6 +204,7 @@ export const updateProduct = async (id, productData) => {
 };
 
 export const uploadImage = cloudinaryUpload;
+export const uploadVideo = cloudinaryVideoUpload;
 
 export const deleteProduct = async (id) => {
   try {

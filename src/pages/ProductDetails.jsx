@@ -182,11 +182,7 @@ const ProductDetails = () => {
   const [isZooming, setIsZooming] = useState(false);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [modalVideoUrl, setModalVideoUrl] = useState('');
-  const [videoLoading, setVideoLoading] = useState(false);
   const [videoError, setVideoError] = useState(null);
-  // isVerticalVideo: drives the 9:16 portrait container for Shorts
-  const isVerticalVideo = modalVideoUrl &&
-    (/\/shorts\//i.test(modalVideoUrl) || modalVideoUrl.includes('vertical'));
 
   const [selectedColor, setSelectedColor] = useState(null);
   const [selectedSize, setSelectedSize] = useState('');
@@ -615,97 +611,18 @@ const ProductDetails = () => {
     setZoomPos({ x, y });
   };
 
-  const getYoutubeId = (url) => {
-    if (!url) return null;
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
-  };
-
-  const getVimeoId = (url) => {
-    if (!url) return null;
-    const regExp = /vimeo\.com\/(?:video\/)?([0-9]+)/;
-    const match = url.match(regExp);
-    return match ? match[1] : null;
-  };
-
-  const getVideoMimeType = (url) => {
-    if (!url) return 'video/mp4';
-    if (/\.webm(\?|$)/i.test(url)) return 'video/webm';
-    if (/\.ogg(\?|$)/i.test(url)) return 'video/ogg';
-    if (/\.mov(\?|$)/i.test(url)) return 'video/quicktime';
-    return 'video/mp4';
-  };
-
-  const getVideoType = (url) => {
-    if (!url) return null;
-
-    // ── YouTube (watch, youtu.be, shorts) ──────────────────────────────────
-    // Uses youtube-nocookie.com: YouTube's privacy-enhanced embed domain.
-    // Samsung Internet's Smart Anti-Tracking blocks www.youtube.com iframes
-    // as third-party trackers. The nocookie domain is explicitly whitelisted
-    // because it doesn't set tracking cookies, so it passes the blocker.
-    const ytId = getYoutubeId(url);
-    if (ytId) {
-      const isShorts = /\/shorts\//i.test(url);
-      const embedUrl = `https://www.youtube-nocookie.com/embed/${ytId}?playsinline=1&rel=0`;
-      return { type: 'youtube', id: ytId, embedUrl, isShorts };
-    }
-
-    // ── Vimeo ───────────────────────────────────────────────────────────────
-    const vimId = getVimeoId(url);
-    if (vimId) return {
-      type: 'vimeo',
-      id: vimId,
-      embedUrl: `https://player.vimeo.com/video/${vimId}?autoplay=1&muted=1&playsinline=1`,
-    };
-
-    // ── Direct video file (MP4, WebM, Firebase Storage, Cloudinary) ─────────
-    const isDirect =
-      /\.mp4(\?|$)/i.test(url) ||
-      /\.webm(\?|$)/i.test(url) ||
-      /\.ogg(\?|$)/i.test(url) ||
-      /\.mov(\?|$)/i.test(url) ||
-      url.includes('firebasestorage.googleapis.com') ||
-      url.includes('storage.googleapis.com') ||
-      (url.includes('cloudinary.com') && url.includes('/video/')) ||
-      url.includes('video/upload');
-    if (isDirect) return { type: 'direct', embedUrl: url };
-
-    return null;
-  };
-
-  const getEmbedUrl = (url) => {
-    const info = getVideoType(url);
-    return info ? info.embedUrl : url;
-  };
-
-  const getYoutubeThumbnail = (url) => {
-    const ytId = getYoutubeId(url);
-    if (!ytId) return null;
-    return `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
-  };
+  // ── Video helpers ────────────────────────────────────────────────────────
+  // All YouTube/Vimeo/iframe logic has been removed.
+  // Videos are now Cloudinary MP4s — played natively via HTML5 <video>.
 
   const openVideoModal = (url) => {
     if (!url) {
-      setVideoError('Video not available.');
+      setVideoError('No video available for this product.');
       setVideoModalOpen(true);
-      setVideoLoading(false);
       return;
     }
-
-    const info = getVideoType(url);
-    if (!info) {
-      setVideoError('Video not available (unsupported format).');
-      setVideoModalOpen(true);
-      setVideoLoading(false);
-      return;
-    }
-
-    console.log('[Video Player] Opening video:', url, '| type:', info.type);
     setModalVideoUrl(url);
     setVideoError(null);
-    setVideoLoading(false);
     setVideoModalOpen(true);
   };
 
@@ -713,7 +630,6 @@ const ProductDetails = () => {
     setVideoModalOpen(false);
     setModalVideoUrl('');
     setVideoError(null);
-    setVideoLoading(false);
   };
 
   const getMediaItems = () => {
@@ -762,12 +678,6 @@ const ProductDetails = () => {
     }
   };
 
-  // FIX: previously, whenever ANY key in sizesObj matched a standard size
-  // (e.g. just "M"), the function returned ONLY the six standard sizes and
-  // silently dropped any non-standard keys also present (e.g. "Free Size",
-  // "XS", or a typo'd key). Now we always include every key actually present
-  // in sizesObj, ordered by the standard size list first, with anything else
-  // appended afterward instead of discarded.
   const getAvailableSizes = () => {
     if (!selectedColor || !selectedColor.sizes) return [];
     const sizesObj = selectedColor.sizes;
@@ -936,34 +846,14 @@ const ProductDetails = () => {
                     className="w-full h-full cursor-pointer group/video"
                     onClick={() => openVideoModal(currentMedia.url)}
                   >
-                    {(() => {
-                      const thumb = getYoutubeThumbnail(currentMedia.url);
-                      return thumb ? (
-                        <div className="relative w-full h-full">
-                          <LazyImage
-                            src={thumb}
-                            alt="Video Preview"
-                            className="w-full h-full object-cover"
-                            wrapperClass="w-full h-full"
-                          />
-                          <div className="absolute inset-0 bg-black/30 group-hover/video:bg-black/10 transition-all duration-300" />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-20 h-20 rounded-full bg-yellow-500 flex items-center justify-center shadow-2xl shadow-yellow-500/40 group-hover/video:scale-110 transition-transform duration-300">
-                              <Play size={32} fill="black" className="text-black ml-1" />
-                            </div>
-                          </div>
-                          <p className="absolute bottom-6 left-0 right-0 text-center text-[10px] font-black uppercase tracking-[0.3em] text-white/70">Click to play video</p>
-                        </div>
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-900 border border-yellow-900/10 text-gray-500 p-6 text-center gap-4">
-                          <div className="w-20 h-20 rounded-full bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center">
-                            <Play size={32} className="text-yellow-500 ml-1" />
-                          </div>
-                          <p className="text-xs font-bold uppercase tracking-widest text-white">Watch Product Video</p>
-                          <p className="text-[10px] text-gray-500 max-w-xs">Click to open video player</p>
-                        </div>
-                      );
-                    })()}
+                    {/* Cloudinary video — show play button overlay on dark background */}
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-900 border border-yellow-900/10 text-gray-500 p-6 text-center gap-4">
+                      <div className="w-20 h-20 rounded-full bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center group-hover/video:bg-yellow-500/20 transition-all duration-300">
+                        <Play size={32} className="text-yellow-500 ml-1" />
+                      </div>
+                      <p className="text-xs font-bold uppercase tracking-widest text-white">Watch Product Video</p>
+                      <p className="text-[10px] text-gray-500 max-w-xs">Click to open video player</p>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -986,7 +876,7 @@ const ProductDetails = () => {
                 {mediaItems.map((item, idx) => {
                   const isVideo = item.type === 'video';
                   const thumbSrc = isVideo
-                    ? getYoutubeThumbnail(item.url)
+                    ? null
                     : getOptimizedImage(item.url, 'thumbnail');
 
                   return (
@@ -1670,7 +1560,7 @@ const ProductDetails = () => {
         </button>
       </div>
 
-      {/* ── Video Modal ─────────────────────────────────────────────────────── */}
+      {/* ── Video Modal ──────────────────────────────────────────────── */}
       <AnimatePresence>
         {videoModalOpen && (
           <motion.div
@@ -1681,31 +1571,21 @@ const ProductDetails = () => {
             onClick={closeVideoModal}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
+              initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-              className={
-                isVerticalVideo
-                  ? "relative w-full max-w-[min(380px,85vw)] aspect-[9/16] max-h-[70vh] bg-black rounded-2xl overflow-hidden border border-yellow-900/30 shadow-2xl shadow-yellow-500/10 md:w-full md:max-w-4xl md:aspect-video md:max-h-none md:rounded-3xl flex items-center justify-center"
-                  : "relative w-full max-w-4xl aspect-video bg-black rounded-3xl overflow-hidden border border-yellow-900/30 shadow-2xl shadow-yellow-500/10"
-              }
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-4xl aspect-video rounded-3xl bg-black overflow-hidden border border-white/10 shadow-2xl flex items-center justify-center"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Close button */}
+              {/* Close Button */}
               <button
                 onClick={closeVideoModal}
-                className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/60 border border-white/10 flex items-center justify-center text-white hover:bg-yellow-500 hover:text-black transition-all"
+                className="absolute top-4 right-4 z-50 p-2.5 rounded-full bg-black/40 hover:bg-black/80 text-white/60 hover:text-white border border-white/5 hover:border-white/20 transition-all"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
 
-              {videoLoading ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black gap-4 text-gray-500">
-                  <Loader2 size={36} className="animate-spin text-yellow-500" />
-                  <p className="text-[10px] font-black uppercase tracking-widest">Loading video...</p>
-                </div>
-              ) : videoError ? (
+              {videoError ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-8 text-center gap-4 rounded-3xl">
                   <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500">
                     <AlertCircle size={22} />
@@ -1719,53 +1599,22 @@ const ProductDetails = () => {
                     Close Player
                   </button>
                 </div>
-              ) : (() => {
-                const info = getVideoType(modalVideoUrl);
-                if (info?.type === 'youtube' || info?.type === 'vimeo') {
-                  return (
-                    <iframe
-                      src={info.embedUrl}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                      loading="lazy"
-                      // sandbox is required by Samsung Internet and some Android WebViews:
-                      // without it the browser blocks the iframe before it even loads.
-                      sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox allow-forms"
-                      className="w-full h-full border-none"
-                      title="Product Video"
-                    />
-                  );
-                } else if (info?.type === 'direct') {
-                  return (
-                    <video
-                      key={info.embedUrl}
-                      style={{ width: '100%', height: 'auto', borderRadius: '16px', display: 'block', maxHeight: '80vh' }}
-                      controls
-                      autoPlay
-                      playsInline
-                      preload="metadata"
-                      onError={(e) => {
-                        console.error('[Video Player] Direct video player source error:', e);
-                        setVideoError('The video playback failed. The format may not be supported by your browser.');
-                      }}
-                    >
-                      <source src={info.embedUrl} type={getVideoMimeType(info.embedUrl)} />
-                      <source src={info.embedUrl} type="video/mp4" />
-                      Your browser does not support HTML5 video.
-                    </video>
-                  );
-                } else {
-                  return (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-8 text-center gap-4 rounded-3xl">
-                      <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500">
-                        <AlertCircle size={22} />
-                      </div>
-                      <h3 className="text-white font-black text-xs uppercase tracking-widest">Video Not Available</h3>
-                      <p className="text-gray-400 text-xs max-w-md leading-relaxed">No supported video format was found for this product.</p>
-                    </div>
-                  );
-                }
-              })()}
+              ) : modalVideoUrl ? (
+                <video
+                  key={modalVideoUrl}
+                  controls
+                  autoPlay
+                  playsInline
+                  preload="metadata"
+                  className="w-full h-full object-contain rounded-3xl"
+                  onError={() => setVideoError('Video playback failed. The format may not be supported by your browser.')}
+                >
+                  <source src={modalVideoUrl} type="video/mp4" />
+                  <source src={modalVideoUrl} type="video/webm" />
+                  <source src={modalVideoUrl} type="video/quicktime" />
+                  Your browser does not support HTML5 video.
+                </video>
+              ) : null}
             </motion.div>
             <p className="absolute bottom-6 text-[10px] font-black uppercase tracking-[0.3em] text-white/30">
               Click outside to close
