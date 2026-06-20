@@ -1580,66 +1580,63 @@ const ProductDetails = () => {
       </div>
 
       {/* ── Video Modal ──────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {videoModalOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[999] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
-            onClick={closeVideoModal}
+      {videoModalOpen && (
+        <div
+          className="fixed inset-0 z-[999] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
+          onClick={closeVideoModal}
+        >
+          <div
+            className="relative w-full max-w-4xl aspect-video rounded-3xl bg-black overflow-hidden border border-white/10 shadow-2xl flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
           >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="relative w-full max-w-4xl aspect-video rounded-3xl bg-black overflow-hidden border border-white/10 shadow-2xl flex items-center justify-center"
-              onClick={(e) => e.stopPropagation()}
+            {/* Close Button */}
+            <button
+              onClick={closeVideoModal}
+              className="absolute top-4 right-4 z-50 p-2.5 rounded-full bg-black/40 hover:bg-black/80 text-white/60 hover:text-white border border-white/5 hover:border-white/20 transition-all"
             >
-              {/* Close Button */}
-              <button
-                onClick={closeVideoModal}
-                className="absolute top-4 right-4 z-50 p-2.5 rounded-full bg-black/40 hover:bg-black/80 text-white/60 hover:text-white border border-white/5 hover:border-white/20 transition-all"
-              >
-                <X size={16} />
-              </button>
+              <X size={16} />
+            </button>
 
-              {videoError ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-8 text-center gap-4 rounded-3xl">
-                  <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500">
-                    <AlertCircle size={22} />
-                  </div>
-                  <h3 className="text-white font-black text-xs uppercase tracking-widest">Unable to Play Video</h3>
-                  <p className="text-gray-400 text-xs max-w-md leading-relaxed">{videoError}</p>
-                  <button
-                    onClick={closeVideoModal}
-                    className="mt-2 px-6 py-2.5 rounded-xl bg-white text-black font-black text-[9px] uppercase tracking-widest hover:bg-yellow-500 transition-all"
-                  >
-                    Close Player
-                  </button>
+            {videoError ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-8 text-center gap-4 rounded-3xl">
+                <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500">
+                  <AlertCircle size={22} />
                 </div>
-              ) : modalVideoUrl ? (
-                <video
-                  key={modalVideoUrl}
-                  controls
-                  autoPlay
-                  playsInline
-                  preload="metadata"
-                  crossOrigin="anonymous"
-                  className="w-full h-full object-contain rounded-3xl"
-                  onError={() => setVideoError('Video playback failed. The format may not be supported by your browser.')}
+                <h3 className="text-white font-black text-xs uppercase tracking-widest">Unable to Play Video</h3>
+                <p className="text-gray-400 text-xs max-w-md leading-relaxed">{videoError}</p>
+                <button
+                  onClick={closeVideoModal}
+                  className="mt-2 px-6 py-2.5 rounded-xl bg-white text-black font-black text-[9px] uppercase tracking-widest hover:bg-yellow-500 transition-all"
                 >
-                  <source src={modalVideoUrl} type="video/mp4" />
-                  Your browser does not support HTML5 video.
-                </video>
-              ) : null}
-            </motion.div>
-            <p className="absolute bottom-6 text-[10px] font-black uppercase tracking-[0.3em] text-white/30">
-              Click outside to close
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                  Close Player
+                </button>
+              </div>
+            ) : modalVideoUrl ? (
+              <video
+                key={modalVideoUrl}
+                src={modalVideoUrl}
+                controls
+                autoPlay
+                playsInline
+                preload="metadata"
+                crossOrigin="anonymous"
+                className="w-full h-full object-contain rounded-3xl"
+                onLoadedData={() => console.log('Video Event: onLoadedData succeeded for URL:', modalVideoUrl)}
+                onCanPlay={() => console.log('Video Event: onCanPlay succeeded for URL:', modalVideoUrl)}
+                onError={(e) => {
+                  console.error('Video Event: onError failed for URL:', modalVideoUrl, e);
+                  setVideoError('Video playback failed. The format may not be supported by your browser.');
+                }}
+              >
+                Your browser does not support HTML5 video.
+              </video>
+            ) : null}
+          </div>
+          <p className="absolute bottom-6 text-[10px] font-black uppercase tracking-[0.3em] text-white/30">
+            Click outside to close
+          </p>
+        </div>
+      )}
     </div>
   );
 };
