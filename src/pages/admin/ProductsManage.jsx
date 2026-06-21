@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { Plus, Edit, Trash2, Search, Image as ImageIcon, Loader2, AlertCircle, Clock } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Image as ImageIcon, Loader2, AlertCircle, Clock, Check } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { deleteProduct } from '../../firebase/services';
 import { getOptimizedImage } from '../../utils/cloudinary';
+import { useNotification } from '../../context/NotificationContext';
 
 // ✅ Single source of truth for low-stock threshold
 const LOW_STOCK_THRESHOLD = 10;
@@ -18,17 +19,82 @@ const ProductsManage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');     // ✅ In-modal error instead of alert()
 
+  const [soldInputs, setSoldInputs] = useState({});
+  const [updatingId, setUpdatingId] = useState(null);
+  const { showToast } = useNotification();
+
   // Fetch products once; refresh on navigate(0) or when component mounts
   const fetchProducts = async () => {
     setLoading(true);
     try {
       const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
       const snap = await getDocs(q);
-      setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setProducts(docs);
+
+      // Pre-fill input states
+      const inputs = {};
+      docs.forEach(p => {
+        inputs[p.id] = p.soldCount || 0;
+      });
+      setSoldInputs(inputs);
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleInputChange = (productId, val) => {
+    setSoldInputs(prev => ({ ...prev, [productId]: val }));
+  };
+
+  const handleSaveSold = async (productId) => {
+    const currentVal = soldInputs[productId];
+    const numericVal = Number(currentVal);
+
+    if (currentVal === '' || isNaN(numericVal) || !Number.isInteger(numericVal) || numericVal < 0) {
+      showToast('Sold count must be a non-negative whole number', 'error');
+      // Rollback to original value from products state
+      const originalProd = products.find(p => p.id === productId);
+      if (originalProd) {
+        setSoldInputs(prev => ({ ...prev, [productId]: originalProd.soldCount || 0 }));
+      }
+      return;
+    }
+
+    setUpdatingId(productId);
+    try {
+      const response = await fetch('/api/update-sold', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ productId, soldCount: numericVal }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || 'Failed to update sold count');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        showToast('Sold count updated successfully.', 'success');
+        await fetchProducts();
+      } else {
+        throw new Error(data.message || 'Failed to update sold count');
+      }
+    } catch (error) {
+      console.error('Error updating sold count:', error);
+      showToast(error.message || 'Failed to update sold count. Please try again.', 'error');
+      // Rollback to original value from products state on failure
+      const originalProd = products.find(p => p.id === productId);
+      if (originalProd) {
+        setSoldInputs(prev => ({ ...prev, [productId]: originalProd.soldCount || 0 }));
+      }
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -216,7 +282,34 @@ const ProductsManage = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm font-black text-yellow-500">{product.soldCount || 0}</span>
+                        <div className="flex items-center gap-1.5 min-w-[90px]">
+                          <input
+                            type="number"
+                            min="0"
+                            value={soldInputs[product.id] !== undefined ? soldInputs[product.id] : (product.soldCount || 0)}
+                            onChange={(e) => handleInputChange(product.id, e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleSaveSold(product.id);
+                              }
+                            }}
+                            disabled={updatingId === product.id}
+                            className="w-16 px-2 py-1.5 bg-gray-900 border border-yellow-900/20 rounded-xl focus:border-yellow-500 outline-none text-white text-sm font-black text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleSaveSold(product.id)}
+                            disabled={updatingId === product.id}
+                            className="p-1.5 bg-yellow-600/10 border border-yellow-900/20 text-yellow-500 hover:text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                            title="Save Sold Count"
+                          >
+                            {updatingId === product.id ? (
+                              <Loader2 size={12} className="animate-spin" />
+                            ) : (
+                              <Check size={12} />
+                            )}
+                          </button>
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">
@@ -325,7 +418,34 @@ const ProductsManage = () => {
                       </div>
                       <div>
                         <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-0.5">Sold</p>
-                        <span className="text-xs font-black text-yellow-500">{product.soldCount || 0}</span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <input
+                            type="number"
+                            min="0"
+                            value={soldInputs[product.id] !== undefined ? soldInputs[product.id] : (product.soldCount || 0)}
+                            onChange={(e) => handleInputChange(product.id, e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleSaveSold(product.id);
+                              }
+                            }}
+                            disabled={updatingId === product.id}
+                            className="w-16 px-2 py-1 bg-gray-900 border border-yellow-900/20 rounded-xl focus:border-yellow-500 outline-none text-white text-xs font-black text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleSaveSold(product.id)}
+                            disabled={updatingId === product.id}
+                            className="p-1 bg-yellow-600/10 border border-yellow-900/20 text-yellow-500 hover:text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                            title="Save Sold Count"
+                          >
+                            {updatingId === product.id ? (
+                              <Loader2 size={10} className="animate-spin" />
+                            ) : (
+                              <Check size={10} />
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
 
