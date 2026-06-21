@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import paymentRoutes from './routes/payment.js';
 import ordersHandler from './orders.js';
 import complaintsHandler from './complaints.js';
+import updateSoldHandler from './update-sold.js';
 
 dotenv.config();
 
@@ -48,6 +49,7 @@ app.use(paymentRoutes);
 // Mount orders and complaints routes
 app.get('/api/orders', ordersHandler);
 app.get('/api/complaints', complaintsHandler);
+app.post('/api/update-sold', updateSoldHandler);
 
 // Export for Vite dev server middleware and Vercel serverless integration
 export default app;

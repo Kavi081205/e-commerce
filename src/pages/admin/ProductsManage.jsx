@@ -34,7 +34,7 @@ const ProductsManage = () => {
 
   useEffect(() => {
     fetchProducts();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Optimistic delete: remove from local state immediately, then Firestore
@@ -114,244 +114,244 @@ const ProductsManage = () => {
           </div>
         </div>
 
-          {/* Desktop Table View */}
-          <div className="hidden lg:block">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-950/80 text-gray-500 text-xs uppercase tracking-widest border-b border-yellow-900/10">
-                  <th className="px-6 py-4 font-bold">Image</th>
-                  <th className="px-6 py-4 font-bold">Details</th>
-                  <th className="px-6 py-4 font-bold">Category</th>
-                  <th className="px-6 py-4 font-bold">Price</th>
-                  <th className="px-6 py-4 font-bold">Cost</th>
-                  <th className="px-6 py-4 font-bold">Margin</th>
-                  <th className="px-6 py-4 font-bold">Stock</th>
-                  <th className="px-6 py-4 font-bold">Sold</th>
-                  <th className="px-6 py-4 font-bold text-right">Actions</th>
+        {/* Desktop Table View */}
+        <div className="hidden lg:block">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-950/80 text-gray-500 text-xs uppercase tracking-widest border-b border-yellow-900/10">
+                <th className="px-6 py-4 font-bold">Image</th>
+                <th className="px-6 py-4 font-bold">Details</th>
+                <th className="px-6 py-4 font-bold">Category</th>
+                <th className="px-6 py-4 font-bold">Price</th>
+                <th className="px-6 py-4 font-bold">Cost</th>
+                <th className="px-6 py-4 font-bold">Margin</th>
+                <th className="px-6 py-4 font-bold">Stock</th>
+                <th className="px-6 py-4 font-bold">Sold</th>
+                <th className="px-6 py-4 font-bold text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 text-sm">
+              {loading ? (
+                <tr>
+                  <td colSpan="9" className="px-6 py-20 text-center text-gray-400">
+                    <Loader2 size={32} className="animate-spin mx-auto mb-2 text-yellow-500" />
+                    <p className="font-medium">Loading catalog...</p>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 text-sm">
-                {loading ? (
-                  <tr>
-                    <td colSpan="9" className="px-6 py-20 text-center text-gray-400">
-                      <Loader2 size={32} className="animate-spin mx-auto mb-2 text-yellow-500" />
-                      <p className="font-medium">Loading catalog...</p>
-                    </td>
-                  </tr>
-                ) : filteredProducts.length === 0 ? (
-                  <tr>
-                    <td colSpan="9" className="px-6 py-20 text-center text-gray-400 font-medium">
-                      No products found matching your search.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredProducts.map((product) => {
-                    const stockNum = Number(product.stock ?? 0);
-                    let stockStatus = 'Available';
-                    let stockColor = 'text-green-600';
-                    if (stockNum <= 0) {
-                      stockStatus = 'Out of Stock';
-                      stockColor = 'text-red-600';
-                    } else if (stockNum <= 5) {
-                      stockStatus = 'Low Stock';
-                      stockColor = 'text-yellow-500';
-                    }
+              ) : filteredProducts.length === 0 ? (
+                <tr>
+                  <td colSpan="9" className="px-6 py-20 text-center text-gray-400 font-medium">
+                    No products found matching your search.
+                  </td>
+                </tr>
+              ) : (
+                filteredProducts.map((product) => {
+                  const stockNum = Number(product.stock ?? 0);
+                  let stockStatus = 'Available';
+                  let stockColor = 'text-green-600';
+                  if (stockNum <= 0) {
+                    stockStatus = 'Out of Stock';
+                    stockColor = 'text-red-600';
+                  } else if (stockNum <= 5) {
+                    stockStatus = 'Low Stock';
+                    stockColor = 'text-yellow-500';
+                  }
 
-                    return (
-                      <tr key={product.id} className="hover:bg-slate-950/50 transition-colors group">
-                        <td className="px-6 py-4">
-                          <div className="w-[60px] h-[60px] rounded-xl bg-gray-800 border border-yellow-900/20 overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
-                            {product.image ? (
-                              <img
-                                src={getOptimizedImage(product.image, 'thumbnail')}
-                                alt={product.name}
-                                loading="lazy"
-                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                <ImageIcon size={24} />
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="max-w-[200px]">
-                            <div className="font-bold text-white text-base truncate" title={product.name}>
-                              {product.name}
+                  return (
+                    <tr key={product.id} className="hover:bg-slate-950/50 transition-colors group">
+                      <td className="px-6 py-4">
+                        <div className="w-[60px] h-[60px] rounded-xl bg-gray-800 border border-yellow-900/20 overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
+                          {product.image ? (
+                            <img
+                              src={getOptimizedImage(product.image, 'thumbnail')}
+                              alt={product.name}
+                              loading="lazy"
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-300">
+                              <ImageIcon size={24} />
                             </div>
-                            <div className="text-gray-400 text-xs mt-0.5 truncate" title={product.description || 'No description'}>
-                              {product.description || 'No description'}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="bg-yellow-500/10 text-yellow-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-yellow-900/40">
-                            {product.category}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="selling-price font-bold text-green-600 text-lg tracking-tight">
-                            ₹{product.price}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="cost-price font-medium text-gray-500 text-sm tracking-tight">
-                            ₹{product.costPrice}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className={`profit font-black text-xs uppercase tracking-widest ${(product.price - product.costPrice) > 0 ? 'text-blue-500' : 'text-red-500'}`}>
-                            ₹{product.price - product.costPrice}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col gap-1">
-                            <span className={`text-sm font-black uppercase tracking-tight ${stockColor}`}>
-                              {product.stock} Units
-                            </span>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                              {stockStatus}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm font-black text-yellow-500">{product.soldCount || 0}</span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-2">
-                            <Link
-                              to={`/admin/edit-product/${product.id}`}
-                              className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="Edit Product"
-                            >
-                              <Edit size={18} />
-                            </Link>
-                            <button
-                              type="button"
-                              onClick={() => setDeleteTargetId(product.id)}
-                              className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Delete Product"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile Card List View */}
-          <div className="block lg:hidden divide-y divide-yellow-900/10">
-            {loading ? (
-              <div className="px-6 py-20 text-center text-gray-400">
-                <Loader2 size={32} className="animate-spin mx-auto mb-2 text-yellow-500" />
-                <p className="font-medium">Loading catalog...</p>
-              </div>
-            ) : filteredProducts.length === 0 ? (
-              <div className="px-6 py-20 text-center text-gray-400 font-medium">
-                No products found matching your search.
-              </div>
-            ) : (
-              filteredProducts.map((product) => {
-                const stockNum = Number(product.stock ?? 0);
-                let stockStatus = 'Available';
-                let stockColor = 'text-green-600';
-                if (stockNum <= 0) {
-                  stockStatus = 'Out of Stock';
-                  stockColor = 'text-red-600';
-                } else if (stockNum <= 5) {
-                  stockStatus = 'Low Stock';
-                  stockColor = 'text-yellow-500';
-                }
-
-                return (
-                  <div key={product.id} className="p-6 flex flex-col gap-4 hover:bg-slate-950/40 transition-colors group">
-                    <div className="flex items-center gap-4">
-                      <div className="w-[60px] h-[60px] rounded-xl bg-gray-800 border border-yellow-900/20 overflow-hidden shadow-sm shrink-0">
-                        {product.image ? (
-                          <img
-                            src={getOptimizedImage(product.image, 'thumbnail')}
-                            alt={product.name}
-                            loading="lazy"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-300">
-                            <ImageIcon size={24} />
-                          </div>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-bold text-white text-base truncate" title={product.name}>
-                          {product.name}
+                          )}
                         </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="bg-yellow-500/10 text-yellow-600 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-yellow-900/40">
-                            {product.category}
-                          </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="max-w-[200px]">
+                          <div className="font-bold text-white text-base truncate" title={product.name}>
+                            {product.name}
+                          </div>
+                          <div className="text-gray-400 text-xs mt-0.5 truncate" title={product.description || 'No description'}>
+                            {product.description || 'No description'}
+                          </div>
                         </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4 pt-2 border-t border-white/5">
-                      <div>
-                        <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">Price</p>
-                        <p className="font-bold text-green-600 text-base">₹{product.price}</p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">Cost</p>
-                        <p className="font-medium text-gray-400 text-sm">₹{product.costPrice}</p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">Margin</p>
-                        <p className={`font-black text-xs uppercase tracking-widest ${(product.price - product.costPrice) > 0 ? 'text-blue-500' : 'text-red-500'}`}>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="bg-yellow-500/10 text-yellow-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-yellow-900/40">
+                          {product.category}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="selling-price font-bold text-green-600 text-lg tracking-tight">
+                          ₹{product.price}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="cost-price font-medium text-gray-500 text-sm tracking-tight">
+                          ₹{product.costPrice}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className={`profit font-black text-xs uppercase tracking-widest ${(product.price - product.costPrice) > 0 ? 'text-blue-500' : 'text-red-500'}`}>
                           ₹{product.price - product.costPrice}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                      <div className="flex items-center gap-4">
-                        <div>
-                          <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-0.5">Stock</p>
-                          <span className={`text-xs font-black uppercase tracking-tight ${stockColor}`}>
-                            {product.stock} Units ({stockStatus})
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1">
+                          <span className={`text-sm font-black uppercase tracking-tight ${stockColor}`}>
+                            {product.stock} Units
                           </span>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                            {stockStatus}
+                          </p>
                         </div>
-                        <div>
-                          <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-0.5">Sold</p>
-                          <span className="text-xs font-black text-yellow-500">{product.soldCount || 0}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-sm font-black text-yellow-500">{product.soldCount || 0}</span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <Link
+                            to={`/admin/edit-product/${product.id}`}
+                            className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit Product"
+                          >
+                            <Edit size={18} />
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTargetId(product.id)}
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete Product"
+                          >
+                            <Trash2 size={18} />
+                          </button>
                         </div>
-                      </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
 
-                      <div className="flex items-center gap-2">
-                        <Link
-                          to={`/admin/edit-product/${product.id}`}
-                          className="p-3 text-blue-500 hover:bg-blue-50/10 rounded-xl transition-colors border border-blue-500/20"
-                          title="Edit Product"
-                        >
-                          <Edit size={16} />
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => setDeleteTargetId(product.id)}
-                          className="p-3 text-red-500 hover:bg-red-50/10 rounded-xl transition-colors border border-red-500/20"
-                          title="Delete Product"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+        {/* Mobile Card List View */}
+        <div className="block lg:hidden divide-y divide-yellow-900/10">
+          {loading ? (
+            <div className="px-6 py-20 text-center text-gray-400">
+              <Loader2 size={32} className="animate-spin mx-auto mb-2 text-yellow-500" />
+              <p className="font-medium">Loading catalog...</p>
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="px-6 py-20 text-center text-gray-400 font-medium">
+              No products found matching your search.
+            </div>
+          ) : (
+            filteredProducts.map((product) => {
+              const stockNum = Number(product.stock ?? 0);
+              let stockStatus = 'Available';
+              let stockColor = 'text-green-600';
+              if (stockNum <= 0) {
+                stockStatus = 'Out of Stock';
+                stockColor = 'text-red-600';
+              } else if (stockNum <= 5) {
+                stockStatus = 'Low Stock';
+                stockColor = 'text-yellow-500';
+              }
+
+              return (
+                <div key={product.id} className="p-6 flex flex-col gap-4 hover:bg-slate-950/40 transition-colors group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-[60px] h-[60px] rounded-xl bg-gray-800 border border-yellow-900/20 overflow-hidden shadow-sm shrink-0">
+                      {product.image ? (
+                        <img
+                          src={getOptimizedImage(product.image, 'thumbnail')}
+                          alt={product.name}
+                          loading="lazy"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                          <ImageIcon size={24} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-white text-base truncate" title={product.name}>
+                        {product.name}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="bg-yellow-500/10 text-yellow-600 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-yellow-900/40">
+                          {product.category}
+                        </span>
                       </div>
                     </div>
                   </div>
-                );
-              })
-            )}
-          </div>
+
+                  <div className="grid grid-cols-3 gap-4 pt-2 border-t border-white/5">
+                    <div>
+                      <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">Price</p>
+                      <p className="font-bold text-green-600 text-base">₹{product.price}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">Cost</p>
+                      <p className="font-medium text-gray-400 text-sm">₹{product.costPrice}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">Margin</p>
+                      <p className={`font-black text-xs uppercase tracking-widest ${(product.price - product.costPrice) > 0 ? 'text-blue-500' : 'text-red-500'}`}>
+                        ₹{product.price - product.costPrice}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                    <div className="flex items-center gap-4">
+                      <div>
+                        <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-0.5">Stock</p>
+                        <span className={`text-xs font-black uppercase tracking-tight ${stockColor}`}>
+                          {product.stock} Units ({stockStatus})
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-0.5">Sold</p>
+                        <span className="text-xs font-black text-yellow-500">{product.soldCount || 0}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Link
+                        to={`/admin/edit-product/${product.id}`}
+                        className="p-3 text-blue-500 hover:bg-blue-50/10 rounded-xl transition-colors border border-blue-500/20"
+                        title="Edit Product"
+                      >
+                        <Edit size={16} />
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTargetId(product.id)}
+                        className="p-3 text-red-500 hover:bg-red-50/10 rounded-xl transition-colors border border-red-500/20"
+                        title="Delete Product"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
 
       {/* Delete Confirmation Modal */}
