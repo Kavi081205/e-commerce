@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import paymentRoutes from './routes/payment.js';
+import ordersHandler from './orders.js';
+import complaintsHandler from './complaints.js';
 
 dotenv.config();
 
@@ -42,6 +44,10 @@ app.get('/api/pincode/:code', (req, res) => {
 
 // Mount the payment routes at root level so full paths '/api/...' match exactly
 app.use(paymentRoutes);
+
+// Mount orders and complaints routes
+app.get('/api/orders', ordersHandler);
+app.get('/api/complaints', complaintsHandler);
 
 // Export for Vite dev server middleware and Vercel serverless integration
 export default app;

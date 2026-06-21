@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { getComplaintsByUser } from '../firebase/services';
 import { AlertCircle, CheckCircle2, Clock, XCircle, Search, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNotification } from '../context/NotificationContext';
 
 const STATUS_CONFIG = {
   'New':       { label: 'New',       color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/30',   icon: Clock },
@@ -18,16 +18,40 @@ export default function MyComplaints() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
+  const { showToast } = useNotification();
 
   const search = async (e) => {
     e.preventDefault();
+    if (!phoneInput.trim()) return;
+
     const clean = phoneInput.replace(/\D/g, '').slice(-10);
-    if (!clean) return;
+    if (clean.length !== 10) {
+      showToast('Please enter a valid 10-digit mobile number', 'error');
+      return;
+    }
+
     setLoading(true);
     setSearched(true);
-    const results = await getComplaintsByUser(clean);
-    setComplaints(results);
-    setLoading(false);
+    try {
+      const response = await fetch(`/api/complaints?mobile=${clean}`);
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || 'Failed to fetch complaints');
+      }
+      const data = await response.json();
+      if (data.success) {
+        setComplaints(data.complaints || []);
+        showToast(`Found ${data.complaints?.length || 0} complaint(s)`, 'success');
+      } else {
+        throw new Error(data.message || 'Failed to fetch complaints');
+      }
+    } catch (err) {
+      console.error('Error fetching complaints:', err);
+      showToast(err.message || 'Error fetching complaints. Please try again.', 'error');
+      setComplaints([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatDate = (ts) => {
@@ -59,8 +83,8 @@ export default function MyComplaints() {
             placeholder="Enter your phone number"
             className="flex-1 bg-gray-900 border border-gray-800 rounded-2xl px-5 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-yellow-500 transition-colors"
           />
-          <button type="submit" className="bg-yellow-500 text-black px-6 py-4 rounded-2xl font-black uppercase tracking-wider text-sm hover:bg-yellow-400 transition-all active:scale-95">
-            <Search size={18} />
+          <button type="submit" disabled={loading} className="bg-yellow-500 text-black px-6 py-4 rounded-2xl font-black uppercase tracking-wider text-sm hover:bg-yellow-400 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+            {loading ? <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" /> : <Search size={18} />}
           </button>
         </form>
 

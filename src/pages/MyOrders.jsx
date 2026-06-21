@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { db } from '../firebase';
-import { collection, query, orderBy, getDocs, where } from 'firebase/firestore';
 import { Package, AlertCircle, CheckCircle2, Truck, Clock, ChevronDown, ChevronUp, ShoppingBag, MessageSquarePlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ComplaintForm from '../components/ComplaintForm';
+import { useNotification } from '../context/NotificationContext';
 
 const STATUS_CONFIG = {
   delivered: { label: 'Delivered', color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/30', icon: CheckCircle2 },
@@ -19,41 +18,43 @@ const getStatusConfig = (status) =>
 
 export default function MyOrders() {
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [phone, setPhone] = useState('');
   const [phoneInput, setPhoneInput] = useState('');
   const [searched, setSearched] = useState(false);
   const [complaintOrder, setComplaintOrder] = useState(null); // order for complaint modal
+  const { showToast } = useNotification();
 
   const searchOrders = async (e) => {
     e.preventDefault();
     if (!phoneInput.trim()) return;
+
+    const cleanPhone = phoneInput.replace(/\D/g, '').slice(-10);
+    if (cleanPhone.length !== 10) {
+      showToast('Please enter a valid 10-digit mobile number', 'error');
+      return;
+    }
+
     setLoading(true);
     setSearched(true);
     try {
-      const cleanPhone = phoneInput.replace(/\D/g, '').slice(-10);
       setPhone(cleanPhone);
-      const q = query(
-        collection(db, 'orders'),
-        where('phone', '==', cleanPhone),
-        orderBy('createdAt', 'desc')
-      );
-      const snap = await getDocs(q);
-      if (snap.empty) {
-        // Try alternate field
-        const q2 = query(
-          collection(db, 'orders'),
-          where('customerPhone', '==', cleanPhone),
-          orderBy('createdAt', 'desc')
-        );
-        const snap2 = await getDocs(q2);
-        setOrders(snap2.docs.map(d => ({ id: d.id, ...d.data() })));
+      const response = await fetch(`/api/orders?mobile=${cleanPhone}`);
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || 'Failed to fetch orders');
+      }
+      const data = await response.json();
+      if (data.success) {
+        setOrders(data.orders || []);
+        showToast(`Found ${data.orders?.length || 0} order(s)`, 'success');
       } else {
-        setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        throw new Error(data.message || 'Failed to fetch orders');
       }
     } catch (err) {
       console.error('Error fetching orders:', err);
+      showToast(err.message || 'Error fetching orders. Please try again.', 'error');
       setOrders([]);
     } finally {
       setLoading(false);
@@ -93,9 +94,10 @@ export default function MyOrders() {
           />
           <button
             type="submit"
-            className="bg-yellow-500 text-black px-6 py-4 rounded-2xl font-black uppercase tracking-wider text-sm hover:bg-yellow-400 transition-all active:scale-95"
+            disabled={loading}
+            className="bg-yellow-500 text-black px-6 py-4 rounded-2xl font-black uppercase tracking-wider text-sm hover:bg-yellow-400 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Search
+            {loading ? 'Searching...' : 'Search'}
           </button>
         </form>
 

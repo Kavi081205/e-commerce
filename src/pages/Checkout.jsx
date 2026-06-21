@@ -532,7 +532,9 @@ const Checkout = () => {
       // Duplicate order check bypassed for Guest checkout
 
       const executeOrderCreation = async (payloadData) => {
+        console.log('[Checkout] Starting final order save to database. Payload:', payloadData);
         const finalOrderId = await createOrder(payloadData);
+        console.log('[Checkout] Final order saved successfully. Database Order ID:', finalOrderId);
 
         // Log order creation to activity trail
         try {
@@ -655,7 +657,7 @@ const Checkout = () => {
           handler: async function (response) {
             try {
               setLoading(true);
-              console.log('[Checkout] Razorpay success response:', response);
+              console.log('[Checkout] Razorpay payment successful. Response data:', response);
 
               const verifyUrl = `${API_BASE}/api/verify-payment`;
               const verifyBody = JSON.stringify({
@@ -718,7 +720,9 @@ const Checkout = () => {
           }
         };
 
+        console.log('[Checkout] Initializing Razorpay Checkout with options:', { ...options, key: options.key ? options.key.substring(0, 8) + '...' : 'undefined' });
         const razor = new window.Razorpay(options);
+        console.log('[Checkout] Razorpay Checkout widget created. Opening iframe...');
         razor.open();
       } else {
         // Cash on Delivery
