@@ -61,8 +61,8 @@ export default function MyComplaints() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white px-4 py-16">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-black text-white px-4 py-16 overflow-x-hidden">
+      <div className="max-w-2xl mx-auto w-full">
         {/* Header */}
         <div className="text-center mb-12">
           <p className="text-yellow-500 text-[9px] font-black uppercase tracking-[0.5em] mb-3">Customer Support</p>
@@ -71,7 +71,7 @@ export default function MyComplaints() {
         </div>
 
         {/* Search */}
-        <form onSubmit={search} className="flex gap-3 mb-10">
+        <form onSubmit={search} className="flex flex-wrap gap-3 mb-10 w-full">
           <label htmlFor="my-complaints-phone" className="sr-only">Phone Number</label>
           <input
             id="my-complaints-phone"
@@ -81,9 +81,9 @@ export default function MyComplaints() {
             value={phoneInput}
             onChange={e => setPhoneInput(e.target.value)}
             placeholder="Enter your phone number"
-            className="flex-1 bg-gray-900 border border-gray-800 rounded-2xl px-5 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-yellow-500 transition-colors"
+            className="flex-1 min-w-0 bg-gray-900 border border-gray-800 rounded-2xl px-5 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-yellow-500 transition-colors box-border"
           />
-          <button type="submit" disabled={loading} className="bg-yellow-500 text-black px-6 py-4 rounded-2xl font-black uppercase tracking-wider text-sm hover:bg-yellow-400 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+          <button type="submit" disabled={loading} className="shrink-0 w-full sm:w-auto bg-yellow-500 text-black px-6 py-4 rounded-2xl font-black uppercase tracking-wider text-sm hover:bg-yellow-400 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
             {loading ? <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" /> : <Search size={18} />}
           </button>
         </form>

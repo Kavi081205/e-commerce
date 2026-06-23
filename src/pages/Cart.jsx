@@ -63,7 +63,7 @@ const Cart = () => {
   const discountVal = subtotalMRP - total;
 
   return (
-    <div className="bg-black min-h-screen pb-24 lg:pb-12">
+    <div className="bg-black min-h-screen pb-32 lg:pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20">
         <div className="mb-8 lg:mb-16">
           <p className="text-yellow-500 text-[10px] font-black uppercase tracking-[0.6em] mb-4">Selection</p>
@@ -222,7 +222,13 @@ const Cart = () => {
       </div>
 
       {/* Mobile Sticky Footer Checkout Bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-gray-950 border-t border-yellow-900/20 px-4 py-3 flex items-center justify-between shadow-2xl">
+      <div
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-gray-950 border-t border-yellow-900/20 px-4 flex items-center justify-between shadow-2xl"
+        style={{
+          paddingTop: '12px',
+          paddingBottom: 'max(12px, env(safe-area-inset-bottom, 12px))'
+        }}
+      >
         <div className="text-left">
           <p className="text-[8px] text-gray-500 font-black uppercase tracking-widest">Total Amount</p>
           <p className="text-lg font-black text-white">₹{total.toLocaleString()}</p>

@@ -310,6 +310,10 @@ const ProductDetails = () => {
     let isMounted = true;
 
     const checkEligibility = async () => {
+      // Debug log: current user
+      console.log('[Review] Current User ID:', currentUser?.uid ?? 'Not logged in');
+      console.log('[Review] Product ID:', productId);
+
       if (!currentUser?.uid) {
         if (isMounted) {
           setIsEligible(false);
@@ -319,13 +323,17 @@ const ProductDetails = () => {
       }
       setEligibilityLoading(true);
       try {
+        // Query orders where userId matches and status is exactly "Delivered"
         const q = query(
           collection(db, 'orders'),
           where('userId', '==', currentUser.uid),
-          where('status', '==', 'delivered')
+          where('status', '==', 'Delivered')
         );
         const snapshot = await getDocs(q);
         if (!isMounted) return;
+
+        // Debug log: delivered orders count
+        console.log('[Review] Delivered orders found:', snapshot.docs.length);
 
         let eligible = false;
         let foundOrderId = null;
@@ -341,11 +349,16 @@ const ProductDetails = () => {
             break;
           }
         }
+
+        // Debug logs: purchase validation and review permission
+        console.log('[Review] Purchase validation passed:', eligible);
+        console.log('[Review] Review permission granted:', eligible);
+
         setIsEligible(eligible);
         setMatchingOrder(foundOrderId);
       } catch (err) {
         if (!isMounted) return;
-        console.error("Error checking review eligibility:", err);
+        console.error('[Review] Error checking review eligibility:', err);
         setIsEligible(false);
       } finally {
         if (isMounted) setEligibilityLoading(false);
@@ -1449,6 +1462,9 @@ const ProductDetails = () => {
                 ) : isEligible ? (
                   userReview && !isEditingReview ? (
                     <div className="space-y-6">
+                      <p className="text-green-500 text-[10px] font-black uppercase tracking-widest text-center">
+                        You already reviewed this product.
+                      </p>
                       <div className="p-6 bg-yellow-500/5 border border-yellow-500/10 rounded-2xl">
                         <div className="flex justify-between items-center mb-4">
                           <span className="text-[9px] text-green-500 font-bold uppercase tracking-tighter flex items-center gap-0.5 bg-green-500/10 border border-green-500/20 px-2.5 py-0.5 rounded-full">
@@ -1551,7 +1567,10 @@ const ProductDetails = () => {
                       <AlertCircle size={20} />
                     </div>
                     <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider leading-relaxed">
-                      You can review this product after it has been delivered.
+                      Purchase this product to write a review.
+                    </p>
+                    <p className="text-gray-600 text-[10px] font-bold uppercase tracking-wider">
+                      Review available after delivery.
                     </p>
                   </div>
                 )}

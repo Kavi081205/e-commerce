@@ -68,8 +68,8 @@ export default function MyOrders() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white px-4 py-16">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-black text-white px-4 py-16 overflow-x-hidden">
+      <div className="max-w-3xl mx-auto w-full">
         {/* Header */}
         <div className="text-center mb-12">
           <p className="text-yellow-500 text-[9px] font-black uppercase tracking-[0.5em] mb-3">
@@ -80,7 +80,7 @@ export default function MyOrders() {
         </div>
 
         {/* Phone Search */}
-        <form onSubmit={searchOrders} className="flex gap-3 mb-10">
+        <form onSubmit={searchOrders} className="flex flex-wrap gap-3 mb-10 w-full">
           <label htmlFor="my-orders-phone" className="sr-only">Phone Number</label>
           <input
             id="my-orders-phone"
@@ -90,12 +90,12 @@ export default function MyOrders() {
             value={phoneInput}
             onChange={e => setPhoneInput(e.target.value)}
             placeholder="Enter your phone number"
-            className="flex-1 bg-gray-900 border border-gray-800 rounded-2xl px-5 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-yellow-500 transition-colors"
+            className="flex-1 min-w-0 bg-gray-900 border border-gray-800 rounded-2xl px-5 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-yellow-500 transition-colors box-border"
           />
           <button
             type="submit"
             disabled={loading}
-            className="bg-yellow-500 text-black px-6 py-4 rounded-2xl font-black uppercase tracking-wider text-sm hover:bg-yellow-400 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="shrink-0 w-full sm:w-auto bg-yellow-500 text-black px-6 py-4 rounded-2xl font-black uppercase tracking-wider text-sm hover:bg-yellow-400 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Searching...' : 'Search'}
           </button>

@@ -53,14 +53,19 @@ const WebsiteLayout = () => {
   }, [location.pathname, navigationType]);
 
   const isProductDetails = location.pathname.startsWith('/product/');
+  const isCartPage = location.pathname === '/cart';
+  // Pages that render their own full-width sticky checkout bar — hide the
+  // shared bottom nav and give the footer extra bottom margin so it clears
+  // the page-level fixed bar instead.
+  const hasPageStickyBar = isProductDetails || isCartPage;
 
   return (
-    <div className={`flex flex-col min-h-screen w-full max-w-full overflow-x-hidden ${isProductDetails ? 'pb-20' : 'pb-16'} md:pb-0`}>
+    <div className={`flex flex-col min-h-screen w-full max-w-full overflow-x-hidden ${hasPageStickyBar ? 'pb-20' : 'pb-16'} md:pb-0`}>
       <Navbar />
       <main className="flex-grow bg-black">
         <Outlet />
       </main>
-      <footer className={`bg-gray-950 border-t border-yellow-900/20 text-gray-400 py-10 ${isProductDetails ? 'mb-20' : 'mb-16'} md:mb-0`}>
+      <footer className={`bg-gray-950 border-t border-yellow-900/20 text-gray-400 py-10 ${hasPageStickyBar ? 'mb-20' : 'mb-16'} md:mb-0`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             {/* Brand */}
@@ -99,8 +104,8 @@ const WebsiteLayout = () => {
         </div>
       </footer>
 
-      {/* Bottom Navigation (Mobile) */}
-      {!isProductDetails && (
+      {/* Bottom Navigation (Mobile) — hidden on pages that have their own sticky checkout bar */}
+      {!hasPageStickyBar && (
         <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-black/95 backdrop-blur-md border-t border-yellow-900/10 pt-3 px-4 flex justify-around items-center shadow-lg bottom-nav-mobile" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom, 12px))' }}>
           <NavLink
             to="/"
