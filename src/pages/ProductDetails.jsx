@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
-import { ShoppingCart, Check, Loader2, AlertCircle, Star, Play, X, Minus, Plus } from 'lucide-react';
+import { ShoppingCart, Check, Loader2, AlertCircle, Star, Play, X, Minus, Plus, Phone } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePromo } from '../context/PromoContext';
@@ -18,10 +17,10 @@ import {
   collection,
   addDoc,
   query,
-  orderBy,
-  serverTimestamp,
   where,
+  orderBy,
   limit,
+  serverTimestamp,
   doc,
   updateDoc,
   getDocs,
@@ -97,12 +96,6 @@ const ProductDetails = () => {
   const { id } = useParams();
   const productId = id;
 
-  // NOTE: previously this was hardcoded to `null`, which silently broke the
-  // entire review/eligibility system (no logged-in user could ever submit
-  // or edit a review). Wired in the real auth context here with a safe guest fallback.
-  const auth = useAuth ? useAuth() : null;
-  const currentUser = auth?.currentUser ?? null;
-
   const { showToast } = useNotification();
   const toast = {
     success: (msg) => showToast(msg, 'success'),
@@ -112,6 +105,14 @@ const ProductDetails = () => {
   const location = useLocation();
   const { addToCart } = useCart();
   const { promoSettings } = usePromo();
+
+  // ── Phone-based customer identification (replaces Firebase Auth) ──────────
+  const [customerPhone, setCustomerPhone] = useState(() => {
+    return localStorage.getItem('reviewCustomerPhone') || '';
+  });
+  const [phoneInput, setPhoneInput] = useState('');
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [phoneSubmitting, setPhoneSubmitting] = useState(false);
 
   // ── real-time product detail ─────────────────────────────────────────────
   const [product, setProduct] = useState(null);
@@ -305,55 +306,139 @@ const ProductDetails = () => {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [isEditingReview, setIsEditingReview] = useState(false);
 
-  // ── review eligibility check ─────────────────────────────────────────────
+  // ── review eligibility check (phone-based, no Firebase Auth) ────────────
   useEffect(() => {
     let isMounted = true;
 
     const checkEligibility = async () => {
-      // Debug log: current user
-      console.log('[Review] Current User ID:', currentUser?.uid ?? 'Not logged in');
-      console.log('[Review] Product ID:', productId);
+      // ── Normalize phone: strip spaces, dashes, leading +91 / 0 ──────────
+      const normalizePhone = (raw = '') => {
+        let p = String(raw).replace(/[\s\-().]/g, '');  // strip spaces/dashes/brackets
+        if (p.startsWith('+91')) p = p.slice(3);
+        if (p.startsWith('91') && p.length === 12) p = p.slice(2);
+        if (p.startsWith('0') && p.length === 11) p = p.slice(1);
+        return p;
+      };
 
-      if (!currentUser?.uid) {
+      const enteredPhone = normalizePhone(customerPhone);
+
+      console.log('[Review] customerPhone (raw):', customerPhone);
+      console.log('[Review] enteredPhone (normalized):', enteredPhone);
+      console.log('[Review] productId:', productId);
+
+      if (!enteredPhone) {
         if (isMounted) {
           setIsEligible(false);
           setEligibilityLoading(false);
         }
         return;
       }
+
       setEligibilityLoading(true);
       try {
-        // Query orders where userId matches and status is exactly "Delivered"
-        const q = query(
-          collection(db, 'orders'),
-          where('userId', '==', currentUser.uid),
-          where('status', '==', 'Delivered')
-        );
-        const snapshot = await getDocs(q);
+        // Fetch ALL orders — we cannot use a Firestore where() because the
+        // phone may be stored under different field paths across orders.
+        // We filter client-side after fetching for reliability.
+        const snapshot = await getDocs(collection(db, 'orders'));
         if (!isMounted) return;
 
-        // Debug log: delivered orders count
-        console.log('[Review] Delivered orders found:', snapshot.docs.length);
+        console.log('[Review] Total orders fetched:', snapshot.docs.length);
 
         let eligible = false;
+        let foundOrder = null;
         let foundOrderId = null;
+
         for (const docSnap of snapshot.docs) {
           const orderData = docSnap.data();
-          const hasProduct = orderData.items?.some(item => {
-            const itemProdId = (item.productId || item.id || '').split('_')[0];
-            return itemProdId === productId;
-          });
-          if (hasProduct) {
-            eligible = true;
-            foundOrderId = docSnap.id;
-            break;
+
+          // ── Extract phone from every possible field path ─────────────
+          const orderPhone = normalizePhone(
+            orderData.customerPhone ||
+            orderData.phone ||
+            orderData.customerDetails?.phone ||
+            orderData.customer?.phone ||
+            ''
+          );
+
+          // ── Normalize status values (stored as lowercase by admin) ────
+          const rawOrderStatus =
+            orderData.orderStatus || orderData.status || '';
+          const rawPaymentStatus =
+            orderData.paymentStatus || '';
+
+          const orderStatus = String(rawOrderStatus).toLowerCase().trim();
+          const paymentStatus = String(rawPaymentStatus).toLowerCase().trim();
+
+          console.log(`[Review] Order ${docSnap.id} — orderPhone: ${orderPhone} | orderStatus: ${orderStatus} | paymentStatus: ${paymentStatus}`);
+
+          // ── Phone match ───────────────────────────────────────────────
+          if (orderPhone !== enteredPhone) continue;
+
+          console.log('[Review] ✅ Phone matched for order:', docSnap.id);
+
+          // ── Status checks ─────────────────────────────────────────────
+          const isDelivered = orderStatus === 'delivered';
+
+          // paymentStatus acceptable values:
+          //   COD orders: 'paid' (admin sets it) OR still 'pending' when COD delivered
+          //   Razorpay:   'paid'
+          //   Admin COD:  'cod delivered' or 'paid'
+          const isPaid =
+            paymentStatus === 'paid' ||
+            paymentStatus === 'cod delivered' ||
+            paymentStatus === 'cod_delivered';
+
+          console.log(`[Review]   isDelivered: ${isDelivered} | isPaid: ${isPaid}`);
+
+          if (!isDelivered) {
+            console.log('[Review]   ❌ Order not delivered yet. Skipping.');
+            continue;
           }
+
+          // ── Product match: check both items[] and orderedItems[] ──────
+          const allItems = [
+            ...(orderData.items || []),
+            ...(orderData.orderedItems || [])
+          ];
+
+          let matchingProduct = null;
+          const hasPurchased = allItems.some(item => {
+            // item.productId may be a variant id like "abc123_Red_M" — strip suffix
+            const rawItemId = item.productId || item.id || '';
+            const orderedProductId = String(rawItemId).split('_')[0];
+
+            console.log(`[Review]   Item check — orderedProductId: ${orderedProductId} vs productId: ${productId}`);
+
+            if (orderedProductId === productId) {
+              matchingProduct = { ...item, orderedProductId };
+              return true;
+            }
+            return false;
+          });
+
+          console.log('[Review]   matchingProduct:', matchingProduct);
+          console.log('[Review]   hasPurchased:', hasPurchased);
+
+          if (!hasPurchased) {
+            console.log('[Review]   ❌ Product not found in this order.');
+            continue;
+          }
+
+          // ── All conditions met ────────────────────────────────────────
+          const canReview = isDelivered && hasPurchased;
+          console.log('[Review] ✅ canReview:', canReview, '| orderId:', docSnap.id);
+
+          eligible = true;
+          foundOrder = { id: docSnap.id, ...orderData };
+          foundOrderId = docSnap.id;
+          break;
         }
 
-        // Debug logs: purchase validation and review permission
-        console.log('[Review] Purchase validation passed:', eligible);
-        console.log('[Review] Review permission granted:', eligible);
+        if (!eligible) {
+          console.log('[Review] ❌ No matching delivered order found for this phone + product combination.');
+        }
 
+        console.log('[Review] Final matchingOrder:', foundOrder);
         setIsEligible(eligible);
         setMatchingOrder(foundOrderId);
       } catch (err) {
@@ -370,7 +455,7 @@ const ProductDetails = () => {
     return () => {
       isMounted = false;
     };
-  }, [currentUser?.uid, productId]);
+  }, [customerPhone, productId]);
 
   // ── real-time reviews ───────────────────────────────────────────────────
   const [reviews, setReviews] = useState([]);
@@ -546,10 +631,11 @@ const ProductDetails = () => {
   const displayRating = reviews.length > 0 ? averageRating : 0;
   const displayReviewCount = reviews.length;
 
+  // Identify the current user's review by their phone number
   const userReview = useMemo(() => {
-    if (!currentUser?.uid) return null;
-    return reviews.find(r => r.userId === currentUser.uid) || null;
-  }, [reviews, currentUser?.uid]);
+    if (!customerPhone) return null;
+    return reviews.find(r => r.customerPhone === customerPhone) || null;
+  }, [reviews, customerPhone]);
 
   useEffect(() => {
     if (userReview) {
@@ -572,16 +658,18 @@ const ProductDetails = () => {
     e.preventDefault();
     if (!reviewForm.userName.trim() || !reviewForm.comment.trim()) return;
 
-    if (!currentUser?.uid) {
-      toast.error("Please sign in to submit a review.");
+    if (!customerPhone) {
+      setShowPhoneModal(true);
       return;
     }
 
     setSubmittingReview(true);
     try {
       if (userReview) {
-        // Edit existing review
+        // Edit existing review — ownership verified by matching customerPhone
         const reviewId = userReview.id;
+        if (!reviewId) throw new Error("Review ID is missing.");
+
         const updatedReview = {
           rating: Number(reviewForm.rating),
           reviewText: reviewForm.comment,
@@ -589,13 +677,6 @@ const ProductDetails = () => {
           userName: reviewForm.userName,
           updatedAt: serverTimestamp()
         };
-
-        if (!reviewId) {
-          throw new Error("Review ID is missing.");
-        }
-        if (userReview.userId !== currentUser.uid) {
-          throw new Error("Unauthorized: You do not own this review.");
-        }
 
         const reviewRef = doc(db, 'products', product?.id || productId, 'reviews', reviewId);
         await updateDoc(reviewRef, updatedReview);
@@ -607,7 +688,7 @@ const ProductDetails = () => {
         const newReview = {
           productId: product?.id || productId,
           productName: product?.name || '',
-          userId: currentUser.uid,
+          customerPhone: customerPhone,
           orderId: matchingOrder,
           rating: Number(reviewForm.rating),
           reviewText: reviewForm.comment,
@@ -627,6 +708,23 @@ const ProductDetails = () => {
     } finally {
       setSubmittingReview(false);
     }
+  };
+
+  // ── Phone modal handlers ─────────────────────────────────────────────────
+  const handlePhoneSubmit = async (e) => {
+    e.preventDefault();
+    const cleaned = phoneInput.trim().replace(/\s+/g, '');
+    if (!cleaned || cleaned.length < 10) {
+      toast.error('Please enter a valid phone number.');
+      return;
+    }
+    setPhoneSubmitting(true);
+    // Persist so the customer doesn't need to re-enter on every visit
+    localStorage.setItem('reviewCustomerPhone', cleaned);
+    setCustomerPhone(cleaned);
+    setShowPhoneModal(false);
+    setPhoneInput('');
+    setPhoneSubmitting(false);
   };
 
   const handleMouseMove = (e) => {
@@ -1445,14 +1543,21 @@ const ProductDetails = () => {
                 <h3 className="text-[10px] font-black text-white uppercase tracking-[0.4em] mb-10">
                   {userReview && !isEditingReview ? 'Your Review' : (userReview ? 'Edit Review' : 'Submit Review')}
                 </h3>
-                {!currentUser?.uid ? (
+                {!customerPhone ? (
                   <div className="py-10 text-center flex flex-col items-center justify-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-yellow-500/5 border border-yellow-500/20 flex items-center justify-center text-yellow-500">
-                      <AlertCircle size={20} />
+                      <Phone size={20} />
                     </div>
                     <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider leading-relaxed">
-                      Please sign in to write a review.
+                      Enter your phone number to verify your purchase and write a review.
                     </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowPhoneModal(true)}
+                      className="mt-2 bg-yellow-500 text-black font-black py-3 px-6 rounded-xl text-[10px] uppercase tracking-[0.3em] hover:bg-yellow-400 transition-all"
+                    >
+                      Enter Phone Number
+                    </button>
                   </div>
                 ) : eligibilityLoading ? (
                   <div className="flex flex-col items-center justify-center py-10 gap-3">
@@ -1687,6 +1792,87 @@ const ProductDetails = () => {
           </div>
         </div>
       )}
+
+      {/* ── Phone Number Modal ─────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showPhoneModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+            onClick={() => setShowPhoneModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 20 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              className="relative w-full max-w-sm bg-gray-950 border border-yellow-900/30 rounded-[2rem] p-10 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setShowPhoneModal(false)}
+                className="absolute top-5 right-5 p-2 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all"
+              >
+                <X size={16} />
+              </button>
+
+              <div className="flex flex-col items-center gap-4 mb-8">
+                <div className="w-14 h-14 rounded-full bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-500">
+                  <Phone size={24} />
+                </div>
+                <div className="text-center">
+                  <h3 className="text-white font-black text-sm uppercase tracking-[0.3em] mb-2">Verify Purchase</h3>
+                  <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider leading-relaxed">
+                    Enter the phone number used when placing your order.
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handlePhoneSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <label htmlFor="customerPhoneInput" className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">
+                    Phone Number
+                  </label>
+                  <input
+                    id="customerPhoneInput"
+                    type="tel"
+                    inputMode="numeric"
+                    required
+                    autoFocus
+                    value={phoneInput}
+                    onChange={(e) => setPhoneInput(e.target.value)}
+                    className="w-full bg-black/60 border border-yellow-900/30 rounded-xl p-4 text-white text-sm outline-none focus:border-yellow-500 transition-all placeholder-gray-700 tracking-widest"
+                    placeholder="e.g. 9876543210"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={phoneSubmitting}
+                  className="w-full bg-yellow-500 text-black font-black py-4 rounded-xl text-[10px] uppercase tracking-[0.3em] hover:bg-yellow-400 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {phoneSubmitting ? 'Verifying...' : 'Check Eligibility'}
+                </button>
+                {customerPhone && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      localStorage.removeItem('reviewCustomerPhone');
+                      setCustomerPhone('');
+                      setShowPhoneModal(false);
+                    }}
+                    className="w-full text-gray-600 text-[10px] font-bold uppercase tracking-widest hover:text-gray-400 transition-all"
+                  >
+                    Use a different number
+                  </button>
+                )}
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

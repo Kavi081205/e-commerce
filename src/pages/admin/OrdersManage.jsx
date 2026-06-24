@@ -8,7 +8,8 @@ import {
   Eye, EyeOff, Search, Loader2, CheckCircle, Clock,
   MapPin, Phone, ShoppingBag, X, Download, History,
   Truck, Package, FileSpreadsheet, Printer, Trash2,
-  Copy, Mail, ChevronDown, ChevronUp, Calendar, CreditCard, ExternalLink, RefreshCw
+  Copy, Mail, ChevronDown, ChevronUp, Calendar, CreditCard, ExternalLink, RefreshCw,
+  PackageCheck, PackageOpen
 } from 'lucide-react';
 import { generateInvoice } from '../../utils/invoiceGenerator';
 import { exportOrdersToExcel } from '../../utils/excelExport';
@@ -46,16 +47,20 @@ const ConfirmDialog = ({ message, onConfirm, onCancel }) => (
   </div>
 );
 
+const PACKING_STATUS = { NOT_PACKED: 'NOT_PACKED', PACKED: 'PACKED' };
+
 const OrdersManage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [packingFilter, setPackingFilter] = useState('ALL'); // 'ALL' | 'NOT_PACKED' | 'PACKED'
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [expandedItems, setExpandedItems] = useState({});
   const [printData, setPrintData] = useState(null);
   const [isPrinting, setIsPrinting] = useState(false);
   const [revealedPhones, setRevealedPhones] = useState({});
+  const [packingLoading, setPackingLoading] = useState({});
 
   const { currentUser } = useAuth();
   const { showToast } = useNotification();
@@ -151,6 +156,31 @@ const OrdersManage = () => {
       fetchOrders(); // rollback via re-fetch
     }
   }, []);
+
+  // ── Packing Management ───────────────────────────────────────────────────
+  const handleMarkPacked = useCallback(async (id) => {
+    setPackingLoading(prev => ({ ...prev, [id]: true }));
+    // Optimistic update
+    setOrders(prev => prev.map(o => o.id === id
+      ? { ...o, packingStatus: PACKING_STATUS.PACKED, packedAt: new Date().toISOString(), packedBy: currentUser?.email || 'Admin' }
+      : o
+    ));
+    try {
+      await updateDoc(doc(db, 'orders', id), {
+        packingStatus: PACKING_STATUS.PACKED,
+        packedAt: serverTimestamp(),
+        packedBy: currentUser?.email || currentUser?.uid || 'Admin',
+        updatedAt: serverTimestamp()
+      });
+      toast.success('Order marked as packed ✅');
+    } catch (error) {
+      console.error('Error updating packing status:', error);
+      toast.error('Failed to update packing status');
+      fetchOrders(); // rollback
+    } finally {
+      setPackingLoading(prev => ({ ...prev, [id]: false }));
+    }
+  }, [currentUser]);
 
   const handlePaymentStatusChange = useCallback(async (id, newPaymentStatus) => {
     // Optimistic update
@@ -261,8 +291,14 @@ const OrdersManage = () => {
       customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       customer.phone.includes(searchTerm) ||
       (order.pincode || '').includes(searchTerm);
-    return matchesSearch;
+    if (!matchesSearch) return false;
+    if (packingFilter === 'PACKED') return (order.packingStatus || PACKING_STATUS.NOT_PACKED) === PACKING_STATUS.PACKED;
+    if (packingFilter === 'NOT_PACKED') return (order.packingStatus || PACKING_STATUS.NOT_PACKED) === PACKING_STATUS.NOT_PACKED;
+    return true;
   });
+
+  const notPackedCount = orders.filter(o => (o.packingStatus || PACKING_STATUS.NOT_PACKED) === PACKING_STATUS.NOT_PACKED).length;
+  const packedCount = orders.filter(o => o.packingStatus === PACKING_STATUS.PACKED).length;
 
   return (
     <div className="animate-fadeIn max-w-7xl mx-auto px-4 sm:px-6 py-6 text-left">
@@ -288,10 +324,22 @@ const OrdersManage = () => {
                 {orders.filter(o => o.status === 'ordered').length} New
               </span>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5">
+            <div className="flex items-center gap-2 px-3 py-1.5 border-r border-yellow-900/10">
               <CheckCircle size={15} className="text-green-500" />
               <span className="text-xs font-black text-neutral-300">
                 {orders.filter(o => o.status === 'delivered').length} Delivered
+              </span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 border-r border-yellow-900/10">
+              <PackageOpen size={15} className="text-orange-400" />
+              <span className="text-xs font-black text-orange-400">
+                {notPackedCount} Not Packed
+              </span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5">
+              <PackageCheck size={15} className="text-green-400" />
+              <span className="text-xs font-black text-green-400">
+                {packedCount} Packed
               </span>
             </div>
           </div>
@@ -317,7 +365,7 @@ const OrdersManage = () => {
       </div>
 
       {/* Search Filter */}
-      <div className="mb-6 relative">
+      <div className="mb-4 relative">
         <label htmlFor="order-search" className="sr-only">Search Orders</label>
         <input
           type="text"
@@ -330,6 +378,33 @@ const OrdersManage = () => {
           className="w-full pl-11 pr-4 py-3.5 bg-neutral-900/30 border border-yellow-900/10 rounded-2xl focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 outline-none transition-all text-xs font-medium text-white placeholder-neutral-500"
         />
         <Search size={16} className="absolute left-4 top-4 text-neutral-500" />
+      </div>
+
+      {/* Packing Filter Tabs */}
+      <div className="flex items-center gap-2 mb-6 flex-wrap">
+        <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest mr-1">Packing:</span>
+        {[
+          { key: 'ALL', label: 'All Orders', icon: Package },
+          { key: 'NOT_PACKED', label: '📦 Not Packed', icon: PackageOpen },
+          { key: 'PACKED', label: '✅ Packed', icon: PackageCheck },
+        ].map(({ key, label }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setPackingFilter(key)}
+            className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${
+              packingFilter === key
+                ? key === 'NOT_PACKED'
+                  ? 'bg-orange-500/15 border-orange-500/40 text-orange-400'
+                  : key === 'PACKED'
+                    ? 'bg-green-500/15 border-green-500/40 text-green-400'
+                    : 'bg-yellow-500/15 border-yellow-500/40 text-yellow-400'
+                : 'bg-neutral-900/40 border-neutral-800 text-neutral-500 hover:border-neutral-700 hover:text-neutral-300'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {loading ? (
@@ -361,7 +436,11 @@ const OrdersManage = () => {
             return (
               <div
                 key={order.id}
-                className="bg-neutral-900/40 backdrop-blur-xl border border-neutral-800 rounded-3xl overflow-hidden shadow-xl hover:border-neutral-700/60 transition-all duration-300"
+                className={`bg-neutral-900/40 backdrop-blur-xl border rounded-3xl overflow-hidden shadow-xl hover:border-neutral-700/60 transition-all duration-300 ${
+                  (order.packingStatus || PACKING_STATUS.NOT_PACKED) === PACKING_STATUS.PACKED
+                    ? 'border-green-900/40'
+                    : 'border-neutral-800'
+                }`}
               >
                 {/* Card Top Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-4 sm:px-6 py-4 bg-neutral-950/60 border-b border-neutral-800/80">
@@ -385,6 +464,16 @@ const OrdersManage = () => {
                         <Calendar size={11} />
                         {orderDate}
                       </span>
+                      {/* Packing Status Badge */}
+                      {(order.packingStatus || PACKING_STATUS.NOT_PACKED) === PACKING_STATUS.PACKED ? (
+                        <span className="flex items-center gap-1 text-[8px] font-black uppercase tracking-widest bg-green-500/10 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full">
+                          <PackageCheck size={9} /> Packed
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-[8px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded-full">
+                          <PackageOpen size={9} /> Not Packed
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -633,6 +722,25 @@ const OrdersManage = () => {
                     >
                       <History size={12} /> History
                     </button>
+                    {/* Mark as Packed Button */}
+                    {(order.packingStatus || PACKING_STATUS.NOT_PACKED) === PACKING_STATUS.NOT_PACKED ? (
+                      <button
+                        type="button"
+                        onClick={() => handleMarkPacked(order.id)}
+                        disabled={!!packingLoading[order.id]}
+                        className="flex items-center justify-center gap-1.5 bg-orange-500/10 text-orange-400 hover:bg-orange-500 hover:text-white py-3 rounded-lg transition-all border border-orange-500/20 w-full md:w-auto md:px-3.5 md:py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Mark as Packed"
+                      >
+                        {packingLoading[order.id]
+                          ? <Loader2 size={12} className="animate-spin" />
+                          : <PackageCheck size={12} />}
+                        Mark as Packed
+                      </button>
+                    ) : (
+                      <span className="flex items-center justify-center gap-1.5 bg-green-500/10 text-green-400 py-3 rounded-lg border border-green-500/20 w-full md:w-auto md:px-3.5 md:py-2.5 text-[9px] font-black uppercase tracking-widest">
+                        <PackageCheck size={12} /> Packed
+                      </span>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleDeleteOrder(order.id, false)}
@@ -838,6 +946,51 @@ const OrdersManage = () => {
                   </div>
                 );
               })()}
+
+              {/* Packing Info Panel inside Modal */}
+              <div className="mt-6 p-4 rounded-2xl border bg-neutral-950/60 border-neutral-800 space-y-3">
+                <h3 className="text-[9px] font-black text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
+                  <Package size={12} className="text-yellow-500" /> Packing Status
+                </h3>
+                <div className="flex flex-wrap items-center gap-3">
+                  {(selectedOrder.packingStatus || PACKING_STATUS.NOT_PACKED) === PACKING_STATUS.PACKED ? (
+                    <>
+                      <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest bg-green-500/10 text-green-400 border border-green-500/20 px-3 py-1.5 rounded-full">
+                        <PackageCheck size={11} /> Packed
+                      </span>
+                      {selectedOrder.packedAt && (
+                        <span className="text-[9px] text-neutral-400 font-bold">
+                          Packed at: {typeof selectedOrder.packedAt === 'string'
+                            ? new Date(selectedOrder.packedAt).toLocaleString('en-IN')
+                            : selectedOrder.packedAt?.toDate?.().toLocaleString('en-IN') || '—'}
+                        </span>
+                      )}
+                      {selectedOrder.packedBy && (
+                        <span className="text-[9px] text-neutral-400 font-bold">
+                          by {selectedOrder.packedBy}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-400 border border-orange-500/20 px-3 py-1.5 rounded-full">
+                        <PackageOpen size={11} /> Not Packed
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleMarkPacked(selectedOrder.id)}
+                        disabled={!!packingLoading[selectedOrder.id]}
+                        className="flex items-center gap-1.5 bg-orange-500 text-white hover:bg-orange-400 font-black uppercase tracking-widest text-[9px] px-4 py-2 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {packingLoading[selectedOrder.id]
+                          ? <Loader2 size={11} className="animate-spin" />
+                          : <PackageCheck size={11} />}
+                        Mark as Packed
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
 
               {/* Items List */}
               <h3 className="text-[9px] font-black text-neutral-500 uppercase tracking-widest mt-8 mb-4 flex items-center gap-1.5">
