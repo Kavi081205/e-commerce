@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   ShoppingCart, Heart, Menu, X, Search
 } from 'lucide-react';
@@ -68,6 +68,23 @@ const Navbar = () => {
   const { getCartCount, bump } = useCart();
   const { wishlistItems } = useWishlist();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isLinkActive = useCallback((path) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+    if (path === '/products') {
+      return location.pathname === '/products';
+    }
+    if (path === '/daily-notes') {
+      return location.pathname === '/daily-notes';
+    }
+    if (path === '/about') {
+      return location.pathname === '/about';
+    }
+    return location.pathname === path;
+  }, [location]);
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -130,10 +147,10 @@ const Navbar = () => {
   };
 
   /* ── nav link style helpers ── */
-  const navCls = ({ isActive }) =>
+  const getNavCls = (isActive) =>
     `text-xs font-black tracking-widest uppercase transition-all duration-300 relative group ${isActive ? 'text-yellow-500' : 'text-gray-400 hover:text-white'
     }`;
-  const mobileCls = ({ isActive }) =>
+  const getMobileCls = (isActive) =>
     `block text-lg font-black tracking-widest uppercase py-4 transition-all ${isActive ? 'text-yellow-500' : 'text-gray-400 hover:text-white'
     }`;
   const underline = (isActive) =>
@@ -172,27 +189,19 @@ const Navbar = () => {
             )}
           </div>
 
-          <div className="hidden md:flex items-center space-x-10">
-            <NavLink to="/" end className={navCls}>
-              {({ isActive }) => (
-                <> Home <span className={underline(isActive)} /> </>
-              )}
-            </NavLink>
-            <NavLink to="/products" end className={navCls}>
-              {({ isActive }) => (
-                <> Products <span className={underline(isActive)} /> </>
-              )}
-            </NavLink>
-            <NavLink to="/about" end className={navCls}>
-              {({ isActive }) => (
-                <> About Us <span className={underline(isActive)} /> </>
-              )}
-            </NavLink>
-            <NavLink to="/my-orders" end className={navCls}>
-              {({ isActive }) => (
-                <> My Orders <span className={underline(isActive)} /> </>
-              )}
-            </NavLink>
+          <div className="hidden md:flex items-center space-x-8">
+            <Link to="/" className={getNavCls(isLinkActive('/'))}>
+              Home <span className={underline(isLinkActive('/'))} />
+            </Link>
+            <Link to="/products" className={getNavCls(isLinkActive('/products'))}>
+              Products <span className={underline(isLinkActive('/products'))} />
+            </Link>
+            <Link to="/daily-notes" className={getNavCls(isLinkActive('/daily-notes'))}>
+              Daily Notes <span className={underline(isLinkActive('/daily-notes'))} />
+            </Link>
+            <Link to="/about" className={getNavCls(isLinkActive('/about'))}>
+              About <span className={underline(isLinkActive('/about'))} />
+            </Link>
 
             <div className="flex items-center gap-6 pl-8 border-l border-yellow-900/30">
               <Link
@@ -303,21 +312,24 @@ const Navbar = () => {
           }`}
       >
         <div className="px-6 py-6 space-y-4">
-          <NavLink to="/" end onClick={() => setMobileOpen(false)} className={mobileCls}>
+          <Link to="/" onClick={() => setMobileOpen(false)} className={getMobileCls(isLinkActive('/'))}>
             Home
-          </NavLink>
-          <NavLink to="/products" end onClick={() => setMobileOpen(false)} className={mobileCls}>
+          </Link>
+          <Link to="/products" onClick={() => setMobileOpen(false)} className={getMobileCls(isLinkActive('/products'))}>
             Products
-          </NavLink>
-          <NavLink to="/about" end onClick={() => setMobileOpen(false)} className={mobileCls}>
-            About Us
-          </NavLink>
-          <NavLink to="/my-orders" end onClick={() => setMobileOpen(false)} className={mobileCls}>
-            My Orders
-          </NavLink>
-          <NavLink to="/my-complaints" end onClick={() => setMobileOpen(false)} className={mobileCls}>
-            My Complaints
-          </NavLink>
+          </Link>
+          <Link to="/daily-notes" onClick={() => setMobileOpen(false)} className={getMobileCls(isLinkActive('/daily-notes'))}>
+            Daily Notes
+          </Link>
+          <Link to="/about" onClick={() => setMobileOpen(false)} className={getMobileCls(isLinkActive('/about'))}>
+            About
+          </Link>
+          <Link to="/wishlist" onClick={() => setMobileOpen(false)} className={getMobileCls(isLinkActive('/wishlist'))}>
+            Wishlist
+          </Link>
+          <Link to="/cart" onClick={() => setMobileOpen(false)} className={getMobileCls(isLinkActive('/cart'))}>
+            Cart
+          </Link>
         </div>
       </div>
     </nav>

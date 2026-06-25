@@ -3,7 +3,7 @@ import { Outlet, Link, NavLink, useLocation, useNavigationType } from 'react-rou
 import Navbar from './Navbar';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
-import { Home, Grid, Heart, Package, ShoppingCart } from 'lucide-react';
+import { Home, Grid, Heart, Package, ShoppingCart, BookOpen } from 'lucide-react';
 
 const WebsiteLayout = () => {
   const location = useLocation();
@@ -129,6 +129,18 @@ const WebsiteLayout = () => {
           >
             <Grid size={18} />
             <span>Store</span>
+          </NavLink>
+
+          <NavLink
+            to="/daily-notes"
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center gap-1 text-[10px] font-black uppercase tracking-widest transition-all ${
+                isActive ? 'text-yellow-500 scale-105' : 'text-gray-500 hover:text-white'
+              }`
+            }
+          >
+            <BookOpen size={18} />
+            <span>Notes</span>
           </NavLink>
 
           <NavLink

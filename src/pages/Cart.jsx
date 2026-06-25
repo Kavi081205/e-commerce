@@ -12,6 +12,8 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1560343090-f0409e92791
 const Cart = () => {
   const { cart, removeFromCart, updateQuantity, cartTotal, getCartTotal, clearCart } = useCart();
   const { promoSettings } = usePromo();
+  const FREE_DELIVERY_THRESHOLD = 500;
+  const FIXED_DELIVERY_CHARGE = 40;
   const total = cartTotal ?? getCartTotal?.() ?? 0;
   const navigate = useNavigate();
 
@@ -61,6 +63,8 @@ const Cart = () => {
 
   const subtotalMRP = getSubtotalMRP();
   const discountVal = subtotalMRP - total;
+  const deliveryCharge = total >= FREE_DELIVERY_THRESHOLD ? 0 : FIXED_DELIVERY_CHARGE;
+  const amountToFreeDelivery = FREE_DELIVERY_THRESHOLD - total;
 
   return (
     <div className="bg-black min-h-screen pb-32 lg:pb-12">
@@ -191,11 +195,21 @@ const Cart = () => {
                 )}
                 <div className="flex justify-between text-gray-500 text-xs font-black uppercase tracking-widest">
                   <span>Delivery Charges</span>
-                  <span className="text-yellow-500 font-bold">Calculated at checkout</span>
+                  {deliveryCharge === 0
+                    ? <span className="text-green-400 font-black">FREE</span>
+                    : <span className="text-yellow-500">₹{deliveryCharge.toLocaleString()}</span>
+                  }
                 </div>
+                {amountToFreeDelivery > 0 && (
+                  <div className="bg-yellow-500/5 border border-yellow-500/15 rounded-xl p-3 text-center">
+                    <p className="text-[9px] font-black text-yellow-400 uppercase tracking-widest">
+                      Add ₹{amountToFreeDelivery.toLocaleString()} more to unlock FREE DELIVERY
+                    </p>
+                  </div>
+                )}
                 <div className="border-t border-yellow-900/10 pt-6 flex justify-between">
                   <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Total Amount</span>
-                  <span className="text-3xl font-black gold-text">₹{total.toLocaleString()}</span>
+                  <span className="text-3xl font-black gold-text">₹{(total + deliveryCharge).toLocaleString()}</span>
                 </div>
                 {discountVal > 0 && (
                   <div className="bg-green-500/5 border border-green-500/10 rounded-2xl p-4 text-center mt-4">
@@ -207,7 +221,11 @@ const Cart = () => {
               </div>
 
               <button
-                onClick={() => navigate('/checkout')}
+                onClick={() => {
+                  // Clear any stale buyNow item so the full cart is used in checkout
+                  localStorage.removeItem('buyNow');
+                  navigate('/checkout');
+                }}
                 className="hidden lg:flex w-full bg-yellow-500 text-black font-black py-5 rounded-2xl items-center justify-center transition-all hover:scale-[1.02] active:scale-95 shadow-2xl shadow-yellow-500/10 uppercase tracking-[0.3em] text-[10px]"
               >
                 Proceed to Checkout <ArrowRight size={16} className="ml-3" />
@@ -231,10 +249,14 @@ const Cart = () => {
       >
         <div className="text-left">
           <p className="text-[8px] text-gray-500 font-black uppercase tracking-widest">Total Amount</p>
-          <p className="text-lg font-black text-white">₹{total.toLocaleString()}</p>
+          <p className="text-lg font-black text-white">₹{(total + deliveryCharge).toLocaleString()}</p>
         </div>
         <button
-          onClick={() => navigate('/checkout')}
+          onClick={() => {
+            // Clear any stale buyNow item so the full cart is used in checkout
+            localStorage.removeItem('buyNow');
+            navigate('/checkout');
+          }}
           className="bg-yellow-500 text-black font-black py-3 px-6 rounded-xl text-[10px] uppercase tracking-widest hover:bg-yellow-400 transition-colors shadow-lg active:scale-95"
         >
           PLACE ORDER

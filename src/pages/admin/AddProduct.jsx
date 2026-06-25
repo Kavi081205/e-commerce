@@ -7,52 +7,7 @@ import {
   CheckCircle, AlertCircle, FilePlus, Video, X as XIcon
 } from 'lucide-react';
 import { getOptimizedImage } from '../../utils/cloudinary';
-
-const getColorCode = (name) => {
-  const cleanName = name.trim().toLowerCase();
-  const colorMap = {
-    red: '#ef4444',
-    blue: '#3b82f6',
-    green: '#22c55e',
-    pink: '#ec4899',
-    yellow: '#eab308',
-    orange: '#f97316',
-    purple: '#a855f7',
-    indigo: '#6366f1',
-    black: '#000000',
-    white: '#ffffff',
-    gray: '#6b7280',
-    grey: '#6b7280',
-    brown: '#78350f',
-    gold: '#d97706',
-    silver: '#cbd5e1',
-    bronze: '#b45309',
-    cream: '#fef3c7',
-    beige: '#f5f5dc',
-    magenta: '#d946ef',
-    cyan: '#06b6d4',
-    teal: '#14b8a6',
-    violet: '#8b5cf6',
-    navy: '#1e3a8a',
-    maroon: '#800000',
-    peach: '#ffdab9',
-    lavender: '#e6e6fa',
-    mustard: '#e5a93b',
-    emerald: '#10b981',
-    turquoise: '#40e0d0'
-  };
-  if (colorMap[cleanName]) return colorMap[cleanName];
-  let hash = 0;
-  for (let i = 0; i < cleanName.length; i++) {
-    hash = cleanName.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  let color = '#';
-  for (let i = 0; i < 3; i++) {
-    const value = (hash >> (i * 8)) & 0xFF;
-    color += ('00' + value.toString(16)).slice(-2);
-  }
-  return color;
-};
+import { isMulticolor, getColorCode, MULTICOLOR_LABEL, detectImageColor, getNearestColorName } from '../../utils/colorUtils';
 
 const sanitizeUrl = (url) => {
   if (!url || typeof url !== 'string') return url;
@@ -174,15 +129,40 @@ const AddProduct = () => {
     try {
       const uploadedUrl = await uploadImage(selectedFile);
       if (uploadedUrl) {
-        setVariants(prev => prev.map((v, idx) => {
-          if (idx === colorIdx) {
-            return {
-              ...v,
-              images: [...(v.images || []), uploadedUrl]
-            };
+        setVariants(prev => {
+          const currentVariant = prev[colorIdx];
+          const hasEmptyName = currentVariant && !currentVariant.colorName.trim();
+          
+          const updated = prev.map((v, idx) => {
+            if (idx === colorIdx) {
+              return {
+                ...v,
+                images: [...(v.images || []), uploadedUrl]
+              };
+            }
+            return v;
+          });
+          
+          if (hasEmptyName) {
+            detectImageColor(uploadedUrl).then(detectedHex => {
+              const nearestName = getNearestColorName(detectedHex);
+              setVariants(latest => latest.map((v, idx) => {
+                if (idx === colorIdx && !v.colorName.trim()) {
+                  return {
+                    ...v,
+                    colorName: nearestName,
+                    colorCode: detectedHex
+                  };
+                }
+                return v;
+              }));
+            }).catch(err => {
+              console.error("Auto color detection failed:", err);
+            });
           }
-          return v;
-        }));
+          
+          return updated;
+        });
       }
     } catch (err) {
       console.error("Variant image upload failed:", err);
@@ -195,15 +175,40 @@ const AddProduct = () => {
   const handleAddVariantImageUrl = (colorIdx, url) => {
     if (!url.trim()) return;
     const sanitizedUrl = sanitizeUrl(url);
-    setVariants(prev => prev.map((v, idx) => {
-      if (idx === colorIdx) {
-        return {
-          ...v,
-          images: [...(v.images || []), sanitizedUrl]
-        };
+    setVariants(prev => {
+      const currentVariant = prev[colorIdx];
+      const hasEmptyName = currentVariant && !currentVariant.colorName.trim();
+      
+      const updated = prev.map((v, idx) => {
+        if (idx === colorIdx) {
+          return {
+            ...v,
+            images: [...(v.images || []), sanitizedUrl]
+          };
+        }
+        return v;
+      });
+      
+      if (hasEmptyName) {
+        detectImageColor(sanitizedUrl).then(detectedHex => {
+          const nearestName = getNearestColorName(detectedHex);
+          setVariants(latest => latest.map((v, idx) => {
+            if (idx === colorIdx && !v.colorName.trim()) {
+              return {
+                ...v,
+                colorName: nearestName,
+                colorCode: detectedHex
+              };
+            }
+            return v;
+          }));
+        }).catch(err => {
+          console.error("Auto color detection failed:", err);
+        });
       }
-      return v;
-    }));
+      
+      return updated;
+    });
   };
 
   const handleRemoveVariantImage = (colorIdx, imgIdx) => {
@@ -378,7 +383,9 @@ const AddProduct = () => {
         return {
           color: v.colorName.trim(),
           colorName: v.colorName.trim(),
-          colorCode: getColorCode(v.colorName),
+          // For multicolour variants, store an empty colorCode so the UI
+          // always renders the rainbow swatch instead of a solid hex.
+          colorCode: isMulticolor(v.colorName) ? '' : (v.colorCode || getColorCode(v.colorName) || ''),
           images: v.images || [],
           priceDifference: Number(v.priceDifference || 0),
           sizes: sizes,
@@ -820,16 +827,30 @@ const AddProduct = () => {
                                 placeholder="e.g. Red, Teal, Blue, Pink"
                                 className="w-full bg-slate-950 border border-yellow-900/20 rounded-xl p-3 text-xs font-medium text-white outline-none focus:border-yellow-500"
                               />
-                              {v.colorName.trim() && (
-                                <div className="flex items-center justify-between sm:justify-start gap-2 bg-slate-950 p-2.5 rounded-xl border border-white/5 w-full sm:w-auto">
-                                  <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Auto Color:</span>
-                                  <div 
-                                    className="w-6 h-6 rounded-full border border-white/20 shadow-md transition-all duration-300" 
-                                    style={{ backgroundColor: v.colorCode || getColorCode(v.colorName) }}
-                                    title={`Color code: ${v.colorCode || getColorCode(v.colorName)}`}
-                                  />
-                                </div>
-                              )}
+                              {v.colorName.trim() && (() => {
+                                const multi = isMulticolor(v.colorName);
+                                const hex = multi ? null : (v.colorCode || getColorCode(v.colorName));
+                                return (
+                                  <div className="flex items-center justify-between sm:justify-start gap-2 bg-slate-950 p-2.5 rounded-xl border border-white/5 w-full sm:w-auto">
+                                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                                      {multi ? 'Multicolour' : 'Auto Color:'}
+                                    </span>
+                                    {multi ? (
+                                      <div
+                                        className="w-6 h-6 rounded-full border border-white/20 shadow-md"
+                                        style={{ background: 'conic-gradient(red, orange, yellow, green, cyan, blue, violet, red)' }}
+                                        title="Multicolour"
+                                      />
+                                    ) : (
+                                      <div
+                                        className="w-6 h-6 rounded-full border border-white/20 shadow-md transition-all duration-300"
+                                        style={{ backgroundColor: hex }}
+                                        title={`Color code: ${hex}`}
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           </div>
 

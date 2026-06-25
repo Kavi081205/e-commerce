@@ -8,6 +8,7 @@ import { usePromo } from '../context/PromoContext';
 import { useNotification } from '../context/NotificationContext';
 import { getEffectivePrice } from '../utils/pricing';
 import { getOptimizedImage, getHDImage } from '../utils/cloudinary';
+import { isMulticolor, getColorCode, MULTICOLOR_LABEL } from '../utils/colorUtils';
 import { db } from '../firebase';
 import { Helmet } from 'react-helmet-async';
 import { logProductView } from '../utils/analytics';
@@ -40,56 +41,8 @@ const formatDate = (timestamp) => {
   });
 };
 
-const getColorCode = (name) => {
-  const cleanName = String(name || '').trim().toLowerCase();
-  const colorMap = {
-    red: '#ef4444',
-    blue: '#3b82f6',
-    green: '#22c55e',
-    pink: '#ec4899',
-    yellow: '#eab308',
-    orange: '#f97316',
-    purple: '#a855f7',
-    indigo: '#6366f1',
-    black: '#000000',
-    white: '#ffffff',
-    gray: '#6b7280',
-    grey: '#6b7280',
-    brown: '#78350f',
-    gold: '#d97706',
-    silver: '#cbd5e1',
-    bronze: '#b45309',
-    cream: '#fef3c7',
-    beige: '#f5f5dc',
-    magenta: '#d946ef',
-    cyan: '#06b6d4',
-    teal: '#14b8a6',
-    violet: '#8b5cf6',
-    navy: '#1e3a8a',
-    maroon: '#800000',
-    peach: '#ffdab9',
-    lavender: '#e6e6fa',
-    mustard: '#e5a93b',
-    emerald: '#10b981',
-    turquoise: '#40e0d0'
-  };
-  return colorMap[cleanName] || '#ffffff';
-};
-
-const getColorEmoji = (name) => {
-  const cleanName = String(name || '').trim().toLowerCase();
-  if (cleanName.includes('red')) return '🔴';
-  if (cleanName.includes('green')) return '🟢';
-  if (cleanName.includes('blue') || cleanName.includes('navy')) return '🔵';
-  if (cleanName.includes('yellow') || cleanName.includes('gold')) return '🟡';
-  if (cleanName.includes('orange')) return '🟠';
-  if (cleanName.includes('purple') || cleanName.includes('violet') || cleanName.includes('lavender')) return '🟣';
-  if (cleanName.includes('brown') || cleanName.includes('bronze')) return '🟤';
-  if (cleanName.includes('black')) return '⚫';
-  if (cleanName.includes('white') || cleanName.includes('silver') || cleanName.includes('cream')) return '⚪';
-  if (cleanName.includes('pink') || cleanName.includes('rose') || cleanName.includes('peach')) return '🌸';
-  return '🎨';
-};
+// getColorCode and isMulticolor are imported from ../utils/colorUtils
+// getColorEmoji is unused — removed.
 
 
 const ProductDetails = () => {
@@ -1174,7 +1127,9 @@ const ProductDetails = () => {
                     {product.variants.map((v, idx) => {
                       const vName = v.colorName || v.color || '';
                       const isSelected = selectedColorName === vName;
-                      const colorCode = v.colorCode || getColorCode(vName);
+                      const multi = isMulticolor(vName);
+                      const colorCode = multi ? null : (v.colorCode || getColorCode(vName));
+                      const displayName = multi ? MULTICOLOR_LABEL : vName;
                       return (
                         <button
                           key={`variant-${vName}-${idx}`}
@@ -1185,13 +1140,24 @@ const ProductDetails = () => {
                               : 'border-white/5 bg-gray-900/30 text-gray-400 hover:border-white/20 hover:text-white'
                             }`}
                         >
-                          {/* Color dot swatch */}
-                          <span
-                            className="w-5 h-5 rounded-full border border-white/30 flex-shrink-0"
-                            style={{ backgroundColor: colorCode }}
-                          />
+                          {/* Color dot swatch — rainbow for multicolour, solid for single-colour */}
+                          {multi ? (
+                            <span
+                              className="w-5 h-5 rounded-full flex-shrink-0 border border-white/30"
+                              style={{
+                                background:
+                                  'conic-gradient(red, orange, yellow, green, cyan, blue, violet, red)',
+                              }}
+                              title="Multicolour"
+                            />
+                          ) : (
+                            <span
+                              className="w-5 h-5 rounded-full border border-white/30 flex-shrink-0"
+                              style={{ backgroundColor: colorCode || '#ffffff' }}
+                            />
+                          )}
                           {/* Color name */}
-                          <span className="text-[11px] font-black uppercase tracking-widest">{vName}</span>
+                          <span className="text-[11px] font-black uppercase tracking-widest">{displayName}</span>
                           {/* Active checkmark */}
                           {isSelected && <Check size={12} className="text-yellow-400 font-bold ml-1" />}
                         </button>

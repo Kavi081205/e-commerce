@@ -24,6 +24,7 @@ const ThankYou = lazyWithRetry(() => import('./pages/ThankYou'));
 const OrderConfirmation = lazyWithRetry(() => import('./pages/OrderConfirmation'));
 const Wishlist = lazyWithRetry(() => import('./pages/Wishlist'));
 const About = lazyWithRetry(() => import('./pages/About'));
+const DailyNotes = lazyWithRetry(() => import('./pages/DailyNotes'));
 const MyOrders = lazyWithRetry(() => import('./pages/MyOrders'));
 const MyComplaints = lazyWithRetry(() => import('./pages/MyComplaints'));
 const NotFound = lazyWithRetry(() => import('./pages/NotFound'));
@@ -129,6 +130,7 @@ function App() {
                 <Route path="/profile" element={<Navigate to="/" replace />} />
                 <Route path="/wishlist" element={<Wishlist />} />
                 <Route path="/about" element={<About />} />
+                <Route path="/daily-notes" element={<DailyNotes />} />
                 <Route path="/my-orders" element={<MyOrders />} />
                 <Route path="/my-complaints" element={<MyComplaints />} />
                 {/* 404 fallback — renders inside the store layout (keeps Navbar/Footer) */}

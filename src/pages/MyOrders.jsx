@@ -179,7 +179,12 @@ export default function MyOrders() {
                                 )}
                                 <div className="min-w-0 flex-1">
                                   <p className="text-sm font-bold text-white truncate">{item.name || item.productName}</p>
-                                  <p className="text-xs text-gray-500">Qty: {item.quantity || 1} · ₹{item.effectivePrice || item.price || 0}</p>
+                                  <p className="text-xs text-gray-500">
+                                    Qty: {item.quantity || 1}
+                                    {item.color && ` · Color: ${typeof item.color === 'object' ? item.color.name : item.color}`}
+                                    {item.size && ` · Size: ${item.size}`}
+                                    {' · ₹'}{(item.effectivePrice || item.price || 0).toLocaleString()}
+                                  </p>
                                 </div>
                               </div>
                             ))}

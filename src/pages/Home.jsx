@@ -15,6 +15,7 @@ import { getEffectivePrice } from '../utils/pricing';
 import { getOptimizedImage, getHDImage } from '../utils/cloudinary';
 import ProductRating from '../components/ProductRating';
 import { useValidatedProducts } from '../hooks/useValidatedProducts';
+import DailyNotes from '../components/DailyNotes';
 
 /* ─────────────────────────────────────────────────────────────────
    STATIC DATA (non-category)
@@ -795,6 +796,9 @@ const Home = () => {
           </div>
         )}
       </section>
+
+      {/* ── Daily Notes ── */}
+      <DailyNotes />
 
       {/* ── 5. Recently Viewed Section ── */}
       {recentlyViewed && recentlyViewed.length > 0 && (

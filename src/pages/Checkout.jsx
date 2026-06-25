@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { Loader2, ShieldCheck, MapPin, Plus, Home, Briefcase, Trash2, Smartphone, Tag, X, ChevronRight, CreditCard, Package, CheckCircle2, Edit2 } from 'lucide-react';
-import { createOrder, getDeliveryCharge, saveInvoice } from '../firebase/services';
+import { createOrder, saveInvoice } from '../firebase/services';
 import PageHeader from '../components/PageHeader';
 import { useNotification } from '../context/NotificationContext';
 import { usePromo } from '../context/PromoContext';
@@ -71,9 +71,8 @@ const Checkout = () => {
     type: 'Home'
   });
 
-  const [deliveryCharge, setDeliveryCharge] = useState(0);
-  const [deliveryZone, setDeliveryZone] = useState('');
-  const [deliveryDays, setDeliveryDays] = useState('');
+  const FREE_DELIVERY_THRESHOLD = 500;
+  const FIXED_DELIVERY_CHARGE = 40;
   const [buyNowItem, setBuyNowItem] = useState(null);
 
   // Coupon state
@@ -86,25 +85,27 @@ const Checkout = () => {
 
 
   useEffect(() => {
-    const item = localStorage.getItem('buyNow');
-    if (item) {
-      setBuyNowItem(JSON.parse(item));
-    }
-  }, []);
+    const raw = localStorage.getItem('buyNow');
+    if (!raw) return;
 
-  useEffect(() => {
-    const activeAddress = addresses.find(a => a.id === selectedAddressId) || (showNewAddressForm ? formData : null);
-    if (activeAddress?.pincode && String(activeAddress.pincode).trim().length === 6) {
-      const details = getDeliveryCharge(activeAddress.pincode);
-      setDeliveryCharge(details.charge);
-      setDeliveryZone(details.zone);
-      setDeliveryDays(details.days);
-    } else {
-      setDeliveryCharge(0);
-      setDeliveryZone('');
-      setDeliveryDays('');
+    // If the user already has cart items, the buyNow key is stale from a
+    // previous "Buy Now" session. Clear it so the full cart is used.
+    if (cart.length > 0) {
+      localStorage.removeItem('buyNow');
+      setBuyNowItem(null);
+      return;
     }
-  }, [selectedAddressId, addresses, formData.pincode, showNewAddressForm]);
+
+    // Genuine Buy Now flow — cart is empty, single product checkout.
+    try {
+      setBuyNowItem(JSON.parse(raw));
+    } catch (e) {
+      console.error('Failed to parse buyNow item', e);
+      localStorage.removeItem('buyNow');
+    }
+  }, [cart.length]);
+
+  // Delivery charge is computed from subtotal — no side-effect needed.
 
   useEffect(() => {
     const hasBuyNow = !!localStorage.getItem('buyNow');
@@ -116,19 +117,23 @@ const Checkout = () => {
   useEffect(() => {
     let active = true;
     const validateCartProducts = async () => {
-      const hasBuyNow = localStorage.getItem('buyNow');
+      // Determine what to validate: full cart takes priority; fall back to
+      // buyNow only when the cart is genuinely empty (true Buy Now flow).
       let itemsToValidate = [];
       let isBuyNow = false;
 
-      if (hasBuyNow) {
-        try {
-          itemsToValidate = [JSON.parse(hasBuyNow)];
-          isBuyNow = true;
-        } catch (e) {
-          console.error("Failed to parse buyNow item", e);
-        }
-      } else {
+      if (cart.length > 0) {
         itemsToValidate = [...cart];
+      } else {
+        const hasBuyNow = localStorage.getItem('buyNow');
+        if (hasBuyNow) {
+          try {
+            itemsToValidate = [JSON.parse(hasBuyNow)];
+            isBuyNow = true;
+          } catch (e) {
+            console.error('Failed to parse buyNow item', e);
+          }
+        }
       }
 
       if (itemsToValidate.length === 0) return;
@@ -156,8 +161,8 @@ const Checkout = () => {
       }
 
       if (invalidProductIds.length > 0) {
-        console.error(`Invalid product IDs found on mount: ${invalidProductIds.join(", ")}`);
-        showToast("One or more products in your cart are no longer available. Please review your cart.", "error");
+        console.error(`Invalid product IDs found on mount: ${invalidProductIds.join(', ')}`);
+        showToast('One or more products in your cart are no longer available. Please review your cart.', 'error');
 
         if (isBuyNow) {
           localStorage.removeItem('buyNow');
@@ -437,6 +442,7 @@ const Checkout = () => {
 
       // Continue checkout with remaining validItems
       const subtotal = buyNowItem ? (getEffectivePrice(buyNowItem, promoSettings) * (buyNowItem.quantity || 1)) : validItems.reduce((acc, item) => acc + getEffectivePrice(item, promoSettings) * (item.quantity || 1), 0);
+      const deliveryCharge = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : FIXED_DELIVERY_CHARGE;
       const finalTotal = subtotal + deliveryCharge - couponDiscount;
 
       let totalProfit = 0;
@@ -483,17 +489,10 @@ const Checkout = () => {
         couponCode: couponData?.code || null,
         couponDiscount: couponDiscount || 0,
         deliveryCharge: deliveryCharge,
-        deliveryZone: deliveryZone || 'Standard Zone',
-        estimatedDeliveryDays: deliveryDays || '--',
+        deliveryZone: subtotal >= FREE_DELIVERY_THRESHOLD ? 'Free Delivery' : 'Standard',
+        estimatedDeliveryDays: '--',
         totalPrice: Math.max(0, finalTotal),
-        profit: (() => {
-          let finalOrderProfit = totalProfit - couponDiscount;
-          if (deliveryCharge === 0 && activeAddress.pincode) {
-            const zoneDetails = getDeliveryCharge(activeAddress.pincode);
-            finalOrderProfit -= Number(zoneDetails?.charge || 0);
-          }
-          return finalOrderProfit;
-        })(),
+        profit: totalProfit - couponDiscount,
         userEmail: 'unknown',
         createdAt: new Date(),
         status: 'ordered',
@@ -745,6 +744,8 @@ const Checkout = () => {
   if (activeItems.length === 0 && !loading && !showSuccess) return null;
 
   const subtotal = buyNowItem ? (getEffectivePrice(buyNowItem, promoSettings) * (buyNowItem.quantity || 1)) : getCartTotal();
+  const deliveryCharge = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : FIXED_DELIVERY_CHARGE;
+  const amountToFreeDelivery = FREE_DELIVERY_THRESHOLD - subtotal;
   const total = Math.max(0, subtotal + deliveryCharge - couponDiscount);
   const getSubtotalMRP = () => {
     if (buyNowItem) {
@@ -1040,8 +1041,18 @@ const Checkout = () => {
                     )}
                     <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
                       <span className="text-gray-500">Delivery</span>
-                      <span className="text-yellow-500">{deliveryCharge === 0 ? '—' : `₹${deliveryCharge.toLocaleString()}`}</span>
+                      {deliveryCharge === 0
+                        ? <span className="text-green-400 font-black">FREE</span>
+                        : <span className="text-yellow-500">₹{deliveryCharge.toLocaleString()}</span>
+                      }
                     </div>
+                    {amountToFreeDelivery > 0 && (
+                      <div className="bg-yellow-500/5 border border-yellow-500/15 rounded-xl p-2.5 text-center">
+                        <p className="text-[9px] font-black text-yellow-400 uppercase tracking-widest">
+                          Add ₹{amountToFreeDelivery.toLocaleString()} more to unlock FREE DELIVERY
+                        </p>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm font-black pt-2 border-t border-white/5">
                       <span className="text-gray-300 uppercase tracking-widest text-[10px]">Total</span>
                       <span className="gold-text text-lg">₹{total.toLocaleString()}</span>
@@ -1151,8 +1162,18 @@ const Checkout = () => {
                     )}
                     <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
                       <span className="text-gray-500">Delivery</span>
-                      <span className="text-yellow-500">{deliveryCharge === 0 ? '—' : `₹${deliveryCharge.toLocaleString()}`}</span>
+                      {deliveryCharge === 0
+                        ? <span className="text-green-400 font-black">FREE DELIVERY</span>
+                        : <span className="text-yellow-500">₹{deliveryCharge.toLocaleString()}</span>
+                      }
                     </div>
+                    {amountToFreeDelivery > 0 && (
+                      <div className="bg-yellow-500/5 border border-yellow-500/15 rounded-xl p-2.5 text-center">
+                        <p className="text-[9px] font-black text-yellow-400 uppercase tracking-widest">
+                          Add ₹{amountToFreeDelivery.toLocaleString()} more to unlock FREE DELIVERY
+                        </p>
+                      </div>
+                    )}
                     <div className="flex justify-between pt-2 border-t border-white/5">
                       <span className="text-xs font-black text-gray-300 uppercase tracking-widest">Amount to Pay</span>
                       <span className="text-2xl font-black gold-text">₹{total.toLocaleString()}</span>
