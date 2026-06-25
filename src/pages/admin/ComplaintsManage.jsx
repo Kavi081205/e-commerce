@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getAllComplaints, updateComplaint, markComplaintNotificationsRead } from '../../firebase/services';
+import { getAllComplaints, updateComplaint, markComplaintNotificationsRead, deleteComplaint } from '../../firebase/services';
 import {
   AlertCircle, CheckCircle2, Clock, XCircle, Eye, X, Search,
   Filter, MessageSquare, Image as ImageIcon, Video, Loader2,
-  ChevronDown, RefreshCw, Send, FileText, Phone, Package, User
+  ChevronDown, RefreshCw, Send, FileText, Phone, Package, User, Trash2
 } from 'lucide-react';
+import { useNotification } from '../../context/NotificationContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // ─── Status Config ─────────────────────────────────────────────────────────────
@@ -304,6 +305,7 @@ const ComplaintDetailModal = ({ complaint, onClose, onUpdate }) => {
 
 // ─── Main Component ─────────────────────────────────────────────────────────────
 const ComplaintsManage = () => {
+  const { showToast } = useNotification();
   const [complaints, setComplaints]   = useState([]);
   const [filtered, setFiltered]       = useState([]);
   const [loading, setLoading]         = useState(true);
@@ -311,6 +313,8 @@ const ComplaintsManage = () => {
   const [search, setSearch]           = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [priorityFilter, setPriorityFilter] = useState('All');
+  const [deletingComplaint, setDeletingComplaint] = useState(null);
+  const [activeStatusSelectId, setActiveStatusSelectId] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -321,6 +325,46 @@ const ComplaintsManage = () => {
     markComplaintNotificationsRead();
     setLoading(false);
   }, []);
+
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      await updateComplaint(id, { status: newStatus });
+      setComplaints(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c));
+      showToast(`Complaint status updated to ${newStatus}`, 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to update status', 'error');
+    }
+  };
+
+  const handleMarkResolved = async (id) => {
+    try {
+      await updateComplaint(id, { status: 'Resolved' });
+      setComplaints(prev => prev.map(c => c.id === id ? { ...c, status: 'Resolved' } : c));
+      showToast('Complaint marked as resolved.', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to mark complaint as resolved', 'error');
+    }
+  };
+
+  const handleDeleteClick = (complaint) => {
+    setDeletingComplaint(complaint);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingComplaint) return;
+    try {
+      await deleteComplaint(deletingComplaint.id);
+      setComplaints(prev => prev.filter(c => c.id !== deletingComplaint.id));
+      showToast('Complaint deleted successfully.', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to delete complaint', 'error');
+    } finally {
+      setDeletingComplaint(null);
+    }
+  };
 
   useEffect(() => { load(); }, [load]);
 
@@ -498,13 +542,79 @@ const ComplaintsManage = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <button
-                          type="button"
-                          onClick={() => setSelected(c)}
-                          className="flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
-                        >
-                          <Eye size={12} /> View
-                        </button>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {/* 👁 View */}
+                          <button
+                            type="button"
+                            onClick={() => setSelected(c)}
+                            className="flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                            title="View Details"
+                          >
+                            <span>👁</span> View
+                          </button>
+
+                          {/* ✏ Edit Status */}
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setActiveStatusSelectId(activeStatusSelectId === c.id ? null : c.id)}
+                              className="flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                              title="Edit Status"
+                            >
+                              <span>✏</span> Edit Status
+                            </button>
+                            
+                            {activeStatusSelectId === c.id && (
+                              <>
+                                <div 
+                                  className="fixed inset-0 z-10" 
+                                  onClick={() => setActiveStatusSelectId(null)}
+                                />
+                                <div className="absolute top-full left-0 mt-1 bg-gray-950 border border-gray-800 rounded-xl shadow-2xl py-1.5 min-w-[120px] z-20">
+                                  {['New', 'In Review', 'Resolved', 'Rejected'].map(statusOpt => (
+                                    <button
+                                      key={statusOpt}
+                                      type="button"
+                                      onClick={() => {
+                                        handleStatusChange(c.id, statusOpt);
+                                        setActiveStatusSelectId(null);
+                                      }}
+                                      className={`w-full text-left px-4 py-2 text-xs transition-colors font-bold ${
+                                        c.status === statusOpt 
+                                          ? 'bg-yellow-500 text-black' 
+                                          : 'text-white hover:bg-yellow-500/20'
+                                      }`}
+                                    >
+                                      {statusOpt}
+                                    </button>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </div>
+
+                          {/* ✅ Mark Resolved */}
+                          {c.status !== 'Resolved' && (
+                            <button
+                              type="button"
+                              onClick={() => handleMarkResolved(c.id)}
+                              className="flex items-center gap-1.5 bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                              title="Mark as Resolved"
+                            >
+                              <span>✅</span> Mark Resolved
+                            </button>
+                          )}
+
+                          {/* 🗑 Delete */}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteClick(c)}
+                            className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                            title="Delete Complaint"
+                          >
+                            <span>🗑</span> Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -557,6 +667,76 @@ const ComplaintsManage = () => {
                       <span className="text-white">{formatDate(c.createdAt)}</span>
                     </div>
                   </div>
+
+                  <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-800/60">
+                    {/* 👁 View */}
+                    <button
+                      type="button"
+                      onClick={() => setSelected(c)}
+                      className="flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+                    >
+                      <span>👁</span> View
+                    </button>
+
+                    {/* ✏ Edit Status */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setActiveStatusSelectId(activeStatusSelectId === c.id ? null : c.id)}
+                        className="flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+                      >
+                        <span>✏</span> Edit Status
+                      </button>
+                      
+                      {activeStatusSelectId === c.id && (
+                        <>
+                          <div 
+                            className="fixed inset-0 z-10" 
+                            onClick={() => setActiveStatusSelectId(null)}
+                          />
+                          <div className="absolute bottom-full left-0 mb-1 bg-gray-950 border border-gray-800 rounded-xl shadow-2xl py-1.5 min-w-[120px] z-20">
+                            {['New', 'In Review', 'Resolved', 'Rejected'].map(statusOpt => (
+                              <button
+                                key={statusOpt}
+                                type="button"
+                                onClick={() => {
+                                  handleStatusChange(c.id, statusOpt);
+                                  setActiveStatusSelectId(null);
+                                }}
+                                className={`w-full text-left px-4 py-2 text-xs transition-colors font-bold ${
+                                  c.status === statusOpt 
+                                    ? 'bg-yellow-500 text-black' 
+                                    : 'text-white hover:bg-yellow-500/20'
+                                }`}
+                              >
+                                {statusOpt}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* ✅ Mark Resolved */}
+                    {c.status !== 'Resolved' && (
+                      <button
+                        type="button"
+                        onClick={() => handleMarkResolved(c.id)}
+                        className="flex items-center gap-1.5 bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+                      >
+                        <span>✅</span> Mark Resolved
+                      </button>
+                    )}
+
+                    {/* 🗑 Delete */}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteClick(c)}
+                      className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ml-auto"
+                    >
+                      <span>🗑</span> Delete
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -571,6 +751,32 @@ const ComplaintsManage = () => {
           onClose={() => setSelected(null)}
           onUpdate={handleUpdate}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingComplaint && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
+          <div className="bg-gray-950 border border-gray-800 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
+            <h3 className="text-lg font-black text-white uppercase tracking-wider">Delete Complaint</h3>
+            <p className="text-sm text-gray-400">Are you sure you want to permanently delete this complaint?</p>
+            <div className="flex gap-3 justify-center pt-2">
+              <button
+                type="button"
+                onClick={() => setDeletingComplaint(null)}
+                className="bg-gray-800 hover:bg-gray-700 text-white font-bold text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                className="bg-red-600 hover:bg-red-500 text-white font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

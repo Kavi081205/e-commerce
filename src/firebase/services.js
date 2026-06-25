@@ -872,6 +872,15 @@ export const updateComplaint = async (complaintId, updates) => {
   }
 };
 
+export const deleteComplaint = async (id) => {
+  try {
+    await deleteDoc(doc(db, 'complaints', id));
+  } catch (error) {
+    console.error('Error deleting complaint:', error);
+    throw error;
+  }
+};
+
 export const createComplaintNotification = async (complaintId, complaintData) => {
   try {
     const notifRef = collection(db, 'adminNotifications');

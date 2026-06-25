@@ -80,6 +80,12 @@ const Navbar = () => {
     if (path === '/daily-notes') {
       return location.pathname === '/daily-notes';
     }
+    if (path === '/my-orders') {
+      return location.pathname === '/my-orders';
+    }
+    if (path === '/my-complaints') {
+      return location.pathname === '/my-complaints';
+    }
     if (path === '/about') {
       return location.pathname === '/about';
     }
@@ -198,6 +204,12 @@ const Navbar = () => {
             </Link>
             <Link to="/daily-notes" className={getNavCls(isLinkActive('/daily-notes'))}>
               Daily Notes <span className={underline(isLinkActive('/daily-notes'))} />
+            </Link>
+            <Link to="/my-orders" className={getNavCls(isLinkActive('/my-orders'))}>
+              My Orders <span className={underline(isLinkActive('/my-orders'))} />
+            </Link>
+            <Link to="/my-complaints" className={getNavCls(isLinkActive('/my-complaints'))}>
+              My Complaints <span className={underline(isLinkActive('/my-complaints'))} />
             </Link>
             <Link to="/about" className={getNavCls(isLinkActive('/about'))}>
               About <span className={underline(isLinkActive('/about'))} />
@@ -320,6 +332,12 @@ const Navbar = () => {
           </Link>
           <Link to="/daily-notes" onClick={() => setMobileOpen(false)} className={getMobileCls(isLinkActive('/daily-notes'))}>
             Daily Notes
+          </Link>
+          <Link to="/my-orders" onClick={() => setMobileOpen(false)} className={getMobileCls(isLinkActive('/my-orders'))}>
+            My Orders
+          </Link>
+          <Link to="/my-complaints" onClick={() => setMobileOpen(false)} className={getMobileCls(isLinkActive('/my-complaints'))}>
+            My Complaints
           </Link>
           <Link to="/about" onClick={() => setMobileOpen(false)} className={getMobileCls(isLinkActive('/about'))}>
             About
