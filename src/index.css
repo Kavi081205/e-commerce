@@ -1175,3 +1175,50 @@ label.toggle-wrap {
     z-index: 99999 !important;
   }
 }
+
+.premium-gold-price {
+  color: #FFD700 !important;
+}
+
+/* Announcement Bar Marquee */
+@keyframes ticker-marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.ticker-wrap {
+  overflow: hidden;
+  width: 100%;
+  background-color: #FFC107;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.ticker-content {
+  display: flex;
+  white-space: nowrap;
+  animation: ticker-marquee 35s linear infinite;
+}
+
+@media (hover: hover) {
+  .ticker-content:hover {
+    animation-play-state: paused;
+  }
+}
+
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  padding-right: 4rem;
+  color: #000000;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}

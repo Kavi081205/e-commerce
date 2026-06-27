@@ -638,7 +638,7 @@ export const printLabel = async (order) => {
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0);
-    const isOnline = (order.paymentMethod || '').toUpperCase() === 'ONLINE' || (order.paymentMethod || '').toUpperCase() === 'RAZORPAY';
+    const isOnline = (order.paymentMethod || '').toUpperCase().includes('ONLINE') || (order.paymentMethod || '').toUpperCase().includes('RAZORPAY');
     doc.text(isOnline ? 'PAID TOTAL:' : 'COD TOTAL:', 8, 139);
     doc.text(`INR ${(order.totalPrice || 0).toLocaleString()}`, 92, 139, { align: 'right' });
 

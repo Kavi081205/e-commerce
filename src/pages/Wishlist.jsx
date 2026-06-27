@@ -92,7 +92,7 @@ const Wishlist = () => {
                       const discountPercent = origPrice > effPrice ? Math.round(((origPrice - effPrice) / origPrice) * 100) : 0;
                       return (
                         <div className="flex items-baseline gap-2 mb-6">
-                          <span className="text-xl font-black text-white">₹{effPrice.toLocaleString()}</span>
+                          <span className="text-xl font-black premium-gold-price text-[#FFD700]">₹{effPrice.toLocaleString()}</span>
                           {discountPercent > 0 && (
                             <>
                               <span className="text-xs text-gray-500 line-through font-semibold">₹{origPrice.toLocaleString()}</span>

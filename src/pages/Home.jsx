@@ -9,6 +9,7 @@ import { getFeaturedProducts, getProductsByIds, getProductById, getCategories } 
 import LazyImage from '../components/LazyImage';
 import { useInView } from 'react-intersection-observer'; // FIX 1: use the canonical hook directly
 import { useWishlist } from '../context/WishlistContext';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePromo } from '../context/PromoContext';
 import { getEffectivePrice } from '../utils/pricing';
@@ -282,6 +283,7 @@ const CountdownTimer = ({ expiryDate }) => {
 const ProductCard = ({ product, delay = 0, promoSettings }) => {
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.1 });
+  const { settings } = useSiteSettings();
 
   const handleWishlist = useCallback((e) => {
     e.preventDefault();
@@ -293,6 +295,12 @@ const ProductCard = ({ product, delay = 0, promoSettings }) => {
   const origPrice = Number(product.originalPrice ?? product.price ?? 0);
   const discountPercent = origPrice > effPrice ? Math.round(((origPrice - effPrice) / origPrice) * 100) : 0;
 
+  const showWishlist = settings?.productCard?.showWishlistButton !== false;
+  const showStock = settings?.productCard?.showStockBadge !== false;
+  const showRating = settings?.productCard?.showRating !== false;
+  const showDiscount = settings?.productCard?.showDiscountBadge !== false;
+  const showQuickView = settings?.productCard?.showQuickView !== false;
+
   return (
     <div
       ref={ref}
@@ -301,17 +309,19 @@ const ProductCard = ({ product, delay = 0, promoSettings }) => {
       }`}
       style={{ transitionDelay: inView ? `${delay}ms` : '0ms' }}
     >
-      <button
-        onClick={handleWishlist}
-        className={`absolute top-2.5 right-2.5 z-10 w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-colors ${
-          isInWishlist(product.id)
-            ? 'bg-yellow-500 text-black'
-            : 'bg-black/50 backdrop-blur-sm text-gray-400 hover:text-yellow-500 border border-white/5'
-        }`}
-        aria-label="Toggle wishlist"
-      >
-        <Heart size={14} fill={isInWishlist(product.id) ? 'currentColor' : 'none'} />
-      </button>
+      {showWishlist && (
+        <button
+          onClick={handleWishlist}
+          className={`absolute top-2.5 right-2.5 z-10 w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-colors ${
+            isInWishlist(product.id)
+              ? 'bg-yellow-500 text-black'
+              : 'bg-black/50 backdrop-blur-sm text-gray-400 hover:text-yellow-500 border border-white/5'
+          }`}
+          aria-label="Toggle wishlist"
+        >
+          <Heart size={14} fill={isInWishlist(product.id) ? 'currentColor' : 'none'} />
+        </button>
+      )}
 
       <Link to={`/product/${product.id}`} className="flex flex-col h-full">
         <div className="overflow-hidden aspect-square relative bg-black">
@@ -321,22 +331,32 @@ const ProductCard = ({ product, delay = 0, promoSettings }) => {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             wrapperClass="w-full h-full"
           />
-          {Number(product.soldCount || 0) >= 50 && (
-            <div className="absolute top-2 left-2 z-10 bg-yellow-500 text-black text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow">
-              🏆 Best Seller
+          {showStock && (
+            <>
+              {Number(product.soldCount || 0) >= 50 && (
+                <div className="absolute top-2 left-2 z-10 bg-yellow-500 text-black text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow">
+                  🏆 Best Seller
+                </div>
+              )}
+              {Number(product.stock || 0) <= 0 ? (
+                <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/50">
+                  <span className="bg-red-600 text-white text-[8px] font-black px-2.5 py-1 rounded uppercase tracking-wider rotate-[-10deg]">
+                    OUT OF STOCK
+                  </span>
+                </div>
+              ) : Number(product.stock || 0) <= 5 ? (
+                <div className="absolute bottom-2 left-2 z-10 bg-red-600 text-white text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow">
+                  ⚠ LOW STOCK ({product.stock})
+                </div>
+              ) : null}
+            </>
+          )}
+
+          {showQuickView && (
+            <div className="absolute bottom-2 inset-x-2 bg-black/70 backdrop-blur-sm py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-10">
+              <span className="text-[8px] font-black tracking-widest uppercase text-yellow-500">Quick View</span>
             </div>
           )}
-          {Number(product.stock || 0) <= 0 ? (
-            <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/50">
-              <span className="bg-red-600 text-white text-[8px] font-black px-2.5 py-1 rounded uppercase tracking-wider rotate-[-10deg]">
-                OUT OF STOCK
-              </span>
-            </div>
-          ) : Number(product.stock || 0) <= 5 ? (
-            <div className="absolute bottom-2 left-2 z-10 bg-red-600 text-white text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow">
-              ⚠ LOW STOCK ({product.stock})
-            </div>
-          ) : null}
         </div>
 
         <div className="p-3 flex-grow flex flex-col gap-1 bg-black/10">
@@ -345,17 +365,22 @@ const ProductCard = ({ product, delay = 0, promoSettings }) => {
             {product.name}
           </h3>
           
-          <div className="flex items-center gap-1.5 my-1">
-            <ProductRating productId={product.id} compact={true} />
-          </div>
+          {showRating && (
+            <div className="flex items-center gap-1.5 my-1">
+              <ProductRating productId={product.id} compact={true} />
+            </div>
+          )}
 
           <div className="mt-auto pt-2 border-t border-white/5 flex flex-wrap items-baseline gap-1.5">
-            <span className="text-sm font-black text-white">₹{effPrice.toLocaleString()}</span>
-            {discountPercent > 0 && (
+            <span className="text-sm font-black premium-gold-price text-[#FFD700]">₹{effPrice.toLocaleString()}</span>
+            {showDiscount && discountPercent > 0 && (
               <>
                 <span className="text-[10px] text-gray-500 line-through font-medium">₹{origPrice.toLocaleString()}</span>
                 <span className="text-[10px] text-green-500 font-black">{discountPercent}% off</span>
               </>
+            )}
+            {!showDiscount && discountPercent > 0 && (
+              <span className="text-[10px] text-gray-500 line-through font-medium">₹{origPrice.toLocaleString()}</span>
             )}
           </div>
         </div>
@@ -369,6 +394,7 @@ const ProductCard = ({ product, delay = 0, promoSettings }) => {
 ───────────────────────────────────────────────────────────────── */
 const Home = () => {
   const navigate = useNavigate();
+  const { settings } = useSiteSettings();
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const { promoSettings } = usePromo();
@@ -539,6 +565,30 @@ const Home = () => {
               <div key="loader" className="absolute inset-0 flex items-center justify-center">
                 <Loader2 size={32} className="animate-spin text-yellow-500" />
               </div>
+            ) : (settings?.banners?.desktop || settings?.banners?.mobile) ? (
+              <motion.div
+                key="custom-banner"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.6 }}
+                className="absolute inset-0"
+              >
+                {settings.banners.desktop && (
+                  <img
+                    src={settings.banners.desktop}
+                    alt="Desktop Banner"
+                    className="hidden lg:block w-full h-full object-cover object-center"
+                  />
+                )}
+                {(settings.banners.mobile || settings.banners.desktop) && (
+                  <img
+                    src={settings.banners.mobile || settings.banners.desktop}
+                    alt="Mobile Banner"
+                    className="lg:hidden w-full h-full object-cover object-center"
+                  />
+                )}
+              </motion.div>
             ) : bannerProducts.length > 0 ? (
               <motion.div
                 key={safeIndex}
@@ -676,8 +726,21 @@ const Home = () => {
         </div>
       </div>
 
+      {/* ── Custom Offer Banner ── */}
+      {settings?.banners?.offer && (
+        <div className="w-full px-3 sm:px-8 lg:px-8 xl:px-12 mt-6">
+          <div className="relative w-full lg:max-w-[1400px] lg:mx-auto rounded-2xl overflow-hidden border border-yellow-900/15">
+            <img 
+              src={settings.banners.offer} 
+              alt="Special Offer" 
+              className="w-full h-auto object-contain"
+            />
+          </div>
+        </div>
+      )}
+
       {/* ── 3. Flash Deals Section — all active offers ── */}
-      {promoSettings?.offerActive && promoSettings?.activeOffers?.length > 0 && (
+      {settings?.homepage?.showFlashDeals !== false && promoSettings?.offerActive && promoSettings?.activeOffers?.length > 0 && (
         <section className="mx-3 sm:mx-8 lg:mx-auto max-w-7xl mt-5 sm:mt-8">
           {/* Section header */}
           <div className="flex justify-between items-center mb-3 sm:mb-5">
@@ -766,36 +829,78 @@ const Home = () => {
         </section>
       )}
 
-      {/* ── 4. New Arrivals / Featured Products ── */}
-      <section className="mx-3 sm:mx-8 lg:mx-auto max-w-7xl mt-5 sm:mt-8">
-        <div className="flex justify-between items-end mb-4 sm:mb-6">
-          <div className="space-y-1">
-            <p className="text-yellow-500 text-[8px] font-black uppercase tracking-[0.4em]">The Elite List</p>
-            <h2 className="text-xl font-black text-white tracking-tight uppercase">New Arrivals</h2>
+      {/* ── Trending Section ── */}
+      {settings?.homepage?.showTrending && products.length > 0 && (
+        <section className="mx-3 sm:mx-8 lg:mx-auto max-w-7xl mt-5 sm:mt-8">
+          <div className="flex justify-between items-end mb-4 sm:mb-6">
+            <div className="space-y-1">
+              <p className="text-yellow-500 text-[8px] font-black uppercase tracking-[0.4em]">Trending Now</p>
+              <h2 className="text-xl font-black text-white tracking-tight uppercase">Trending Products</h2>
+            </div>
+            <Link to="/products" className="text-gray-400 hover:text-white font-black text-[9px] uppercase tracking-widest transition-colors border-b border-white/10 pb-0.5">
+              View All
+            </Link>
           </div>
-          <Link to="/products" className="text-gray-400 hover:text-white font-black text-[9px] uppercase tracking-widest transition-colors border-b border-white/10 pb-0.5">
-            View All
-          </Link>
-        </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {products.slice(0, 4).map((p, i) => (
+              <ProductCard key={`trending-${p.id}-${i}`} product={p} delay={i * 50} promoSettings={promoSettings} />
+            ))}
+          </div>
+        </section>
+      )}
 
-        {loading ? (
+      {/* ── Best Sellers Section ── */}
+      {settings?.homepage?.showBestSeller && products.length > 0 && (
+        <section className="mx-3 sm:mx-8 lg:mx-auto max-w-7xl mt-5 sm:mt-8">
+          <div className="flex justify-between items-end mb-4 sm:mb-6">
+            <div className="space-y-1">
+              <p className="text-yellow-500 text-[8px] font-black uppercase tracking-[0.4em]">Customer Favorites</p>
+              <h2 className="text-xl font-black text-white tracking-tight uppercase">Best Sellers</h2>
+            </div>
+            <Link to="/products" className="text-gray-400 hover:text-white font-black text-[9px] uppercase tracking-widest transition-colors border-b border-white/10 pb-0.5">
+              View All
+            </Link>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={`new-arrival-skeleton-${i}`} className="animate-pulse bg-gray-900/50 h-[260px] rounded-2xl border border-white/5" />
+            {products.slice(Math.max(0, products.length - 4)).map((p, i) => (
+              <ProductCard key={`bestseller-${p.id}-${i}`} product={p} delay={i * 50} promoSettings={promoSettings} />
             ))}
           </div>
-        ) : products && products.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {products.map((p, i) => (
-              <ProductCard key={p.id || `new-arrival-${i}`} product={p} delay={i * 50} promoSettings={promoSettings} />
-            ))}
+        </section>
+      )}
+
+      {/* ── 4. New Arrivals / Featured Products ── */}
+      {(settings?.homepage?.showNewArrival !== false || settings?.homepage?.showFeaturedProducts !== false) && (
+        <section className="mx-3 sm:mx-8 lg:mx-auto max-w-7xl mt-5 sm:mt-8">
+          <div className="flex justify-between items-end mb-4 sm:mb-6">
+            <div className="space-y-1">
+              <p className="text-yellow-500 text-[8px] font-black uppercase tracking-[0.4em]">The Elite List</p>
+              <h2 className="text-xl font-black text-white tracking-tight uppercase">New Arrivals</h2>
+            </div>
+            <Link to="/products" className="text-gray-400 hover:text-white font-black text-[9px] uppercase tracking-widest transition-colors border-b border-white/10 pb-0.5">
+              View All
+            </Link>
           </div>
-        ) : (
-          <div className="text-center py-16 bg-gray-900/30 rounded-2xl border border-yellow-900/10">
-            <p className="text-gray-500 font-black uppercase tracking-[0.2em] text-xs">No New Arrivals Available</p>
-          </div>
-        )}
-      </section>
+
+          {loading ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={`new-arrival-skeleton-${i}`} className="animate-pulse bg-gray-900/50 h-[260px] rounded-2xl border border-white/5" />
+              ))}
+            </div>
+          ) : products && products.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {products.map((p, i) => (
+                <ProductCard key={p.id || `new-arrival-${i}`} product={p} delay={i * 50} promoSettings={promoSettings} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16 bg-gray-900/30 rounded-2xl border border-yellow-900/10">
+              <p className="text-gray-500 font-black uppercase tracking-[0.2em] text-xs">No New Arrivals Available</p>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ── Daily Notes ── */}
       <DailyNotes />
@@ -820,9 +925,9 @@ const Home = () => {
       {/* ── FOOTER ──────────────────────────────────────────────── */}
       <footer className="bg-black py-32 border-t border-yellow-900/10">
         <div className="max-w-7xl mx-auto px-6 text-center">
-          <img src="/logo.png" alt="Brand" className="h-20 w-auto mx-auto mb-10 opacity-40 grayscale" />
+          <img src={settings?.logoUrl || "/logo.png"} alt="Brand" className="h-20 w-auto mx-auto mb-10 opacity-40 grayscale" />
           <p className="text-gray-600 text-[10px] font-black uppercase tracking-[0.8em]">
-            SMKP TRADERS — Est. {new Date().getFullYear()}
+            {settings?.storeName || "SMKP TRADERS"} — Est. {new Date().getFullYear()}
           </p>
         </div>
       </footer>

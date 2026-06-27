@@ -204,7 +204,10 @@ const Dashboard = () => {
         const pm = o.paymentMethod?.toUpperCase();
         return pm === 'COD' || pm === 'CASH ON DELIVERY';
       }).length;
-      const onlineOrdersCount = activeDocs.filter(o => o.paymentMethod?.toUpperCase() === 'ONLINE').length;
+      const onlineOrdersCount = activeDocs.filter(o => {
+        const pm = o.paymentMethod?.toUpperCase() || '';
+        return pm === 'ONLINE' || pm.includes('ONLINE') || pm.includes('RAZORPAY');
+      }).length;
       const paidOrdersCount = activeDocs.filter(o => o.paymentStatus?.toLowerCase() === 'paid').length;
       const pendingPaymentsCount = activeDocs.filter(o => o.paymentStatus?.toLowerCase() === 'pending' || o.paymentStatus?.toLowerCase() === 'unpaid').length;
       const pendingPaymentsValue = activeDocs.filter(o => o.paymentStatus?.toLowerCase() === 'pending' || o.paymentStatus?.toLowerCase() === 'unpaid').reduce((a, o) => a + (Number(o.totalPrice) || 0), 0);

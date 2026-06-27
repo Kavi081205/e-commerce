@@ -1058,7 +1058,7 @@ const ProductDetails = () => {
               <div className="flex items-center flex-wrap gap-4">
                 {discountPercent > 0 ? (
                   <>
-                    <span className="text-5xl font-black gold-shine">
+                    <span className="text-5xl font-black premium-gold-price text-[#FFD700]">
                       ₹{currentPrice.toLocaleString()}
                     </span>
                     <span className="text-xl text-gray-600 line-through font-bold">
@@ -1069,7 +1069,7 @@ const ProductDetails = () => {
                     </span>
                   </>
                 ) : (
-                  <span className="text-5xl font-black text-white">
+                  <span className="text-5xl font-black premium-gold-price text-[#FFD700]">
                     ₹{currentPrice.toLocaleString()}
                   </span>
                 )}
@@ -1432,7 +1432,7 @@ const ProductDetails = () => {
                         const rpDiscountPercent = rpOrigPrice > rpPrice ? Math.round(((rpOrigPrice - rpPrice) / rpOrigPrice) * 100) : 0;
                         return (
                           <div className="flex items-baseline gap-2 mt-1">
-                            <span className="text-lg font-black text-white">₹{rpPrice.toLocaleString()}</span>
+                            <span className="text-lg font-black premium-gold-price text-[#FFD700]">₹{rpPrice.toLocaleString()}</span>
                             {rpDiscountPercent > 0 && (
                               <>
                                 <span className="text-xs text-gray-500 line-through font-semibold">₹{rpOrigPrice.toLocaleString()}</span>

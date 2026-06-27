@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, limit, startAfter, getDocs } from 'firebase/firestore';
 import { useWishlist } from '../context/WishlistContext';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 import {
   Search, Filter, SlidersHorizontal,
   Heart, AlertCircle, Loader2, ArrowRight
@@ -23,6 +24,7 @@ const PRODUCTS_PER_PAGE = 20;
    Component
 ───────────────────────────────────────────────────────────────────────────── */
 const Products = () => {
+  const { settings } = useSiteSettings();
   const [searchParams, setSearchParams] = useSearchParams();
   const urlCategory = searchParams.get('category');
   const [filter, setFilter] = useState(urlCategory || 'all');
@@ -376,22 +378,31 @@ const Products = () => {
                     const effPrice = getEffectivePrice(product, promoSettings);
                     const origPrice = Number(product.originalPrice ?? product.price ?? 0);
                     const discountPercent = origPrice > effPrice ? Math.round(((origPrice - effPrice) / origPrice) * 100) : 0;
+
+                    const showWishlist = settings?.productCard?.showWishlistButton !== false;
+                    const showStock = settings?.productCard?.showStockBadge !== false;
+                    const showRating = settings?.productCard?.showRating !== false;
+                    const showDiscount = settings?.productCard?.showDiscountBadge !== false;
+                    const showQuickView = settings?.productCard?.showQuickView !== false;
+
                     return (
                       <div
                         key={product.id}
                         className="bg-gray-900/40 rounded-2xl border border-yellow-900/10 overflow-hidden hover:border-yellow-500/30 transition-all flex flex-col h-full relative group"
                       >
-                        <button
-                          onClick={e => { e.preventDefault(); e.stopPropagation(); toggleWishlist(product); }}
-                          className={`absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center shadow transition-colors ${
-                            isInWishlist(product.id)
-                              ? 'bg-yellow-500 text-black'
-                              : 'bg-black/50 backdrop-blur-sm text-gray-400 hover:text-yellow-500 border border-white/5'
-                          }`}
-                          aria-label="Toggle wishlist"
-                        >
-                          <Heart size={13} fill={isInWishlist(product.id) ? 'currentColor' : 'none'} />
-                        </button>
+                        {showWishlist && (
+                          <button
+                            onClick={e => { e.preventDefault(); e.stopPropagation(); toggleWishlist(product); }}
+                            className={`absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center shadow transition-colors ${
+                              isInWishlist(product.id)
+                                ? 'bg-yellow-500 text-black'
+                                : 'bg-black/50 backdrop-blur-sm text-gray-400 hover:text-yellow-500 border border-white/5'
+                            }`}
+                            aria-label="Toggle wishlist"
+                          >
+                            <Heart size={13} fill={isInWishlist(product.id) ? 'currentColor' : 'none'} />
+                          </button>
+                        )}
 
                         <Link to={`/product/${product.id}`} className="flex flex-col h-full">
                           <div className="overflow-hidden aspect-square relative bg-black">
@@ -401,22 +412,32 @@ const Products = () => {
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               wrapperClass="w-full h-full"
                             />
-                            {Number(product.soldCount || 0) >= 50 && (
-                              <div className="absolute top-1.5 left-1.5 z-10 bg-yellow-500 text-black text-[6px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded shadow">
-                                🏆 Best Seller
+                            {showStock && (
+                              <>
+                                {Number(product.soldCount || 0) >= 50 && (
+                                  <div className="absolute top-1.5 left-1.5 z-10 bg-yellow-500 text-black text-[6px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded shadow">
+                                    🏆 Best Seller
+                                  </div>
+                                )}
+                                {Number(product.stock || 0) <= 0 ? (
+                                  <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/50">
+                                    <span className="bg-red-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider rotate-[-10deg]">
+                                      OUT OF STOCK
+                                    </span>
+                                  </div>
+                                ) : Number(product.stock || 0) <= 5 ? (
+                                  <div className="absolute bottom-1.5 left-1.5 z-10 bg-red-600 text-white text-[6px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded shadow">
+                                    ⚠ LOW STOCK ({product.stock})
+                                  </div>
+                                ) : null}
+                              </>
+                            )}
+
+                            {showQuickView && (
+                              <div className="absolute bottom-2 inset-x-2 bg-black/70 backdrop-blur-sm py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-10">
+                                <span className="text-[8px] font-black tracking-widest uppercase text-yellow-500">Quick View</span>
                               </div>
                             )}
-                            {Number(product.stock || 0) <= 0 ? (
-                              <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/50">
-                                <span className="bg-red-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider rotate-[-10deg]">
-                                  OUT OF STOCK
-                                </span>
-                              </div>
-                            ) : Number(product.stock || 0) <= 5 ? (
-                              <div className="absolute bottom-1.5 left-1.5 z-10 bg-red-600 text-white text-[6px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded shadow">
-                                ⚠ LOW STOCK ({product.stock})
-                              </div>
-                            ) : null}
                           </div>
 
                           <div className="p-2 flex-grow flex flex-col gap-0.5 bg-black/10 text-left">
@@ -425,17 +446,22 @@ const Products = () => {
                               {product.name}
                             </h3>
                             
-                            <div className="flex items-center gap-1 my-0.5">
-                              <ProductRating productId={product.id} compact={true} />
-                            </div>
+                            {showRating && (
+                              <div className="flex items-center gap-1 my-0.5">
+                                <ProductRating productId={product.id} compact={true} />
+                              </div>
+                            )}
 
                             <div className="mt-auto pt-1.5 border-t border-white/5 flex flex-wrap items-baseline gap-1">
-                              <span className="text-xs font-black text-white">₹{effPrice.toLocaleString()}</span>
-                              {discountPercent > 0 && (
+                              <span className="text-xs font-black premium-gold-price text-[#FFD700]">₹{effPrice.toLocaleString()}</span>
+                              {showDiscount && discountPercent > 0 && (
                                 <>
                                   <span className="text-[9px] text-gray-500 line-through font-medium">₹{origPrice.toLocaleString()}</span>
                                   <span className="text-[9px] text-green-500 font-black">{discountPercent}% off</span>
                                 </>
+                              )}
+                              {!showDiscount && discountPercent > 0 && (
+                                <span className="text-[9px] text-gray-500 line-through font-medium">₹{origPrice.toLocaleString()}</span>
                               )}
                             </div>
                           </div>

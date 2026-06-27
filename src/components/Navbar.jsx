@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 import { db } from '../firebase';
 import { collection, query, limit, getDocs, orderBy } from 'firebase/firestore';
 import { getOptimizedImage } from '../utils/cloudinary';
@@ -67,6 +68,7 @@ const SuggestionDropdown = ({ suggestions, handleProductClick }) => (
 const Navbar = () => {
   const { getCartCount, bump } = useCart();
   const { wishlistItems } = useWishlist();
+  const { settings } = useSiteSettings();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -173,8 +175,8 @@ const Navbar = () => {
             className="flex items-center flex-shrink-0 transition-transform hover:scale-105 active:scale-95"
           >
             <img
-              src="/logo.png"
-              alt="SMKP Traders"
+              src={settings?.logoUrl || "/logo.png"}
+              alt={settings?.storeName || "SMKP Traders"}
               className="h-14 w-auto object-contain"
             />
           </Link>
@@ -271,8 +273,8 @@ const Navbar = () => {
                 className="flex items-center transition-transform hover:scale-105 active:scale-95"
               >
                 <img
-                  src="/logo.png"
-                  alt="SMKP Traders"
+                  src={settings?.logoUrl || "/logo.png"}
+                  alt={settings?.storeName || "SMKP Traders"}
                   className="h-10 w-auto object-contain"
                 />
               </Link>

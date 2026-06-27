@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Outlet, Link, NavLink, useLocation, useNavigationType } from 'react-router-dom';
 import Navbar from './Navbar';
+import AnnouncementTicker from './AnnouncementTicker';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { Home, Grid, Heart, Package, ShoppingCart, BookOpen } from 'lucide-react';
@@ -61,6 +62,7 @@ const WebsiteLayout = () => {
 
   return (
     <div className={`flex flex-col min-h-screen w-full max-w-full overflow-x-hidden ${hasPageStickyBar ? 'pb-20' : 'pb-16'} md:pb-0`}>
+      <AnnouncementTicker />
       <Navbar />
       <main className="flex-grow bg-black">
         <Outlet />

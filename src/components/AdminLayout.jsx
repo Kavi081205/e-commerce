@@ -66,7 +66,7 @@ const AdminLayout = () => {
       icon: MessageSquareWarning,
       badge: unreadComplaints > 0 ? unreadComplaints : null
     },
-    { name: 'Settings',    href: '/admin/settings',    icon: SettingsIcon },
+    { name: 'Website Settings',    href: '/admin/settings',    icon: SettingsIcon },
   ];
 
   // ✅ Exact match for Dashboard, prefix match for all others

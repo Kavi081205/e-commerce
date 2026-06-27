@@ -33,6 +33,7 @@ const AdminLayout = lazyWithRetry(() => import('./components/AdminLayout'));
 
 import { WishlistProvider } from './context/WishlistContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { SiteSettingsProvider } from './context/SiteSettingsContext';
 
 
 
@@ -105,12 +106,13 @@ function App() {
 
   return (
     <NotificationProvider>
-      <WishlistProvider>
-      {phase === 'loading' && <LoadingScreen onDone={handleLoadingDone} />}
-      {phase === 'splash' && <SplashScreen onDone={handleSplashDone} />}
+      <SiteSettingsProvider>
+        <WishlistProvider>
+        {phase === 'loading' && <LoadingScreen onDone={handleLoadingDone} />}
+        {phase === 'splash' && <SplashScreen onDone={handleSplashDone} />}
 
-      {/* ✅ Routes only mount once the app is ready and auth state has resolved */}
-      {phase === 'ready' && !authLoading && (
+        {/* ✅ Routes only mount once the app is ready and auth state has resolved */}
+        {phase === 'ready' && !authLoading && (
         <ErrorBoundary>
           <Suspense fallback={<PageSkeleton />}>
             <Routes>
@@ -170,8 +172,9 @@ function App() {
             </Routes>
           </Suspense>
         </ErrorBoundary>
-      )}
-      </WishlistProvider>
+        )}
+        </WishlistProvider>
+      </SiteSettingsProvider>
     </NotificationProvider>
   );
 }

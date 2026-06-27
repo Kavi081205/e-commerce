@@ -131,23 +131,23 @@ export const InvoicePrintView = ({ order }) => {
   const invoiceNo = order.invoiceNumber || `INV-${order.id.slice(-8).toUpperCase()}`;
 
   return (
-    <div className="w-full text-black bg-white font-sans print:p-0 space-y-0">
+    <div className="w-[135mm] text-black bg-white font-sans print:p-0 space-y-0 border border-gray-200 rounded-2xl overflow-hidden">
       {/* ── BRANDED HEADER ─────────────────────────────────────────────── */}
-      <div className="bg-[#0f0f0f] text-white px-6 py-4 flex items-center justify-between print:bg-[#0f0f0f] print:text-white">
+      <div className="bg-[#0f0f0f] text-white px-4 py-2 flex items-center justify-between print:bg-[#0f0f0f] print:text-white">
         {/* Left: Logo + Name */}
-        <div className="flex items-center gap-4">
-          <BrandLogo size={56} />
+        <div className="flex items-center gap-3">
+          <BrandLogo size={42} />
           <div>
-            <h1 className="text-xl font-black uppercase tracking-tight text-white leading-tight">
+            <h1 className="text-base font-black uppercase tracking-tight text-white leading-tight">
               {settings.name}
             </h1>
-            <p className="text-[11px] font-semibold text-yellow-400 tracking-widest uppercase mt-0.5">
+            <p className="text-[9px] font-semibold text-yellow-400 tracking-widest uppercase mt-0.5">
               Premium E-Commerce Store
             </p>
-            <p className="text-[10px] text-gray-400 mt-1">
+            <p className="text-[8px] text-gray-400 mt-0.5">
               Ph: {settings.phone} &nbsp;|&nbsp; {settings.email}
             </p>
-            <p className="text-[10px] text-gray-400">
+            <p className="text-[8px] text-gray-400">
               {settings.address}, {settings.state}, {settings.country}
             </p>
           </div>
@@ -155,13 +155,13 @@ export const InvoicePrintView = ({ order }) => {
 
         {/* Right: Invoice badge + number */}
         <div className="text-right flex-shrink-0">
-          <span className="inline-block px-3 py-1 bg-yellow-500 text-[#0f0f0f] rounded text-[10px] font-black uppercase tracking-widest">
+          <span className="inline-block px-2 py-0.5 bg-yellow-500 text-[#0f0f0f] rounded text-[8px] font-black uppercase tracking-widest">
             Retail Invoice
           </span>
-          <p className="text-sm font-mono font-bold text-white mt-3">
+          <p className="text-xs font-mono font-bold text-white mt-1.5">
             {invoiceNo}
           </p>
-          <p className="text-[10px] text-gray-400 mt-1">{orderDate}</p>
+          <p className="text-[8px] text-gray-400 mt-0.5">{orderDate}</p>
         </div>
       </div>
 
@@ -169,23 +169,23 @@ export const InvoicePrintView = ({ order }) => {
       <div className="h-1 bg-yellow-500 w-full print:bg-yellow-500" />
 
       {/* ── METADATA STRIP ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-4 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200 text-xs">
+      <div className="grid grid-cols-4 gap-2 px-4 py-1.5 bg-gray-50 border-b border-gray-200 text-[10px]">
         <div>
-          <span className="font-bold text-gray-400 uppercase tracking-widest block mb-0.5">Order ID</span>
+          <span className="font-bold text-gray-400 uppercase tracking-widest block mb-0">Order ID</span>
           <span className="font-mono text-slate-900 font-bold">#{order.id.toUpperCase()}</span>
         </div>
         <div>
-          <span className="font-bold text-gray-400 uppercase tracking-widest block mb-0.5">Payment Method</span>
+          <span className="font-bold text-gray-400 uppercase tracking-widest block mb-0">Payment Method</span>
           <span className="text-slate-900 font-bold uppercase">{order.paymentMethod || 'COD'}</span>
         </div>
         <div>
-          <span className="font-bold text-gray-400 uppercase tracking-widest block mb-0.5">Payment Status</span>
+          <span className="font-bold text-gray-400 uppercase tracking-widest block mb-0">Payment Status</span>
           <span className={`font-black uppercase ${order.paymentStatus?.toLowerCase() === 'paid' ? 'text-green-700' : 'text-orange-600'}`}>
             {order.paymentStatus || 'Pending'}
           </span>
         </div>
         <div>
-          <span className="font-bold text-gray-400 uppercase tracking-widest block mb-0.5">Est. Delivery</span>
+          <span className="font-bold text-gray-400 uppercase tracking-widest block mb-0">Est. Delivery</span>
           <span className="text-slate-900 font-bold">
             {order.estimatedDeliveryDays ? `${order.estimatedDeliveryDays} Days` : 'Standard'}
           </span>
@@ -193,10 +193,10 @@ export const InvoicePrintView = ({ order }) => {
       </div>
 
       {/* ── ADDRESS SECTION ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-0 text-xs border-b border-gray-200">
+      <div className="grid grid-cols-2 gap-0 text-[10px] border-b border-gray-200">
         {/* FROM */}
-        <div className="p-5 border-r border-gray-200 bg-yellow-50/30">
-          <h4 className="font-black text-yellow-700 uppercase tracking-wider mb-2 text-[9px] border-b border-yellow-100 pb-1">
+        <div className="p-3.5 border-r border-gray-200 bg-yellow-50/30">
+          <h4 className="font-black text-yellow-700 uppercase tracking-wider mb-1 text-[8px] border-b border-yellow-100 pb-1">
             Sender (From)
           </h4>
           <p className="font-bold text-slate-900">{settings.name}</p>
@@ -205,8 +205,8 @@ export const InvoicePrintView = ({ order }) => {
           <p className="text-gray-600">{settings.address}, {settings.state}, {settings.country}</p>
         </div>
         {/* TO */}
-        <div className="p-5">
-          <h4 className="font-black text-slate-600 uppercase tracking-wider mb-2 text-[9px] border-b border-gray-100 pb-1">
+        <div className="p-3.5">
+          <h4 className="font-black text-slate-600 uppercase tracking-wider mb-1 text-[8px] border-b border-gray-100 pb-1">
             Ship To (Receiver)
           </h4>
           <p className="font-bold text-slate-900">{customer.name}</p>
@@ -222,23 +222,23 @@ export const InvoicePrintView = ({ order }) => {
 
       {/* ── COURIER NOTES ──────────────────────────────────────────────── */}
       {(order.courierNotes || order.instructions) && (
-        <div className="mx-6 my-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2">
+        <div className="mx-4 my-1.5 p-2 bg-amber-50 border border-amber-200 rounded-xl text-[10px] text-amber-800 flex items-start gap-2">
           <div>
-            <strong className="uppercase tracking-wider text-[9px] block mb-0.5">Courier Notes</strong>
+            <strong className="uppercase tracking-wider text-[8px] block mb-0">Courier Notes</strong>
             <span>{order.courierNotes || order.instructions}</span>
           </div>
         </div>
       )}
 
       {/* ── PRODUCTS TABLE ─────────────────────────────────────────────── */}
-      <div className="px-6 pb-2 pt-4">
-        <table className="w-full text-xs text-left border-collapse border border-gray-200">
+      <div className="px-4 pb-1 pt-2">
+        <table className="w-full text-[10px] text-left border-collapse border border-gray-200">
           <thead>
-            <tr className="bg-[#0f0f0f] text-yellow-400 font-bold uppercase text-[9px] tracking-wider">
-              <th className="p-3 border-r border-yellow-900/20">Item Details</th>
-              <th className="p-3 text-center border-r border-yellow-900/20">Qty</th>
-              <th className="p-3 text-right border-r border-yellow-900/20">Unit Price</th>
-              <th className="p-3 text-right">Total Price</th>
+            <tr className="bg-[#0f0f0f] text-yellow-400 font-bold uppercase text-[8px] tracking-wider">
+              <th className="p-1.5 border-r border-yellow-900/20">Item Details</th>
+              <th className="p-1.5 text-center border-r border-yellow-900/20">Qty</th>
+              <th className="p-1.5 text-right border-r border-yellow-900/20">Unit Price</th>
+              <th className="p-1.5 text-right">Total Price</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -247,25 +247,25 @@ export const InvoicePrintView = ({ order }) => {
               const details = [displayColor, item.size].filter(Boolean).join(' / ');
               return (
                 <tr key={item.id} className="text-slate-800 hover:bg-gray-50">
-                  <td className="p-3 border-r border-gray-200">
+                  <td className="p-1.5 border-r border-gray-200">
                     <div className="flex items-center gap-2">
                       {item.image && (
                         <img
                           src={getOptimizedImage(item.image, 'thumbnail')}
                           alt={item.name}
                           loading="lazy"
-                          className="w-8 h-8 rounded object-cover border border-gray-100 no-print"
+                          className="w-6 h-6 rounded object-cover border border-gray-100 no-print"
                         />
                       )}
                       <div>
                         <div className="font-bold">{item.name}</div>
-                        {details && <div className="text-[10px] text-gray-500 mt-0.5">{details}</div>}
+                        {details && <div className="text-[9px] text-gray-500 mt-0.5">{details}</div>}
                       </div>
                     </div>
                   </td>
-                  <td className="p-3 text-center border-r border-gray-200 font-medium">{item.quantity}</td>
-                  <td className="p-3 text-right border-r border-gray-200 font-mono">₹{item.price.toFixed(2)}</td>
-                  <td className="p-3 text-right font-bold font-mono">₹{item.total.toLocaleString()}</td>
+                  <td className="p-1.5 text-center border-r border-gray-200 font-medium">{item.quantity}</td>
+                  <td className="p-1.5 text-right border-r border-gray-200 font-mono">₹{item.price.toFixed(2)}</td>
+                  <td className="p-1.5 text-right font-bold font-mono">₹{item.total.toLocaleString()}</td>
                 </tr>
               );
             })}
@@ -274,8 +274,8 @@ export const InvoicePrintView = ({ order }) => {
       </div>
 
       {/* ── PRICE SUMMARY ──────────────────────────────────────────────── */}
-      <div className="flex justify-end px-6 pb-4 pt-2">
-        <div className="w-72 space-y-2 text-xs">
+      <div className="flex justify-end px-4 pb-2 pt-1">
+        <div className="w-60 space-y-1 text-[10px]">
           <div className="flex justify-between text-gray-600">
             <span>Subtotal:</span>
             <span className="font-mono">₹{subtotal.toFixed(2)}</span>
@@ -290,19 +290,19 @@ export const InvoicePrintView = ({ order }) => {
               <span className="font-mono">-₹{couponDiscount.toFixed(2)}</span>
             </div>
           )}
-          <div className="flex justify-between font-black text-sm text-slate-900 pt-2 border-t-2 border-yellow-400">
+          <div className="flex justify-between font-black text-xs text-slate-900 pt-1 border-t-2 border-yellow-400">
             <span>GRAND TOTAL:</span>
-            <span className="font-mono text-base text-yellow-600">₹{grandTotal.toFixed(2)}</span>
+            <span className="font-mono text-sm text-yellow-600">₹{grandTotal.toFixed(2)}</span>
           </div>
         </div>
       </div>
 
       {/* ── FOOTER ─────────────────────────────────────────────────────── */}
-      <div className="bg-[#0f0f0f] text-center py-4 space-y-1 print:bg-[#0f0f0f]">
-        <p className="text-[10px] text-gray-400">
+      <div className="bg-[#0f0f0f] text-center py-2 space-y-0.5 print:bg-[#0f0f0f]">
+        <p className="text-[8px] text-gray-400">
           This is a computer-generated invoice. No signature required.
         </p>
-        <p className="text-[10px] font-bold text-yellow-500 uppercase tracking-wider">
+        <p className="text-[8px] font-bold text-yellow-500 uppercase tracking-wider">
           Thank you for shopping with {settings.name}!
         </p>
       </div>
@@ -363,8 +363,8 @@ export const LabelPrintView = ({ order }) => {
     return `${i.name}${details ? ` (${details})` : ''} x ${i.quantity}`;
   }).join(', ');
 
-  const isOnline = (order.paymentMethod || '').toUpperCase() === 'ONLINE' ||
-                   (order.paymentMethod || '').toUpperCase() === 'RAZORPAY';
+  const isOnline = (order.paymentMethod || '').toUpperCase().includes('ONLINE') ||
+                   (order.paymentMethod || '').toUpperCase().includes('RAZORPAY');
 
   return (
     <div className="w-[100mm] min-h-[150mm] text-black bg-white font-sans border-2 border-black flex flex-col justify-between box-border overflow-hidden">

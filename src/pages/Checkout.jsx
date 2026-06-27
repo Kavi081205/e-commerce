@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { Loader2, ShieldCheck, MapPin, Plus, Home, Briefcase, Trash2, Smartphone, Tag, X, ChevronRight, CreditCard, Package, CheckCircle2, Edit2 } from 'lucide-react';
 import { createOrder, saveInvoice } from '../firebase/services';
@@ -7,6 +7,7 @@ import PageHeader from '../components/PageHeader';
 import { useNotification } from '../context/NotificationContext';
 import { usePromo } from '../context/PromoContext';
 import { getEffectivePrice } from '../utils/pricing';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 import OrderSuccessPopup from '../components/OrderSuccessPopup';
 import { generateInvoice } from '../utils/invoiceGenerator';
 import { getOptimizedImage } from '../utils/cloudinary';
@@ -71,8 +72,9 @@ const Checkout = () => {
     type: 'Home'
   });
 
-  const FREE_DELIVERY_THRESHOLD = 500;
-  const FIXED_DELIVERY_CHARGE = 40;
+  const { settings } = useSiteSettings();
+  const FREE_DELIVERY_THRESHOLD = settings?.delivery?.freeAbove ?? 499;
+  const FIXED_DELIVERY_CHARGE = settings?.delivery?.charge ?? 29;
   const [buyNowItem, setBuyNowItem] = useState(null);
 
   // Coupon state
@@ -81,6 +83,27 @@ const Checkout = () => {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
+
+  const getSelectedState = () => {
+    const selected = addresses.find(a => a.id === selectedAddressId);
+    const addr = showNewAddressForm ? formData : selected;
+    if (!addr) return '';
+    const cityVal = addr.city || '';
+    const parts = cityVal.split(',').map(s => s.trim());
+    const parsedState = parts[1] || '';
+    return (addr.state || parsedState || '').trim();
+  };
+
+  const isTamilNadu = (() => {
+    const stateStr = getSelectedState().toLowerCase().replace(/\s/g, '');
+    return !getSelectedState() || stateStr === 'tamilnadu' || stateStr === 'tn';
+  })();
+
+  useEffect(() => {
+    if (!isTamilNadu && paymentMethod === 'cod') {
+      setPaymentMethod('online');
+    }
+  }, [isTamilNadu, paymentMethod]);
 
 
 
@@ -496,7 +519,7 @@ const Checkout = () => {
         userEmail: 'unknown',
         createdAt: new Date(),
         status: 'ordered',
-        paymentMethod: "Cash on Delivery",
+        paymentMethod: paymentMethod === 'online' ? "ONLINE PAYMENT" : "COD",
         paymentStatus: "Pending",
         orderStatus: 'ordered',
         customerDetails: {
@@ -695,7 +718,7 @@ const Checkout = () => {
                 // Step 8: Only AFTER successful verification, save order to Firebase, generate invoice, etc.
                 const enrichedOrderData = {
                   ...orderData,
-                  paymentMethod: 'Online Payment (Razorpay)',
+                  paymentMethod: 'ONLINE PAYMENT',
                   paymentStatus: 'Paid',
                   razorpayOrderId: response.razorpay_order_id,
                   razorpayPaymentId: response.razorpay_payment_id,
@@ -1042,7 +1065,7 @@ const Checkout = () => {
                     <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
                       <span className="text-gray-500">Delivery</span>
                       {deliveryCharge === 0
-                        ? <span className="text-green-400 font-black">FREE</span>
+                        ? <span className="text-green-400 font-black">FREE DELIVERY</span>
                         : <span className="text-yellow-500">₹{deliveryCharge.toLocaleString()}</span>
                       }
                     </div>
@@ -1120,30 +1143,53 @@ const Checkout = () => {
                       </div>
 
                       {/* Cash on Delivery */}
-                      <div
-                        onClick={() => setPaymentMethod('cod')}
-                        className={`bg-black/40 border-2 rounded-2xl p-4 flex items-start gap-4 cursor-pointer transition-all ${paymentMethod === 'cod'
-                            ? 'border-yellow-500 bg-yellow-500/5 shadow-[0_0_16px_rgba(234,179,8,0.1)]'
-                            : 'border-white/5 hover:border-white/10'
-                          }`}
-                      >
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${paymentMethod === 'cod'
-                            ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/20'
-                            : 'bg-gray-800 text-gray-400'
-                          }`}>
-                          <ShieldCheck size={18} />
+                      {isTamilNadu ? (
+                        <div
+                          onClick={() => setPaymentMethod('cod')}
+                          className={`bg-black/40 border-2 rounded-2xl p-4 flex items-start gap-4 cursor-pointer transition-all ${paymentMethod === 'cod'
+                              ? 'border-yellow-500 bg-yellow-500/5 shadow-[0_0_16px_rgba(234,179,8,0.1)]'
+                              : 'border-white/5 hover:border-white/10'
+                            }`}
+                        >
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${paymentMethod === 'cod'
+                              ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/20'
+                              : 'bg-gray-800 text-gray-400'
+                            }`}>
+                            <ShieldCheck size={18} />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-black text-white uppercase tracking-widest text-xs">Cash on Delivery</p>
+                            <p className="text-[9px] text-gray-500 mt-1 leading-relaxed">Pay securely when your order arrives at your doorstep.</p>
+                            {paymentMethod === 'cod' && (
+                              <div className="mt-2.5 flex items-center gap-1.5">
+                                <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                                <span className="text-[9px] font-black text-green-500 uppercase tracking-widest">Selected</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <p className="font-black text-white uppercase tracking-widest text-xs">Cash on Delivery</p>
-                          <p className="text-[9px] text-gray-500 mt-1 leading-relaxed">Pay securely when your order arrives at your doorstep.</p>
-                          {paymentMethod === 'cod' && (
-                            <div className="mt-2.5 flex items-center gap-1.5">
-                              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                              <span className="text-[9px] font-black text-green-500 uppercase tracking-widest">Selected</span>
-                            </div>
-                          )}
+                      ) : (
+                        <div
+                          className="bg-black/25 border-2 border-white/5 border-dashed rounded-2xl p-4 flex items-start gap-4 opacity-40 cursor-not-allowed"
+                          title="Cash on Delivery is available only in Tamil Nadu"
+                        >
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-gray-800 text-gray-500">
+                            <ShieldCheck size={18} />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-black text-gray-400 uppercase tracking-widest text-xs">Cash on Delivery</p>
+                            <p className="text-[9px] text-gray-500 mt-1 leading-relaxed">Pay securely when your order arrives at your doorstep.</p>
+                          </div>
                         </div>
-                      </div>
+                      )}
+
+                      {!isTamilNadu && (
+                        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-left">
+                          <p className="text-[10px] font-semibold text-red-400">
+                            Cash on Delivery is available only in Tamil Nadu. Please use Online Payment.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
 

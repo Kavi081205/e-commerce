@@ -6,14 +6,16 @@ import { Trash2, Plus, Minus, ArrowRight, ShoppingCart } from 'lucide-react';
 import { usePromo } from '../context/PromoContext';
 import { getEffectivePrice } from '../utils/pricing';
 import { getOptimizedImage } from '../utils/cloudinary';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=400&q=75';
 
 const Cart = () => {
   const { cart, removeFromCart, updateQuantity, cartTotal, getCartTotal, clearCart } = useCart();
   const { promoSettings } = usePromo();
-  const FREE_DELIVERY_THRESHOLD = 500;
-  const FIXED_DELIVERY_CHARGE = 40;
+  const { settings } = useSiteSettings();
+  const FREE_DELIVERY_THRESHOLD = settings?.delivery?.freeAbove ?? 499;
+  const FIXED_DELIVERY_CHARGE = settings?.delivery?.charge ?? 29;
   const total = cartTotal ?? getCartTotal?.() ?? 0;
   const navigate = useNavigate();
 
@@ -196,7 +198,7 @@ const Cart = () => {
                 <div className="flex justify-between text-gray-500 text-xs font-black uppercase tracking-widest">
                   <span>Delivery Charges</span>
                   {deliveryCharge === 0
-                    ? <span className="text-green-400 font-black">FREE</span>
+                    ? <span className="text-green-400 font-black">FREE DELIVERY</span>
                     : <span className="text-yellow-500">₹{deliveryCharge.toLocaleString()}</span>
                   }
                 </div>
