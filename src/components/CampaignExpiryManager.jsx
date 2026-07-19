@@ -62,7 +62,7 @@ const CampaignExpiryManager = ({ initialDate, onDateChange, id = 'campaign-expir
       <div className="space-y-3">
         <label
           htmlFor={id}
-          className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1"
+          className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest ml-1"
         >
           Campaign Expiry
         </label>
@@ -88,10 +88,10 @@ const CampaignExpiryManager = ({ initialDate, onDateChange, id = 'campaign-expir
               size={20}
             />
             <div className="flex flex-col min-w-0">
-              <span className="text-[9px] text-gray-500 font-black uppercase tracking-widest leading-none mb-1">
+              <span className="text-[9px] text-gray-500 font-semibold uppercase tracking-widest leading-none mb-1">
                 Expiry Date &amp; Time
               </span>
-              <span className="text-sm font-bold text-white truncate">
+              <span className="text-sm font-semibold text-white truncate">
                 {expiryDate
                   ? new Date(expiryDate).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
                   : 'Not Scheduled'}
@@ -103,7 +103,7 @@ const CampaignExpiryManager = ({ initialDate, onDateChange, id = 'campaign-expir
           <button
             type="button"
             onClick={openPicker}
-            className="flex-shrink-0 flex items-center gap-2 bg-yellow-500/10 hover:bg-yellow-500/20 active:scale-95 border border-yellow-500/30 text-yellow-400 text-[10px] font-black px-4 h-16 rounded-2xl uppercase tracking-widest transition-all"
+            className="flex-shrink-0 flex items-center gap-2 bg-yellow-500/10 hover:bg-yellow-500/20 active:scale-95 border border-yellow-500/30 text-yellow-400 text-[10px] font-semibold px-4 h-16 rounded-2xl uppercase tracking-widest transition-all"
             aria-label="Open date picker"
           >
             <Calendar size={14} />
@@ -119,7 +119,7 @@ const CampaignExpiryManager = ({ initialDate, onDateChange, id = 'campaign-expir
               setExpiryDate('');
               if (onDateChange) onDateChange('');
             }}
-            className="text-[9px] font-black uppercase tracking-widest text-gray-600 hover:text-red-500 transition-colors ml-1"
+            className="text-[9px] font-semibold uppercase tracking-widest text-gray-600 hover:text-red-500 transition-colors ml-1"
           >
             ✕ Clear date
           </button>
@@ -138,7 +138,7 @@ const CampaignExpiryManager = ({ initialDate, onDateChange, id = 'campaign-expir
               ) : (
                 <Zap size={16} className="text-yellow-500 animate-pulse" />
               )}
-              <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${
+              <span className={`text-[10px] font-semibold uppercase tracking-[0.2em] ${
                 timeLeft.expired ? 'text-red-500' : 'text-yellow-500'
               }`}>
                 {timeLeft.expired ? 'Campaign Expired' : 'Time Remaining'}
@@ -155,14 +155,14 @@ const CampaignExpiryManager = ({ initialDate, onDateChange, id = 'campaign-expir
               { label: 'Sec',  value: timeLeft.secs }
             ].map((unit, idx) => (
               <div key={unit.label} className="flex flex-col items-center">
-                <div className={`w-full aspect-square rounded-2xl flex items-center justify-center text-xl font-black shadow-inner border ${
+                <div className={`w-full aspect-square rounded-2xl flex items-center justify-center text-xl font-semibold shadow-inner border ${
                   timeLeft.expired
                     ? 'bg-gray-800 border-gray-700 text-gray-500'
                     : 'bg-white/5 border-white/10 text-white'
                 }`}>
                   {unit.value.toString().padStart(2, '0')}
                 </div>
-                <span className="text-[8px] font-black text-gray-500 uppercase mt-2 tracking-widest">
+                <span className="text-[8px] font-semibold text-gray-500 uppercase mt-2 tracking-widest">
                   {unit.label}
                 </span>
               </div>

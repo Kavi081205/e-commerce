@@ -92,7 +92,7 @@ const SetupAdmin = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 mb-4">
             <ShieldCheck size={32} className="text-yellow-400" />
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Admin Setup Tool</h1>
+          <h1 className="text-2xl font-semibold text-white tracking-tight">Admin Setup Tool</h1>
           <p className="text-gray-400 text-sm mt-2">One-time Firestore role provisioning</p>
         </div>
 
@@ -101,17 +101,17 @@ const SetupAdmin = () => {
 
           {/* Auth Status */}
           <div className="px-6 py-4 border-b border-gray-800">
-            <p className="text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Logged-in Firebase User</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">Logged-in Firebase User</p>
             {user ? (
               <div className="flex items-center gap-3">
                 <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                 <div>
-                  <p className="text-white font-bold text-sm">{user.email ?? '(no email)'}</p>
+                  <p className="text-white font-semibold text-sm">{user.email ?? '(no email)'}</p>
                   <p className="text-gray-500 text-xs font-mono">{user.uid}</p>
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-amber-400 text-sm font-bold">
+              <div className="flex items-center gap-2 text-amber-400 text-sm font-semibold">
                 <AlertCircle size={16} />
                 Not logged in — go to <Link to="/admin-login" className="underline">/admin-login</Link> first
               </div>
@@ -121,7 +121,7 @@ const SetupAdmin = () => {
           {/* fix #5: only render existingRole banner once user is confirmed */}
           {existingRole && user && (
             <div className="px-6 py-3 bg-yellow-500/5 border-b border-gray-800">
-              <p className="text-xs text-yellow-400 font-bold">
+              <p className="text-xs text-yellow-400 font-semibold">
                 ✓ users/{user.uid} already exists with role: <span className="uppercase">{existingRole}</span>
               </p>
             </div>
@@ -133,7 +133,7 @@ const SetupAdmin = () => {
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex gap-3">
               <Info size={16} className="text-blue-400 flex-shrink-0 mt-0.5" />
               <div className="text-xs text-blue-300 space-y-1 leading-relaxed">
-                <p className="font-bold">What this does:</p>
+                <p className="font-semibold">What this does:</p>
                 <p>Creates <code className="bg-blue-900/40 px-1 rounded">users/{'{'}uid{'}'}</code> in Firestore with <code className="bg-blue-900/40 px-1 rounded">role: "admin"</code>.</p>
                 <p>Your Firestore rules will then allow this UID to write to products &amp; orders.</p>
               </div>
@@ -144,7 +144,7 @@ const SetupAdmin = () => {
               <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 flex gap-3">
                 <CheckCircle size={16} className="text-green-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-green-400 font-black text-sm">Setup Complete!</p>
+                  <p className="text-green-400 font-semibold text-sm">Setup Complete!</p>
                   <p className="text-green-300 text-xs mt-1">{message}</p>
                   <p className="text-gray-400 text-xs mt-2">
                     Now paste the Firestore rules below and remove this route from App.jsx.
@@ -164,7 +164,7 @@ const SetupAdmin = () => {
             <button
               onClick={handleSetupAdmin}
               disabled={!user || status === 'loading' || status === 'success'}
-              className={`w-full py-4 rounded-xl font-black uppercase tracking-widest text-sm transition-all flex items-center justify-center gap-2
+              className={`w-full py-4 rounded-xl font-semibold uppercase tracking-widest text-sm transition-all flex items-center justify-center gap-2
                 ${!user || status === 'loading' || status === 'success'
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                   : 'bg-yellow-600 hover:bg-yellow-500 text-white shadow-lg shadow-yellow-600/20 active:scale-95'
@@ -180,7 +180,7 @@ const SetupAdmin = () => {
 
             {/* Firestore Rules */}
             <div>
-              <p className="text-xs font-black text-gray-500 uppercase tracking-widest mb-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">
                 Step 2 — Paste these rules in Firebase Console → Firestore → Rules
               </p>
               <pre className="bg-slate-950 border border-gray-700 rounded-xl p-4 text-xs text-yellow-300 overflow-x-auto leading-relaxed font-mono">

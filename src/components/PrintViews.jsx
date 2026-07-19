@@ -138,7 +138,7 @@ export const InvoicePrintView = ({ order }) => {
         <div className="flex items-center gap-3">
           <BrandLogo size={42} />
           <div>
-            <h1 className="text-base font-black uppercase tracking-tight text-white leading-tight">
+            <h1 className="text-base font-semibold uppercase tracking-tight text-white leading-tight">
               {settings.name}
             </h1>
             <p className="text-[9px] font-semibold text-yellow-400 tracking-widest uppercase mt-0.5">
@@ -155,10 +155,10 @@ export const InvoicePrintView = ({ order }) => {
 
         {/* Right: Invoice badge + number */}
         <div className="text-right flex-shrink-0">
-          <span className="inline-block px-2 py-0.5 bg-yellow-500 text-[#0f0f0f] rounded text-[8px] font-black uppercase tracking-widest">
+          <span className="inline-block px-2 py-0.5 bg-yellow-500 text-[#0f0f0f] rounded text-[8px] font-semibold uppercase tracking-widest">
             Retail Invoice
           </span>
-          <p className="text-xs font-mono font-bold text-white mt-1.5">
+          <p className="text-xs font-mono font-semibold text-white mt-1.5">
             {invoiceNo}
           </p>
           <p className="text-[8px] text-gray-400 mt-0.5">{orderDate}</p>
@@ -171,22 +171,22 @@ export const InvoicePrintView = ({ order }) => {
       {/* ── METADATA STRIP ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-4 gap-2 px-4 py-1.5 bg-gray-50 border-b border-gray-200 text-[10px]">
         <div>
-          <span className="font-bold text-gray-400 uppercase tracking-widest block mb-0">Order ID</span>
-          <span className="font-mono text-slate-900 font-bold">#{order.id.toUpperCase()}</span>
+          <span className="font-semibold text-gray-400 uppercase tracking-widest block mb-0">Order ID</span>
+          <span className="font-mono text-slate-900 font-semibold">#{order.id.toUpperCase()}</span>
         </div>
         <div>
-          <span className="font-bold text-gray-400 uppercase tracking-widest block mb-0">Payment Method</span>
-          <span className="text-slate-900 font-bold uppercase">{order.paymentMethod || 'COD'}</span>
+          <span className="font-semibold text-gray-400 uppercase tracking-widest block mb-0">Payment Method</span>
+          <span className="text-slate-900 font-semibold uppercase">{order.paymentMethod || 'COD'}</span>
         </div>
         <div>
-          <span className="font-bold text-gray-400 uppercase tracking-widest block mb-0">Payment Status</span>
-          <span className={`font-black uppercase ${order.paymentStatus?.toLowerCase() === 'paid' ? 'text-green-700' : 'text-orange-600'}`}>
+          <span className="font-semibold text-gray-400 uppercase tracking-widest block mb-0">Payment Status</span>
+          <span className={`font-semibold uppercase ${order.paymentStatus?.toLowerCase() === 'paid' ? 'text-green-700' : 'text-orange-600'}`}>
             {order.paymentStatus || 'Pending'}
           </span>
         </div>
         <div>
-          <span className="font-bold text-gray-400 uppercase tracking-widest block mb-0">Est. Delivery</span>
-          <span className="text-slate-900 font-bold">
+          <span className="font-semibold text-gray-400 uppercase tracking-widest block mb-0">Est. Delivery</span>
+          <span className="text-slate-900 font-semibold">
             {order.estimatedDeliveryDays ? `${order.estimatedDeliveryDays} Days` : 'Standard'}
           </span>
         </div>
@@ -196,25 +196,25 @@ export const InvoicePrintView = ({ order }) => {
       <div className="grid grid-cols-2 gap-0 text-[10px] border-b border-gray-200">
         {/* FROM */}
         <div className="p-3.5 border-r border-gray-200 bg-yellow-50/30">
-          <h4 className="font-black text-yellow-700 uppercase tracking-wider mb-1 text-[8px] border-b border-yellow-100 pb-1">
+          <h4 className="font-semibold text-yellow-700 uppercase tracking-wider mb-1 text-[8px] border-b border-yellow-100 pb-1">
             Sender (From)
           </h4>
-          <p className="font-bold text-slate-900">{settings.name}</p>
+          <p className="font-semibold text-slate-900">{settings.name}</p>
           <p className="text-gray-600 mt-0.5">Ph: {settings.phone}</p>
           <p className="text-gray-600">Email: {settings.email}</p>
           <p className="text-gray-600">{settings.address}, {settings.state}, {settings.country}</p>
         </div>
         {/* TO */}
         <div className="p-3.5">
-          <h4 className="font-black text-slate-600 uppercase tracking-wider mb-1 text-[8px] border-b border-gray-100 pb-1">
+          <h4 className="font-semibold text-slate-600 uppercase tracking-wider mb-1 text-[8px] border-b border-gray-100 pb-1">
             Ship To (Receiver)
           </h4>
-          <p className="font-bold text-slate-900">{customer.name}</p>
-          <p className="text-slate-900 font-bold">Ph: {customer.phone}</p>
+          <p className="font-semibold text-slate-900">{customer.name}</p>
+          <p className="text-slate-900 font-semibold">Ph: {customer.phone}</p>
           {customer.email && <p className="text-gray-600">Email: {customer.email}</p>}
           <p className="text-gray-600">{customer.address}</p>
           {customer.landmark && <p className="text-gray-500">Landmark: {customer.landmark}</p>}
-          <p className="text-slate-900 font-bold">
+          <p className="text-slate-900 font-semibold">
             {customer.district ? `${customer.district}, ` : ''}{customer.state} - {customer.pincode}
           </p>
         </div>
@@ -234,7 +234,7 @@ export const InvoicePrintView = ({ order }) => {
       <div className="px-4 pb-1 pt-2">
         <table className="w-full text-[10px] text-left border-collapse border border-gray-200">
           <thead>
-            <tr className="bg-[#0f0f0f] text-yellow-400 font-bold uppercase text-[8px] tracking-wider">
+            <tr className="bg-[#0f0f0f] text-yellow-400 font-semibold uppercase text-[8px] tracking-wider">
               <th className="p-1.5 border-r border-yellow-900/20">Item Details</th>
               <th className="p-1.5 text-center border-r border-yellow-900/20">Qty</th>
               <th className="p-1.5 text-right border-r border-yellow-900/20">Unit Price</th>
@@ -258,14 +258,14 @@ export const InvoicePrintView = ({ order }) => {
                         />
                       )}
                       <div>
-                        <div className="font-bold">{item.name}</div>
+                        <div className="font-semibold">{item.name}</div>
                         {details && <div className="text-[9px] text-gray-500 mt-0.5">{details}</div>}
                       </div>
                     </div>
                   </td>
                   <td className="p-1.5 text-center border-r border-gray-200 font-medium">{item.quantity}</td>
                   <td className="p-1.5 text-right border-r border-gray-200 font-mono">₹{item.price.toFixed(2)}</td>
-                  <td className="p-1.5 text-right font-bold font-mono">₹{item.total.toLocaleString()}</td>
+                  <td className="p-1.5 text-right font-semibold font-mono">₹{item.total.toLocaleString()}</td>
                 </tr>
               );
             })}
@@ -285,12 +285,12 @@ export const InvoicePrintView = ({ order }) => {
             <span className="font-mono">₹{deliveryCharge.toFixed(2)}</span>
           </div>
           {couponDiscount > 0 && (
-            <div className="flex justify-between text-red-600 font-bold">
+            <div className="flex justify-between text-red-600 font-semibold">
               <span>Coupon Discount:</span>
               <span className="font-mono">-₹{couponDiscount.toFixed(2)}</span>
             </div>
           )}
-          <div className="flex justify-between font-black text-xs text-slate-900 pt-1 border-t-2 border-yellow-400">
+          <div className="flex justify-between font-semibold text-xs text-slate-900 pt-1 border-t-2 border-yellow-400">
             <span>GRAND TOTAL:</span>
             <span className="font-mono text-sm text-yellow-600">₹{grandTotal.toFixed(2)}</span>
           </div>
@@ -302,7 +302,7 @@ export const InvoicePrintView = ({ order }) => {
         <p className="text-[8px] text-gray-400">
           This is a computer-generated invoice. No signature required.
         </p>
-        <p className="text-[8px] font-bold text-yellow-500 uppercase tracking-wider">
+        <p className="text-[8px] font-semibold text-yellow-500 uppercase tracking-wider">
           Thank you for shopping with {settings.name}!
         </p>
       </div>
@@ -373,7 +373,7 @@ export const LabelPrintView = ({ order }) => {
       <div className="bg-[#0f0f0f] text-white px-3 py-2.5 flex items-center gap-2.5 print:bg-[#0f0f0f]">
         <BrandLogo size={40} />
         <div className="flex-1 min-w-0">
-          <h2 className="text-[11px] font-black uppercase tracking-wider text-white leading-tight truncate">
+          <h2 className="text-[11px] font-semibold uppercase tracking-wider text-white leading-tight truncate">
             {settings.name}
           </h2>
           <p className="text-[8px] font-semibold text-yellow-400 tracking-widest uppercase mt-0.5">
@@ -399,7 +399,7 @@ export const LabelPrintView = ({ order }) => {
               backgroundImage: 'repeating-linear-gradient(90deg, #fff, #fff 2px, #000 2px, #000 6px, #fff 6px, #fff 7px, #000 7px, #000 9px)'
             }}
           />
-          <span className="text-[10px] font-mono font-black tracking-widest uppercase">
+          <span className="text-[10px] font-mono font-semibold tracking-widest uppercase">
             AWB: SMKP-{order.id.slice(-8).toUpperCase()}
           </span>
         </div>
@@ -408,20 +408,20 @@ export const LabelPrintView = ({ order }) => {
 
         {/* ── SHIP TO ─────────────────────────────────────────────────────── */}
         <div className="space-y-1.5 text-left">
-          <span className="text-[8px] font-black text-gray-400 uppercase tracking-wider block">
+          <span className="text-[8px] font-semibold text-gray-400 uppercase tracking-wider block">
             Ship To (Receiver):
           </span>
-          <h3 className="text-sm font-black uppercase leading-tight text-slate-900">
+          <h3 className="text-sm font-semibold uppercase leading-tight text-slate-900">
             {customer.name}
           </h3>
           <div className="text-[10px] text-slate-800 space-y-0.5 font-medium">
-            <p className="text-xs font-black text-black">Ph: {customer.phone}</p>
+            <p className="text-xs font-semibold text-black">Ph: {customer.phone}</p>
             {customer.email && <p className="text-gray-500">{customer.email}</p>}
             <p className="text-slate-700">{customer.address}</p>
             {customer.landmark && (
               <p className="text-gray-500 text-[9px]">Landmark: {customer.landmark}</p>
             )}
-            <p className="text-slate-900 font-bold text-[10px] uppercase tracking-wide">
+            <p className="text-slate-900 font-semibold text-[10px] uppercase tracking-wide">
               {customer.district ? `${customer.district}, ` : ''}
               {customer.state} - {customer.pincode}
             </p>
@@ -432,10 +432,10 @@ export const LabelPrintView = ({ order }) => {
 
         {/* ── ITEMS DESCRIPTION ─────────────────────────────────────────── */}
         <div className="border-t border-dashed border-gray-200 pt-2 mt-2 text-left">
-          <span className="text-[8px] font-black text-gray-400 uppercase tracking-wider block mb-0.5">
+          <span className="text-[8px] font-semibold text-gray-400 uppercase tracking-wider block mb-0.5">
             Items:
           </span>
-          <p className="text-[10px] font-bold text-slate-800 line-clamp-3 leading-relaxed">
+          <p className="text-[10px] font-semibold text-slate-800 line-clamp-3 leading-relaxed">
             {productSummary}
           </p>
         </div>
@@ -443,10 +443,10 @@ export const LabelPrintView = ({ order }) => {
         {/* ── COURIER NOTES ────────────────────────────────────────────── */}
         {(order.courierNotes || order.instructions) && (
           <div className="mt-1.5 bg-amber-50 border border-amber-200 p-2 rounded text-left">
-            <span className="text-[7px] font-black text-amber-700 uppercase tracking-widest block mb-0.5">
+            <span className="text-[7px] font-semibold text-amber-700 uppercase tracking-widest block mb-0.5">
               Instructions:
             </span>
-            <p className="text-[9px] font-bold text-amber-900 leading-tight">
+            <p className="text-[9px] font-semibold text-amber-900 leading-tight">
               {order.courierNotes || order.instructions}
             </p>
           </div>
@@ -455,14 +455,14 @@ export const LabelPrintView = ({ order }) => {
         {/* ── PAYMENT BOX ──────────────────────────────────────────────── */}
         <div className="mt-2 mb-1 border-2 border-black p-2.5 bg-gray-50 flex justify-between items-center">
           <div>
-            <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest block">Payment</span>
-            <span className={`text-xs font-black uppercase ${isOnline ? 'text-green-700' : 'text-orange-700'}`}>
+            <span className="text-[8px] font-semibold text-gray-400 uppercase tracking-widest block">Payment</span>
+            <span className={`text-xs font-semibold uppercase ${isOnline ? 'text-green-700' : 'text-orange-700'}`}>
               {isOnline ? 'PREPAID' : 'COD'}
             </span>
           </div>
           <div className="text-right">
-            <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest block">Amount</span>
-            <span className="text-sm font-black font-mono">₹{(order.totalPrice || 0).toLocaleString()}</span>
+            <span className="text-[8px] font-semibold text-gray-400 uppercase tracking-widest block">Amount</span>
+            <span className="text-sm font-semibold font-mono">₹{(order.totalPrice || 0).toLocaleString()}</span>
           </div>
         </div>
       </div>

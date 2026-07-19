@@ -154,7 +154,7 @@ const AdvancedDashboard = () => {
                 key={label}
                 to={to}
                 onClick={() => setMobileSidebarOpen(false)}
-                className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all ${label === 'Dashboard'
+                className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-semibold transition-all ${label === 'Dashboard'
                     ? 'bg-yellow-500/10 text-yellow-400'
                     : 'text-gray-500 hover:text-gray-200 hover:bg-white/5'
                   }`}
@@ -167,12 +167,12 @@ const AdvancedDashboard = () => {
 
           <div className="p-8 border-t border-white/5">
             <div className="bg-gradient-to-br from-yellow-500/20 to-blue-500/20 p-6 rounded-3xl border border-white/5 text-center">
-              <p className="text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-2">Pro Plan</p>
+              <p className="text-[10px] font-semibold text-yellow-400 uppercase tracking-widest mb-2">Pro Plan</p>
               <p className="text-xs text-gray-400 font-medium mb-4">
                 Unlock advanced analytics and fleet tracking.
               </p>
               {/* FIX 5: was text-black on bg-gray-900 — completely invisible */}
-              <button className="w-full bg-yellow-500 text-black py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-transform">
+              <button className="w-full bg-yellow-500 text-black py-2.5 rounded-xl text-[10px] font-semibold uppercase tracking-widest hover:scale-105 transition-transform">
                 Upgrade Now
               </button>
             </div>
@@ -197,7 +197,7 @@ const AdvancedDashboard = () => {
                 </svg>
               </button>
               <div>
-                <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-1">
+                <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-white mb-1">
                   SMKP Traders Dashboard
                 </h1>
                 <p className="text-gray-500 font-medium flex items-center gap-2 text-sm">
@@ -225,7 +225,7 @@ const AdvancedDashboard = () => {
               </button>
               <button
                 onClick={handleTaskComplete}
-                className="bg-yellow-500 hover:bg-yellow-600 text-black font-black px-6 py-3 rounded-2xl text-xs uppercase tracking-widest shadow-lg shadow-yellow-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-6 py-3 rounded-2xl text-xs uppercase tracking-widest shadow-lg shadow-yellow-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Complete Task
               </button>
@@ -246,12 +246,12 @@ const AdvancedDashboard = () => {
                   <div className={`p-4 rounded-2xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform`}>
                     <stat.icon size={24} />
                   </div>
-                  <span className={`text-[10px] font-black ${stat.trend.startsWith('+') ? 'text-green-500' : 'text-red-500'}`}>
+                  <span className={`text-[10px] font-semibold ${stat.trend.startsWith('+') ? 'text-green-500' : 'text-red-500'}`}>
                     {stat.trend}
                   </span>
                 </div>
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">{stat.title}</p>
-                <h3 className="text-3xl font-black tracking-tight text-white">{stat.value}</h3>
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1">{stat.title}</p>
+                <h3 className="text-3xl font-semibold tracking-tight text-white">{stat.value}</h3>
               </motion.div>
             ))}
           </div>
@@ -266,7 +266,7 @@ const AdvancedDashboard = () => {
             >
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h3 className="text-lg font-black uppercase tracking-widest">Daily Earnings</h3>
+                  <h3 className="text-lg font-semibold uppercase tracking-widest">Daily Earnings</h3>
                   <p className="text-xs text-gray-500 font-medium mt-1">Revenue stream for current week</p>
                 </div>
                 <div className="p-3 bg-yellow-500/10 text-yellow-400 rounded-xl">
@@ -302,7 +302,7 @@ const AdvancedDashboard = () => {
             >
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h3 className="text-lg font-black uppercase tracking-widest">Fuel Usage Trend</h3>
+                  <h3 className="text-lg font-semibold uppercase tracking-widest">Fuel Usage Trend</h3>
                   <p className="text-xs text-gray-500 font-medium mt-1">Consumption analytics per liter</p>
                 </div>
                 <div className="p-3 bg-orange-500/10 text-orange-400 rounded-xl">
@@ -341,7 +341,7 @@ const AdvancedDashboard = () => {
                 <PieIcon size={32} />
               </div>
               <div>
-                <h4 className="font-black text-white uppercase tracking-widest mb-1 text-sm">
+                <h4 className="font-semibold text-white uppercase tracking-widest mb-1 text-sm">
                   Optimization Suggestion
                 </h4>
                 <p className="text-xs text-gray-500 font-medium">
@@ -351,7 +351,7 @@ const AdvancedDashboard = () => {
               </div>
             </div>
             {/* FIX 6: replaced bg-gray-900/5 (invisible) with bg-white/5 */}
-            <button className="bg-white/5 hover:bg-white/10 text-white border border-white/10 px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">
+            <button className="bg-white/5 hover:bg-white/10 text-white border border-white/10 px-8 py-3 rounded-2xl text-[10px] font-semibold uppercase tracking-widest transition-all">
               Download PDF Report
             </button>
           </div>
@@ -378,13 +378,13 @@ const AdvancedDashboard = () => {
               <div className="w-20 h-20 bg-yellow-500 text-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl shadow-yellow-500/20">
                 <CheckCircle size={40} />
               </div>
-              <h2 className="text-3xl font-black text-white mb-2 uppercase tracking-tight">Success!</h2>
+              <h2 className="text-3xl font-semibold text-white mb-2 uppercase tracking-tight">Success!</h2>
               <p className="text-gray-500 font-medium mb-10 leading-relaxed">
                 Task has been marked as complete and recorded in logs.
               </p>
               <button
                 onClick={handleCloseModal}   // FIX 2: clears confetti + resets guard
-                className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-black py-4 rounded-2xl uppercase tracking-widest text-xs transition-all shadow-lg shadow-yellow-500/20"
+                className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-4 rounded-2xl uppercase tracking-widest text-xs transition-all shadow-lg shadow-yellow-500/20"
               >
                 Continue
               </button>

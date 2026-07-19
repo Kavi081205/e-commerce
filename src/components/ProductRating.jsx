@@ -28,7 +28,7 @@ export default function ProductRating({ productId, compact = false }) {
 
   if (isLoading) {
     return (
-      <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest leading-none">
+      <span className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest leading-none">
         —
       </span>
     );
@@ -41,7 +41,7 @@ export default function ProductRating({ productId, compact = false }) {
 
   if (reviewCount === 0 || !averageRating) {
     return (
-      <div className="flex items-center gap-1.5 text-yellow-500 text-[10px] font-black tracking-widest uppercase">
+      <div className="flex items-center gap-1.5 text-yellow-500 text-[10px] font-semibold tracking-widest uppercase">
         <Star size={12} className="fill-yellow-500" />
         <span>New</span>
       </div>
@@ -51,11 +51,11 @@ export default function ProductRating({ productId, compact = false }) {
   return (
     <div className="flex items-center gap-1.5 text-yellow-500">
       <Star size={12} className="fill-yellow-500" />
-      <span className="text-xs font-black tracking-widest uppercase">
+      <span className="text-xs font-semibold tracking-widest uppercase">
         {averageRating}
       </span>
       {!compact && (
-        <span className="text-gray-500 text-[10px] font-bold lowercase tracking-normal">
+        <span className="text-gray-500 text-[10px] font-semibold lowercase tracking-normal">
           ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})
         </span>
       )}

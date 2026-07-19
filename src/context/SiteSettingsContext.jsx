@@ -183,12 +183,23 @@ export const applyTheme = (settings) => {
   }
 };
 
+export const defaultWelcomeOffer = {
+  enabled: true,
+  code: 'FIRSTORDER',
+  discountAmount: 30,
+  minOrderValue: 299,
+  expiryDate: '',
+  usageCount: 0
+};
+
 export const SiteSettingsProvider = ({ children }) => {
   const [settings, setSettings] = useState(defaultSettings);
+  const [welcomeOffer, setWelcomeOffer] = useState(defaultWelcomeOffer);
   const [loading, setLoading] = useState(true);
 
   const fetchSettings = async () => {
     try {
+      // 1. Fetch main site settings
       const docRef = doc(db, 'site_settings', 'main');
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
@@ -211,6 +222,24 @@ export const SiteSettingsProvider = ({ children }) => {
       } else {
         applyTheme(defaultSettings);
       }
+
+      // 2. Fetch welcome offer configuration
+      try {
+        const welcomeOfferRef = doc(db, 'site_settings', 'welcome_offer');
+        const welcomeOfferSnap = await getDoc(welcomeOfferRef);
+        if (welcomeOfferSnap.exists()) {
+          setWelcomeOffer({
+            ...defaultWelcomeOffer,
+            ...welcomeOfferSnap.data()
+          });
+        } else {
+          setWelcomeOffer(defaultWelcomeOffer);
+        }
+      } catch (err) {
+        console.error("Error loading welcome offer settings:", err);
+        setWelcomeOffer(defaultWelcomeOffer);
+      }
+
     } catch (error) {
       console.error("Error loading site settings:", error);
       applyTheme(defaultSettings);
@@ -224,7 +253,7 @@ export const SiteSettingsProvider = ({ children }) => {
   }, []);
 
   return (
-    <SiteSettingsContext.Provider value={{ settings, loading, refreshSettings: fetchSettings }}>
+    <SiteSettingsContext.Provider value={{ settings, welcomeOffer, loading, refreshSettings: fetchSettings }}>
       {children}
     </SiteSettingsContext.Provider>
   );

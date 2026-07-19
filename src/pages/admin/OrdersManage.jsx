@@ -26,19 +26,19 @@ const STATUS_FLOW = ['ordered', 'processing', 'shipped', 'delivered'];
 const ConfirmDialog = ({ message, onConfirm, onCancel }) => (
   <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
     <div className="bg-gray-900 rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-yellow-900/10">
-      <p className="text-white font-bold text-center mb-6">{message}</p>
+      <p className="text-white font-semibold text-center mb-6">{message}</p>
       <div className="flex gap-3">
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 py-3 rounded-2xl border border-yellow-900/20 text-gray-400 font-black text-[10px] uppercase tracking-widest hover:bg-gray-800 transition-all"
+          className="flex-1 py-3 rounded-2xl border border-yellow-900/20 text-gray-400 font-semibold text-[10px] uppercase tracking-widest hover:bg-gray-800 transition-all"
         >
           Cancel
         </button>
         <button
           type="button"
           onClick={onConfirm}
-          className="flex-1 py-3 rounded-2xl bg-red-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-red-700 transition-all animate-pulse"
+          className="flex-1 py-3 rounded-2xl bg-red-600 text-white font-semibold text-[10px] uppercase tracking-widest hover:bg-red-700 transition-all animate-pulse"
         >
           Delete
         </button>
@@ -313,32 +313,32 @@ const OrdersManage = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight uppercase">Order Logistics</h1>
+          <h1 className="text-3xl font-semibold text-white tracking-tight uppercase">Order Logistics</h1>
           <p className="text-gray-500 text-sm mt-1 font-medium">Fulfillment tracking, dynamic variants, and invoices</p>
         </div>
         <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
           <div className="flex items-center gap-4 bg-neutral-900/40 p-1.5 rounded-2xl border border-yellow-900/10 shadow-lg">
             <div className="flex items-center gap-2 px-3 py-1.5 border-r border-yellow-900/10">
               <Clock size={15} className="text-yellow-500" />
-              <span className="text-xs font-black text-neutral-300">
+              <span className="text-xs font-semibold text-neutral-300">
                 {orders.filter(o => o.status === 'ordered').length} New
               </span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 border-r border-yellow-900/10">
               <CheckCircle size={15} className="text-green-500" />
-              <span className="text-xs font-black text-neutral-300">
+              <span className="text-xs font-semibold text-neutral-300">
                 {orders.filter(o => o.status === 'delivered').length} Delivered
               </span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 border-r border-yellow-900/10">
               <PackageOpen size={15} className="text-orange-400" />
-              <span className="text-xs font-black text-orange-400">
+              <span className="text-xs font-semibold text-orange-400">
                 {notPackedCount} Not Packed
               </span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5">
               <PackageCheck size={15} className="text-green-400" />
-              <span className="text-xs font-black text-green-400">
+              <span className="text-xs font-semibold text-green-400">
                 {packedCount} Packed
               </span>
             </div>
@@ -346,7 +346,7 @@ const OrdersManage = () => {
           <button
             type="button"
             onClick={() => exportOrdersToExcel(orders)}
-            className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-green-600/20 transition-all active:scale-95"
+            className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl font-semibold uppercase tracking-widest text-[9px] shadow-lg shadow-green-600/20 transition-all active:scale-95"
           >
             <FileSpreadsheet size={14} />
             Export Excel
@@ -356,7 +356,7 @@ const OrdersManage = () => {
             onClick={fetchOrders}
             disabled={loading}
             title="Refresh orders"
-            className="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-yellow-400 px-4 py-3 rounded-xl font-black uppercase tracking-widest text-[9px] border border-yellow-900/20 transition-all active:scale-95 disabled:opacity-50"
+            className="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-yellow-400 px-4 py-3 rounded-xl font-semibold uppercase tracking-widest text-[9px] border border-yellow-900/20 transition-all active:scale-95 disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             Refresh
@@ -382,7 +382,7 @@ const OrdersManage = () => {
 
       {/* Packing Filter Tabs */}
       <div className="flex items-center gap-2 mb-6 flex-wrap">
-        <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest mr-1">Packing:</span>
+        <span className="text-[9px] font-semibold text-neutral-500 uppercase tracking-widest mr-1">Packing:</span>
         {[
           { key: 'ALL', label: 'All Orders', icon: Package },
           { key: 'NOT_PACKED', label: '📦 Not Packed', icon: PackageOpen },
@@ -392,7 +392,7 @@ const OrdersManage = () => {
             key={key}
             type="button"
             onClick={() => setPackingFilter(key)}
-            className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${
+            className={`px-4 py-2 rounded-xl text-[9px] font-semibold uppercase tracking-widest border transition-all ${
               packingFilter === key
                 ? key === 'NOT_PACKED'
                   ? 'bg-orange-500/15 border-orange-500/40 text-orange-400'
@@ -410,10 +410,10 @@ const OrdersManage = () => {
       {loading ? (
         <div className="py-24 text-center text-neutral-500 bg-neutral-900/10 rounded-3xl border border-yellow-900/5">
           <Loader2 size={32} className="animate-spin mx-auto mb-3 text-yellow-500" />
-          <p className="font-black uppercase tracking-widest text-[9px]">Loading Orders...</p>
+          <p className="font-semibold uppercase tracking-widest text-[9px]">Loading Orders...</p>
         </div>
       ) : filteredOrders.length === 0 ? (
-        <div className="py-24 text-center text-neutral-500 bg-neutral-900/10 rounded-3xl border border-yellow-900/5 font-black uppercase tracking-widest text-[10px]">
+        <div className="py-24 text-center text-neutral-500 bg-neutral-900/10 rounded-3xl border border-yellow-900/5 font-semibold uppercase tracking-widest text-[10px]">
           No orders matching criteria.
         </div>
       ) : (
@@ -446,7 +446,7 @@ const OrdersManage = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-4 sm:px-6 py-4 bg-neutral-950/60 border-b border-neutral-800/80">
                   <div className="space-y-1">
                     <div className="flex items-center flex-wrap gap-2">
-                      <span className="text-[10px] font-mono font-bold text-yellow-500 bg-yellow-500/5 border border-yellow-500/15 px-2 py-0.5 rounded">
+                      <span className="text-[10px] font-mono font-semibold text-yellow-500 bg-yellow-500/5 border border-yellow-500/15 px-2 py-0.5 rounded">
                         #{order.id.slice(-8).toUpperCase()}
                       </span>
                       <button
@@ -466,11 +466,11 @@ const OrdersManage = () => {
                       </span>
                       {/* Packing Status Badge */}
                       {(order.packingStatus || PACKING_STATUS.NOT_PACKED) === PACKING_STATUS.PACKED ? (
-                        <span className="flex items-center gap-1 text-[8px] font-black uppercase tracking-widest bg-green-500/10 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full">
+                        <span className="flex items-center gap-1 text-[8px] font-semibold uppercase tracking-widest bg-green-500/10 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full">
                           <PackageCheck size={9} /> Packed
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1 text-[8px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded-full">
+                        <span className="flex items-center gap-1 text-[8px] font-semibold uppercase tracking-widest bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded-full">
                           <PackageOpen size={9} /> Not Packed
                         </span>
                       )}
@@ -485,7 +485,7 @@ const OrdersManage = () => {
                       name="paymentStatus"
                       value={order.paymentStatus || 'Pending'}
                       onChange={(e) => handlePaymentStatusChange(order.id, e.target.value)}
-                      className={`text-[8px] rounded px-2 py-1 font-black uppercase tracking-wider border transition-all outline-none bg-neutral-950 ${
+                      className={`text-[8px] rounded px-2 py-1 font-semibold uppercase tracking-wider border transition-all outline-none bg-neutral-950 ${
                         (order.paymentStatus || 'Pending').toLowerCase() === 'paid'
                           ? 'text-green-500 border-green-500/20 bg-green-500/5'
                           : 'text-amber-500 border-amber-500/20 bg-amber-500/5'
@@ -502,7 +502,7 @@ const OrdersManage = () => {
                       name="orderStatus"
                       value={order.status || 'ordered'}
                       onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                      className={`text-[8px] rounded px-2 py-1 font-black uppercase tracking-wider border transition-all outline-none bg-neutral-950 ${getStatusStyle(order.status)}`}
+                      className={`text-[8px] rounded px-2 py-1 font-semibold uppercase tracking-wider border transition-all outline-none bg-neutral-950 ${getStatusStyle(order.status)}`}
                     >
                       {STATUS_FLOW.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
@@ -513,15 +513,15 @@ const OrdersManage = () => {
                 <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                   {/* Left Column: Customer & Delivery Address Details */}
                   <div className="space-y-4 text-left">
-                    <h3 className="text-[9px] font-black text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
+                    <h3 className="text-[9px] font-semibold text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
                       <MapPin size={12} className="text-yellow-500" />
                       Recipient & Destination
                     </h3>
 
                     <div className="bg-neutral-950/50 p-4 rounded-2xl border border-neutral-800/80 text-xs text-neutral-300 leading-relaxed font-sans relative group whitespace-pre-line">
                       <div className="space-y-0.5">
-                        <p className="font-black text-white text-sm uppercase tracking-wide">{customer.name}</p>
-                        <p className="font-bold text-yellow-500/90 flex items-center gap-2">
+                        <p className="font-semibold text-white text-sm uppercase tracking-wide">{customer.name}</p>
+                        <p className="font-semibold text-yellow-500/90 flex items-center gap-2">
                           <span>
                             {revealedPhones[order.id] ? customer.phone : maskPhone(customer.phone)}
                           </span>
@@ -542,12 +542,12 @@ const OrdersManage = () => {
                         {customer.landmark && (
                           <p className="text-neutral-300">{customer.landmark}</p>
                         )}
-                        <p className="text-neutral-100 font-bold uppercase tracking-wider text-[10px]">
+                        <p className="text-neutral-100 font-semibold uppercase tracking-wider text-[10px]">
                           {customer.district}, {customer.state} - {customer.pincode}
                         </p>
                       </div>
 
-                      <div className="mt-3 pt-3 border-t border-neutral-850 grid grid-cols-2 gap-2 text-[9px] uppercase tracking-wider font-bold">
+                      <div className="mt-3 pt-3 border-t border-neutral-850 grid grid-cols-2 gap-2 text-[9px] uppercase tracking-wider font-semibold">
                         <div>
                           <span className="text-neutral-550 block text-[8px] mb-0.5">Payment Method</span>
                           <span className="text-neutral-200">{order.paymentMethod || 'COD'}</span>
@@ -565,7 +565,7 @@ const OrdersManage = () => {
                   {/* Right Column: Items details (Expandable/Collapsible) */}
                   <div className="space-y-4 text-left">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-[9px] font-black text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
+                      <h3 className="text-[9px] font-semibold text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
                         <ShoppingBag size={12} className="text-yellow-500" />
                         Ordered Products ({items.reduce((acc, i) => acc + i.quantity, 0)} items)
                       </h3>
@@ -592,8 +592,8 @@ const OrdersManage = () => {
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-black text-white uppercase tracking-wider break-words whitespace-normal">{item.name}</p>
-                            <div className="text-[9px] text-neutral-400 uppercase tracking-wide mt-0.5 space-y-0.5 font-bold">
+                            <p className="text-xs font-semibold text-white uppercase tracking-wider break-words whitespace-normal">{item.name}</p>
+                            <div className="text-[9px] text-neutral-400 uppercase tracking-wide mt-0.5 space-y-0.5 font-semibold">
                               {item.color && (
                                 <div>Color: <strong className="text-neutral-200">{typeof item.color === 'object' ? item.color.name : item.color}</strong></div>
                               )}
@@ -602,7 +602,7 @@ const OrdersManage = () => {
                               )}
                               <div>Qty: <strong className="text-neutral-200">{item.quantity}</strong></div>
                             </div>
-                            <p className="text-[10px] text-yellow-500 font-bold mt-1.5">
+                            <p className="text-[10px] text-yellow-500 font-semibold mt-1.5">
                               ₹{item.price.toLocaleString()} × {item.quantity} = ₹{item.total.toLocaleString()}
                             </p>
                           </div>
@@ -613,7 +613,7 @@ const OrdersManage = () => {
                         <button
                           type="button"
                           onClick={() => toggleItems(order.id)}
-                          className="flex items-center gap-1 bg-neutral-850 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-wider transition-colors mt-2"
+                          className="flex items-center gap-1 bg-neutral-850 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 px-3 py-1.5 rounded-lg text-[8px] font-semibold uppercase tracking-wider transition-colors mt-2"
                         >
                           {isExpanded ? (
                             <>Collapse Items <ChevronUp size={11} /></>
@@ -627,10 +627,10 @@ const OrdersManage = () => {
                   {/* Card Bottom Footer: Summary & Actions */}
                   <div className="px-4 py-4 sm:px-6 sm:py-5 bg-neutral-950/30 border-t border-neutral-800/80 flex flex-col items-start gap-4 w-full">
                   {/* Expanded Summary Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4 text-[8px] md:text-[9px] uppercase tracking-wider font-bold w-full border-b border-neutral-800/50 pb-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4 text-[8px] md:text-[9px] uppercase tracking-wider font-semibold w-full border-b border-neutral-800/50 pb-4">
                     <div>
                       <span className="text-neutral-550 block mb-0.5">Order ID</span>
-                      <span className="text-neutral-200 font-mono font-bold text-[10px] truncate block max-w-[80px]" title={order.id}>#{order.id.slice(-8).toUpperCase()}</span>
+                      <span className="text-neutral-200 font-mono font-semibold text-[10px] truncate block max-w-[80px]" title={order.id}>#{order.id.slice(-8).toUpperCase()}</span>
                     </div>
                     <div>
                       <span className="text-neutral-550 block mb-0.5">Placed On</span>
@@ -658,12 +658,12 @@ const OrdersManage = () => {
                     </div>
                     <div>
                       <span className="text-orange-500 block mb-0.5">Final Total</span>
-                      <span className="text-orange-500 text-xs font-black block">₹{order.totalPrice?.toLocaleString()}</span>
+                      <span className="text-orange-500 text-xs font-semibold block">₹{order.totalPrice?.toLocaleString()}</span>
                     </div>
                   </div>
 
                   {/* Actions row */}
-                  <div className="grid grid-cols-2 gap-2 w-full text-[9px] font-black uppercase tracking-widest md:flex md:flex-wrap md:items-center md:gap-2 md:text-[8px]">
+                  <div className="grid grid-cols-2 gap-2 w-full text-[9px] font-semibold uppercase tracking-widest md:flex md:flex-wrap md:items-center md:gap-2 md:text-[8px]">
                     {revealedPhones[order.id] ? (
                       <a
                         href={`tel:${customer.phone}`}
@@ -737,7 +737,7 @@ const OrdersManage = () => {
                         Mark as Packed
                       </button>
                     ) : (
-                      <span className="flex items-center justify-center gap-1.5 bg-green-500/10 text-green-400 py-3 rounded-lg border border-green-500/20 w-full md:w-auto md:px-3.5 md:py-2.5 text-[9px] font-black uppercase tracking-widest">
+                      <span className="flex items-center justify-center gap-1.5 bg-green-500/10 text-green-400 py-3 rounded-lg border border-green-500/20 w-full md:w-auto md:px-3.5 md:py-2.5 text-[9px] font-semibold uppercase tracking-widest">
                         <PackageCheck size={12} /> Packed
                       </span>
                     )}
@@ -771,7 +771,7 @@ const OrdersManage = () => {
             <div className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto border-b md:border-b-0 md:border-r border-neutral-800/60 text-left">
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h2 className="text-xl font-black text-white uppercase tracking-widest">Order Details</h2>
+                  <h2 className="text-xl font-semibold text-white uppercase tracking-widest">Order Details</h2>
                   <p className="text-[9px] font-mono text-neutral-500 mt-1">ID: {selectedOrder.id}</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -809,11 +809,11 @@ const OrdersManage = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       {/* Recipient Details */}
                       <div className="space-y-2.5">
-                        <h3 className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Shipping Destination</h3>
+                        <h3 className="text-[9px] font-semibold text-neutral-500 uppercase tracking-widest">Shipping Destination</h3>
                         <div className="bg-neutral-950/50 p-4 rounded-xl border border-neutral-800/80 text-xs leading-relaxed text-neutral-300 whitespace-pre-line">
                           <div className="space-y-0.5">
-                            <p className="font-black text-white text-sm uppercase tracking-wide">{customer.name}</p>
-                            <p className="font-bold text-yellow-500 flex items-center gap-2">
+                            <p className="font-semibold text-white text-sm uppercase tracking-wide">{customer.name}</p>
+                            <p className="font-semibold text-yellow-500 flex items-center gap-2">
                               <span>
                                 {revealedPhones[selectedOrder.id] ? customer.phone : maskPhone(customer.phone)}
                               </span>
@@ -832,12 +832,12 @@ const OrdersManage = () => {
                           <div className="border-t border-neutral-850 pt-3 mt-3 space-y-0.5 font-medium text-neutral-300">
                             <p className="text-neutral-200">{customer.address}</p>
                             {customer.landmark && <p className="text-neutral-200">{customer.landmark}</p>}
-                            <p className="text-neutral-100 font-bold uppercase tracking-wider text-[10px]">
+                            <p className="text-neutral-100 font-semibold uppercase tracking-wider text-[10px]">
                               {customer.district}, {customer.state} - {customer.pincode}
                             </p>
                           </div>
 
-                          <div className="border-t border-neutral-850 pt-3 mt-3 grid grid-cols-2 gap-2 text-[9px] uppercase tracking-wider font-bold">
+                          <div className="border-t border-neutral-850 pt-3 mt-3 grid grid-cols-2 gap-2 text-[9px] uppercase tracking-wider font-semibold">
                             <div>
                               <span className="text-neutral-550 block text-[8px] mb-0.5">Payment Method</span>
                               <span className="text-neutral-200">{selectedOrder.paymentMethod || 'COD'}</span>
@@ -854,8 +854,8 @@ const OrdersManage = () => {
 
                       {/* Summary details */}
                       <div className="space-y-2.5">
-                        <h3 className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Order Summary</h3>
-                        <div className="bg-neutral-950/50 p-4 rounded-xl border border-neutral-800/80 space-y-2 text-xs uppercase tracking-wider font-bold">
+                        <h3 className="text-[9px] font-semibold text-neutral-500 uppercase tracking-widest">Order Summary</h3>
+                        <div className="bg-neutral-950/50 p-4 rounded-xl border border-neutral-800/80 space-y-2 text-xs uppercase tracking-wider font-semibold">
                           <div className="flex justify-between">
                             <span className="text-neutral-500">Placed On</span>
                             <span className="text-white normal-case">{orderDate}</span>
@@ -882,7 +882,7 @@ const OrdersManage = () => {
                             <span className="text-neutral-550">Shipping</span>
                             <span className="text-yellow-500">₹{selectedOrder.deliveryCharge?.toLocaleString()}</span>
                           </div>
-                          <div className="flex justify-between font-black text-orange-500 pt-2 border-t border-neutral-850 mt-2 text-sm">
+                          <div className="flex justify-between font-semibold text-orange-500 pt-2 border-t border-neutral-850 mt-2 text-sm">
                             <span>Total Amount</span>
                             <span>₹{selectedOrder.totalPrice?.toLocaleString()}</span>
                           </div>
@@ -891,7 +891,7 @@ const OrdersManage = () => {
                     </div>
 
                     {/* Quick actions row */}
-                    <div className="grid grid-cols-2 gap-2 text-[9px] font-black uppercase tracking-widest border-t border-neutral-850 pt-4 w-full md:flex md:flex-wrap md:items-center md:gap-2 md:text-[8px]">
+                    <div className="grid grid-cols-2 gap-2 text-[9px] font-semibold uppercase tracking-widest border-t border-neutral-850 pt-4 w-full md:flex md:flex-wrap md:items-center md:gap-2 md:text-[8px]">
                       {revealedPhones[selectedOrder.id] ? (
                         <a
                           href={`tel:${customer.phone}`}
@@ -949,38 +949,38 @@ const OrdersManage = () => {
 
               {/* Packing Info Panel inside Modal */}
               <div className="mt-6 p-4 rounded-2xl border bg-neutral-950/60 border-neutral-800 space-y-3">
-                <h3 className="text-[9px] font-black text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
+                <h3 className="text-[9px] font-semibold text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
                   <Package size={12} className="text-yellow-500" /> Packing Status
                 </h3>
                 <div className="flex flex-wrap items-center gap-3">
                   {(selectedOrder.packingStatus || PACKING_STATUS.NOT_PACKED) === PACKING_STATUS.PACKED ? (
                     <>
-                      <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest bg-green-500/10 text-green-400 border border-green-500/20 px-3 py-1.5 rounded-full">
+                      <span className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-widest bg-green-500/10 text-green-400 border border-green-500/20 px-3 py-1.5 rounded-full">
                         <PackageCheck size={11} /> Packed
                       </span>
                       {selectedOrder.packedAt && (
-                        <span className="text-[9px] text-neutral-400 font-bold">
+                        <span className="text-[9px] text-neutral-400 font-semibold">
                           Packed at: {typeof selectedOrder.packedAt === 'string'
                             ? new Date(selectedOrder.packedAt).toLocaleString('en-IN')
                             : selectedOrder.packedAt?.toDate?.().toLocaleString('en-IN') || '—'}
                         </span>
                       )}
                       {selectedOrder.packedBy && (
-                        <span className="text-[9px] text-neutral-400 font-bold">
+                        <span className="text-[9px] text-neutral-400 font-semibold">
                           by {selectedOrder.packedBy}
                         </span>
                       )}
                     </>
                   ) : (
                     <>
-                      <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-400 border border-orange-500/20 px-3 py-1.5 rounded-full">
+                      <span className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-widest bg-orange-500/10 text-orange-400 border border-orange-500/20 px-3 py-1.5 rounded-full">
                         <PackageOpen size={11} /> Not Packed
                       </span>
                       <button
                         type="button"
                         onClick={() => handleMarkPacked(selectedOrder.id)}
                         disabled={!!packingLoading[selectedOrder.id]}
-                        className="flex items-center gap-1.5 bg-orange-500 text-white hover:bg-orange-400 font-black uppercase tracking-widest text-[9px] px-4 py-2 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-1.5 bg-orange-500 text-white hover:bg-orange-400 font-semibold uppercase tracking-widest text-[9px] px-4 py-2 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {packingLoading[selectedOrder.id]
                           ? <Loader2 size={11} className="animate-spin" />
@@ -993,7 +993,7 @@ const OrdersManage = () => {
               </div>
 
               {/* Items List */}
-              <h3 className="text-[9px] font-black text-neutral-500 uppercase tracking-widest mt-8 mb-4 flex items-center gap-1.5">
+              <h3 className="text-[9px] font-semibold text-neutral-500 uppercase tracking-widest mt-8 mb-4 flex items-center gap-1.5">
                 <ShoppingBag size={13} className="text-yellow-500" />
                 Ordered Products
               </h3>
@@ -1015,8 +1015,8 @@ const OrdersManage = () => {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-black text-white uppercase tracking-wider break-words whitespace-normal">{item.name}</p>
-                      <div className="text-[9px] text-neutral-455 uppercase tracking-wide mt-0.5 space-y-0.5 font-bold">
+                      <p className="text-xs font-semibold text-white uppercase tracking-wider break-words whitespace-normal">{item.name}</p>
+                      <div className="text-[9px] text-neutral-455 uppercase tracking-wide mt-0.5 space-y-0.5 font-semibold">
                         {item.color && (
                           <div>Color: <strong className="text-neutral-200">{typeof item.color === 'object' ? item.color.name : item.color}</strong></div>
                         )}
@@ -1025,7 +1025,7 @@ const OrdersManage = () => {
                         )}
                         <div>Qty: <strong className="text-neutral-200">{item.quantity}</strong></div>
                       </div>
-                      <p className="text-[10px] text-yellow-500 font-bold mt-1.5">
+                      <p className="text-[10px] text-yellow-500 font-semibold mt-1.5">
                         ₹{item.price.toLocaleString()} × {item.quantity} = ₹{item.total.toLocaleString()}
                       </p>
                     </div>
@@ -1037,7 +1037,7 @@ const OrdersManage = () => {
             {/* Right Column: Status Timeline */}
             <div className="w-full md:w-80 bg-slate-950/40 p-4 sm:p-6 md:p-8 overflow-y-auto border-t md:border-t-0 border-neutral-800 flex flex-col justify-between">
               <div>
-                <h3 className="text-[9px] font-black text-neutral-500 uppercase tracking-widest mb-6">Fulfillment Log</h3>
+                <h3 className="text-[9px] font-semibold text-neutral-500 uppercase tracking-widest mb-6">Fulfillment Log</h3>
                 <div className="space-y-6 relative text-left">
                   <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-neutral-800" />
                   {[...(selectedOrder.statusHistory ?? [])].reverse().map((h, i) => (
@@ -1047,8 +1047,8 @@ const OrdersManage = () => {
                           ? <CheckCircle size={10} className="text-neutral-950" />
                           : <Clock size={10} className={i === 0 ? 'text-neutral-950' : 'text-neutral-400'} />}
                       </div>
-                      <p className={`text-[10px] font-black uppercase tracking-wider ${i === 0 ? 'text-yellow-500' : 'text-neutral-200'}`}>{h.status}</p>
-                      <p className="text-[8px] text-neutral-500 font-bold mt-0.5">{new Date(h.timestamp).toLocaleString()}</p>
+                      <p className={`text-[10px] font-semibold uppercase tracking-wider ${i === 0 ? 'text-yellow-500' : 'text-neutral-200'}`}>{h.status}</p>
+                      <p className="text-[8px] text-neutral-500 font-semibold mt-0.5">{new Date(h.timestamp).toLocaleString()}</p>
                       <p className="text-[8px] text-neutral-400 mt-1 italic leading-relaxed">{h.message}</p>
                     </div>
                   ))}
@@ -1056,19 +1056,19 @@ const OrdersManage = () => {
               </div>
 
               <div className="mt-10 pt-6 border-t border-neutral-800/80">
-                <h4 className="text-[9px] font-black text-neutral-500 uppercase tracking-widest mb-3 text-left">Fulfill Step</h4>
+                <h4 className="text-[9px] font-semibold text-neutral-500 uppercase tracking-widest mb-3 text-left">Fulfill Step</h4>
                 {(() => {
                   const nextStatus = getNextStatus(selectedOrder.status);
                   return nextStatus ? (
                     <button
                       type="button"
                       onClick={() => handleStatusChange(selectedOrder.id, nextStatus)}
-                      className="w-full py-3 bg-yellow-600 text-white font-black uppercase tracking-widest text-[9px] rounded-xl shadow-md shadow-yellow-600/10 hover:bg-yellow-500 transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                      className="w-full py-3 bg-yellow-600 text-white font-semibold uppercase tracking-widest text-[9px] rounded-xl shadow-md shadow-yellow-600/10 hover:bg-yellow-500 transition-all active:scale-95 flex items-center justify-center gap-1.5"
                     >
                       <Truck size={13} /> Mark as {nextStatus}
                     </button>
                   ) : (
-                    <div className="py-3 bg-green-500/10 border border-green-500/20 text-green-500 font-black uppercase tracking-widest text-[9px] rounded-xl text-center">
+                    <div className="py-3 bg-green-500/10 border border-green-500/20 text-green-500 font-semibold uppercase tracking-widest text-[9px] rounded-xl text-center">
                       Fulfillment Complete
                     </div>
                   );
@@ -1083,10 +1083,10 @@ const OrdersManage = () => {
       {isPrinting && (
         <div className="fixed inset-0 z-[300] bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center text-white no-print">
           <Loader2 size={48} className="animate-spin text-yellow-500 mb-4" />
-          <h3 className="text-xl font-black uppercase tracking-widest">
+          <h3 className="text-xl font-semibold uppercase tracking-widest">
             {printData?.type === 'invoice' ? "Generating Invoice..." : "Generating Shipping Label..."}
           </h3>
-          <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">Preparing printable document view</p>
+          <p className="text-xs text-gray-500 font-semibold uppercase tracking-widest mt-1">Preparing printable document view</p>
         </div>
       )}
 

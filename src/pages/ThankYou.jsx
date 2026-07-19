@@ -62,24 +62,24 @@ const ThankYou = () => {
           <CheckCircle size={52} />
         </div>
 
-        <p className="text-yellow-500 text-[9px] font-black uppercase tracking-[0.6em] mb-4 relative z-10">
+        <p className="text-yellow-500 text-[9px] font-semibold uppercase tracking-[0.6em] mb-4 relative z-10">
           Order Confirmed
         </p>
-        <h1 className="text-4xl font-black text-white mb-4 tracking-tighter uppercase relative z-10">
+        <h1 className="text-4xl font-semibold text-white mb-4 tracking-tighter uppercase relative z-10">
           Order Placed
         </h1>
         <p className="text-gray-500 font-medium mb-12 text-sm uppercase tracking-widest leading-relaxed relative z-10">
-          Order <span className="text-yellow-500 font-black">#{shortId}</span> has been successfully placed.
+          Order <span className="text-yellow-500 font-semibold">#{shortId}</span> has been successfully placed.
         </p>
 
         <div className="bg-black/50 rounded-[2rem] p-8 mb-12 flex flex-col md:flex-row items-center justify-between gap-6 border border-yellow-900/10 relative z-10">
           <div className="text-left">
-            <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-2">Payment Mode</p>
-            <p className="font-black text-white uppercase tracking-widest text-xs">Cash on Delivery</p>
+            <p className="text-[9px] font-semibold text-gray-600 uppercase tracking-[0.3em] mb-2">Payment Mode</p>
+            <p className="font-semibold text-white uppercase tracking-widest text-xs">Cash on Delivery</p>
           </div>
           <div className="text-center md:text-right">
-            <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.3em] mb-2">Total Amount</p>
-            <p className="text-4xl font-black text-yellow-400 tracking-tighter">
+            <p className="text-[9px] font-semibold text-gray-600 uppercase tracking-[0.3em] mb-2">Total Amount</p>
+            <p className="text-4xl font-semibold text-yellow-400 tracking-tighter">
               ₹{total?.toLocaleString() ?? '—'}
             </p>
           </div>
@@ -88,13 +88,13 @@ const ThankYou = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-14 relative z-10">
           <Link
             to="/my-orders"
-            className="flex items-center justify-center gap-3 bg-white/5 border border-white/10 text-white py-5 rounded-2xl font-black uppercase tracking-[0.3em] text-[9px] hover:border-yellow-500/30 transition-all active:scale-95"
+            className="flex items-center justify-center gap-3 bg-white/5 border border-white/10 text-white py-5 rounded-2xl font-semibold uppercase tracking-[0.3em] text-[9px] hover:border-yellow-500/30 transition-all active:scale-95"
           >
             <Package size={16} /> My Orders
           </Link>
           <Link
             to="/products"
-            className="flex items-center justify-center gap-3 bg-yellow-500 text-black py-5 rounded-2xl font-black uppercase tracking-[0.3em] text-[9px] hover:bg-yellow-400 transition-all active:scale-95 shadow-2xl shadow-yellow-500/20"
+            className="flex items-center justify-center gap-3 bg-yellow-500 text-black py-5 rounded-2xl font-semibold uppercase tracking-[0.3em] text-[9px] hover:bg-yellow-400 transition-all active:scale-95 shadow-2xl shadow-yellow-500/20"
           >
             Browse More <ArrowRight size={16} />
           </Link>
@@ -108,7 +108,7 @@ const ThankYou = () => {
             <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center text-gray-600 group-hover:text-yellow-500 group-hover:border-yellow-500/30 transition-all">
               <Download size={20} />
             </div>
-            <span className="text-[9px] font-black text-gray-700 uppercase tracking-[0.3em]">Invoice</span>
+            <span className="text-[9px] font-semibold text-gray-700 uppercase tracking-[0.3em]">Invoice</span>
           </button>
           <a
             href={whatsappUrl}
@@ -119,7 +119,7 @@ const ThankYou = () => {
             <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center text-gray-600 group-hover:text-yellow-500 group-hover:border-yellow-500/30 transition-all">
               <Smartphone size={20} />
             </div>
-            <span className="text-[9px] font-black text-gray-700 uppercase tracking-[0.3em]">Support</span>
+            <span className="text-[9px] font-semibold text-gray-700 uppercase tracking-[0.3em]">Support</span>
           </a>
         </div>
       </motion.div>

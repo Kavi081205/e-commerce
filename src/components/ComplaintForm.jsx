@@ -132,7 +132,7 @@ export default function ComplaintForm({ order, customerPhone, onClose }) {
           {/* Header */}
           <div className="sticky top-0 bg-gray-950 border-b border-gray-800 px-6 py-5 flex items-center justify-between z-10 rounded-t-3xl">
             <div>
-              <h2 className="text-lg font-black text-white">Raise a Complaint</h2>
+              <h2 className="text-lg font-semibold text-white">Raise a Complaint</h2>
               <p className="text-xs text-gray-500 mt-0.5">Order #{order.id.slice(-8).toUpperCase()}</p>
             </div>
             <button type="button" onClick={onClose} className="text-gray-500 hover:text-white transition-colors p-1">
@@ -151,18 +151,18 @@ export default function ComplaintForm({ order, customerPhone, onClose }) {
                 <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto">
                   <CheckCircle2 size={40} className="text-green-400" />
                 </div>
-                <h3 className="text-xl font-black text-white">Complaint Submitted!</h3>
+                <h3 className="text-xl font-semibold text-white">Complaint Submitted!</h3>
                 <p className="text-gray-400 text-sm leading-relaxed">
                   Your complaint has been received. Our team will review it and respond within 24–48 hours.
                 </p>
                 <div className="bg-gray-900 rounded-2xl p-4 text-left text-xs space-y-2 mt-4">
                   <p className="text-gray-400">You can track your complaint status at:</p>
-                  <a href="/my-complaints" className="text-yellow-400 font-bold underline">My Complaints →</a>
+                  <a href="/my-complaints" className="text-yellow-400 font-semibold underline">My Complaints →</a>
                 </div>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="mt-6 bg-yellow-500 text-black px-8 py-3 rounded-xl font-black uppercase tracking-wider text-sm hover:bg-yellow-400 transition-all"
+                  className="mt-6 bg-yellow-500 text-black px-8 py-3 rounded-xl font-semibold uppercase tracking-wider text-sm hover:bg-yellow-400 transition-all"
                 >
                   Done
                 </button>
@@ -173,9 +173,9 @@ export default function ComplaintForm({ order, customerPhone, onClose }) {
             {step === 'error' && (
               <div className="text-center py-12 space-y-4">
                 <AlertTriangle size={48} className="text-red-400 mx-auto" />
-                <h3 className="text-lg font-black text-white">Submission Failed</h3>
+                <h3 className="text-lg font-semibold text-white">Submission Failed</h3>
                 <p className="text-red-400 text-sm">{errorMsg}</p>
-                <button type="button" onClick={() => setStep('form')} className="bg-gray-800 text-white px-6 py-2.5 rounded-xl font-bold text-sm">
+                <button type="button" onClick={() => setStep('form')} className="bg-gray-800 text-white px-6 py-2.5 rounded-xl font-semibold text-sm">
                   Try Again
                 </button>
               </div>
@@ -188,7 +188,7 @@ export default function ComplaintForm({ order, customerPhone, onClose }) {
                 <div className="bg-gray-900 rounded-2xl p-4 text-xs space-y-1">
                   <div className="flex justify-between">
                     <span className="text-gray-500">Order ID</span>
-                    <span className="text-white font-mono font-bold">#{order.id.slice(-8).toUpperCase()}</span>
+                    <span className="text-white font-mono font-semibold">#{order.id.slice(-8).toUpperCase()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Product(s)</span>
@@ -196,13 +196,13 @@ export default function ComplaintForm({ order, customerPhone, onClose }) {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Total</span>
-                    <span className="text-yellow-400 font-black">₹{(order.totalPrice || 0).toLocaleString()}</span>
+                    <span className="text-yellow-400 font-semibold">₹{(order.totalPrice || 0).toLocaleString()}</span>
                   </div>
                 </div>
 
                 {/* Complaint Type */}
                 <div>
-                  <label htmlFor="complaintType" className="block text-xs font-black text-gray-400 uppercase tracking-wider mb-2">
+                  <label htmlFor="complaintType" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                     Complaint Type <span className="text-red-400">*</span>
                   </label>
                   <select
@@ -222,7 +222,7 @@ export default function ComplaintForm({ order, customerPhone, onClose }) {
 
                 {/* Customer Name */}
                 <div>
-                  <label htmlFor="customerName" className="block text-xs font-black text-gray-400 uppercase tracking-wider mb-2">
+                  <label htmlFor="customerName" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                     Your Name <span className="text-red-400">*</span>
                   </label>
                   <input
@@ -240,7 +240,7 @@ export default function ComplaintForm({ order, customerPhone, onClose }) {
 
                 {/* Description */}
                 <div>
-                  <label htmlFor="description" className="block text-xs font-black text-gray-400 uppercase tracking-wider mb-2">
+                  <label htmlFor="description" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                     Description <span className="text-red-400">*</span>
                   </label>
                   <textarea
@@ -257,7 +257,7 @@ export default function ComplaintForm({ order, customerPhone, onClose }) {
 
                 {/* Image Upload */}
                 <div>
-                  <p className="block text-xs font-black text-gray-400 uppercase tracking-wider mb-2">
+                  <p className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                     Images (up to {MAX_IMAGES})
                   </p>
                   <div className="flex flex-wrap gap-3">
@@ -280,7 +280,7 @@ export default function ComplaintForm({ order, customerPhone, onClose }) {
                         className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-700 flex flex-col items-center justify-center gap-1 text-gray-500 hover:border-yellow-500 hover:text-yellow-500 transition-colors"
                       >
                         <ImageIcon size={18} />
-                        <span className="text-[9px] font-bold">Add</span>
+                        <span className="text-[9px] font-semibold">Add</span>
                       </button>
                     )}
                   </div>
@@ -298,7 +298,7 @@ export default function ComplaintForm({ order, customerPhone, onClose }) {
 
                 {/* Video Upload */}
                 <div>
-                  <p className="block text-xs font-black text-gray-400 uppercase tracking-wider mb-2">
+                  <p className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                     Video (optional, max {MAX_VIDEO_MB}MB)
                   </p>
                   {videoPreview ? (
@@ -319,7 +319,7 @@ export default function ComplaintForm({ order, customerPhone, onClose }) {
                       className="w-full border-2 border-dashed border-gray-700 rounded-2xl py-5 flex flex-col items-center gap-2 text-gray-500 hover:border-yellow-500 hover:text-yellow-500 transition-colors"
                     >
                       <Video size={24} />
-                      <span className="text-xs font-bold">Upload Video</span>
+                      <span className="text-xs font-semibold">Upload Video</span>
                     </button>
                   )}
                   <input
@@ -337,7 +337,7 @@ export default function ComplaintForm({ order, customerPhone, onClose }) {
                 <button
                   type="submit"
                   disabled={step === 'submitting'}
-                  className="w-full bg-yellow-500 hover:bg-yellow-400 disabled:opacity-60 text-black py-4 rounded-2xl font-black uppercase tracking-wider text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
+                  className="w-full bg-yellow-500 hover:bg-yellow-400 disabled:opacity-60 text-black py-4 rounded-2xl font-semibold uppercase tracking-wider text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
                   {step === 'submitting' ? (
                     <><Loader2 size={18} className="animate-spin" /> Submitting...</>

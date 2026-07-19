@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { db } from '../firebase';
@@ -7,7 +7,8 @@ import { useWishlist } from '../context/WishlistContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 import {
   Search, Filter, SlidersHorizontal,
-  Heart, AlertCircle, Loader2, ArrowRight
+  Heart, AlertCircle, Loader2, ArrowRight,
+  ChevronDown, Check
 } from 'lucide-react';
 import { usePromo } from '../context/PromoContext';
 import { getEffectivePrice } from '../utils/pricing';
@@ -56,6 +57,26 @@ const Products = () => {
   const [sort, setSort] = useState('none');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
+
+  const sortOptions = [
+    { value: 'none', label: 'Newest' },
+    { value: 'price-asc', label: 'Price: Low to High' },
+    { value: 'price-desc', label: 'Price: High to Low' },
+    { value: 'best-selling', label: 'Best Selling' },
+    { value: 'highest-rated', label: 'Highest Rated' },
+  ];
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // ── pagination state ──────────────────────────────────────────────────────
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
@@ -158,10 +179,22 @@ const Products = () => {
   });
 
   const sortedProducts = [...processedProducts].sort((a, b) => {
-    const priceA = getEffectivePrice(a, promoSettings);
-    const priceB = getEffectivePrice(b, promoSettings);
-    if (sort === 'price-asc') return priceA - priceB;
-    if (sort === 'price-desc') return priceB - priceA;
+    if (sort === 'price-asc') {
+      const priceA = getEffectivePrice(a, promoSettings);
+      const priceB = getEffectivePrice(b, promoSettings);
+      return priceA - priceB;
+    }
+    if (sort === 'price-desc') {
+      const priceA = getEffectivePrice(a, promoSettings);
+      const priceB = getEffectivePrice(b, promoSettings);
+      return priceB - priceA;
+    }
+    if (sort === 'best-selling') {
+      return Number(b.soldCount || 0) - Number(a.soldCount || 0);
+    }
+    if (sort === 'highest-rated') {
+      return Number(b.rating || 0) - Number(a.rating || 0);
+    }
     return 0;
   });
 
@@ -172,11 +205,11 @@ const Products = () => {
     <div className="bg-black min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20 pb-24">
         <div className="mb-8 lg:mb-20 text-center lg:text-left">
-          <p className="text-yellow-500 text-[10px] font-black uppercase tracking-[0.6em] mb-4">
+          <p className="text-yellow-500 text-[9px] font-semibold uppercase tracking-[0.25em] mb-4">
             Curated Selection
           </p>
-          <h1 className="text-3xl md:text-6xl font-black text-white tracking-tighter uppercase">
-            The Collections
+          <h1 className="text-product md:text-product-sm lg:type-heading-lg text-white">
+            Our Collections
           </h1>
         </div>
 
@@ -187,7 +220,7 @@ const Products = () => {
               key={cat.slug}
               type="button"
               onClick={() => handleFilterChange(cat.slug)}
-              className={`px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border flex-shrink-0 transition-all ${filter === cat.slug
+              className={`px-4 py-2 rounded-full text-[9px] font-semibold uppercase tracking-widest border flex-shrink-0 transition-all ${filter === cat.slug
                 ? 'bg-yellow-500 border-yellow-500 text-black shadow-lg shadow-yellow-500/10'
                 : 'border-yellow-900/20 text-gray-400'
               }`}
@@ -202,14 +235,14 @@ const Products = () => {
           <button
             type="button"
             onClick={() => setIsSortOpen(true)}
-            className="flex-1 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-yellow-900/10 active:bg-yellow-500/10"
+            className="flex-1 flex items-center justify-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-gray-400 border-r border-yellow-900/10 active:bg-yellow-500/10"
           >
             <SlidersHorizontal size={12} /> Sort
           </button>
           <button
             type="button"
             onClick={() => setIsFilterOpen(true)}
-            className="flex-1 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 active:bg-yellow-500/10"
+            className="flex-1 flex items-center justify-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-gray-400 active:bg-yellow-500/10"
           >
             <Filter size={12} /> Filter
           </button>
@@ -224,7 +257,7 @@ const Products = () => {
               <div>
                 <div className="flex items-center gap-3 mb-6 text-yellow-500">
                   <Search size={16} strokeWidth={3} />
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em]">Search</h3>
+                  <h3 className="text-[10px] font-semibold uppercase tracking-[0.2em]">Search</h3>
                 </div>
                 <div className="relative">
                   <label htmlFor="filter-search" className="sr-only">Search Filter</label>
@@ -236,7 +269,7 @@ const Products = () => {
                     placeholder="Find in collection..."
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    className="w-full bg-black/50 border border-yellow-900/30 text-white rounded-2xl py-3.5 px-5 text-sm focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500/50 outline-none transition-all placeholder:text-gray-700 font-bold"
+                    className="w-full bg-black/50 border border-yellow-900/30 text-white rounded-2xl py-3.5 px-5 text-sm focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500/50 outline-none transition-all placeholder:text-gray-700 font-semibold"
                   />
                 </div>
               </div>
@@ -245,7 +278,7 @@ const Products = () => {
               <div>
                 <div className="flex items-center gap-3 mb-6 text-yellow-500">
                   <Filter size={16} strokeWidth={3} />
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em]">Category</h3>
+                  <h3 className="text-[10px] font-semibold uppercase tracking-[0.2em]">Category</h3>
                 </div>
                 <div className="space-y-3">
                   {[{ name: 'All Collections', slug: 'all' }, ...categories].map(cat => (
@@ -254,7 +287,7 @@ const Products = () => {
                       type="button"
                       aria-pressed={filter === cat.slug}
                       onClick={() => handleFilterChange(cat.slug)}
-                      className={`w-full text-left px-5 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${filter === cat.slug
+                      className={`w-full text-left px-5 py-3 rounded-2xl text-[11px] font-semibold uppercase tracking-widest transition-all ${filter === cat.slug
                         ? 'bg-yellow-500 text-black shadow-xl shadow-yellow-500/10'
                         : 'text-gray-500 hover:text-white hover:bg-white/5'
                         }`}
@@ -269,7 +302,7 @@ const Products = () => {
               <div>
                 <div className="flex items-center gap-3 mb-6 text-yellow-500">
                   <SlidersHorizontal size={16} strokeWidth={3} />
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em]">Price Limit</h3>
+                  <h3 className="text-[10px] font-semibold uppercase tracking-[0.2em]">Price Limit</h3>
                 </div>
                 <label htmlFor="filter-price" className="sr-only">Max Price</label>
                 <input
@@ -282,7 +315,7 @@ const Products = () => {
                   onChange={e => setMaxPrice(Number(e.target.value))}
                   className="w-full h-1 bg-yellow-900/30 rounded-lg appearance-none cursor-pointer accent-yellow-500"
                 />
-                <div className="flex justify-between mt-4 text-[10px] font-black text-gray-600">
+                <div className="flex justify-between mt-4 text-[10px] font-semibold text-gray-600">
                   <span>₹0</span>
                   <span className="text-yellow-500">₹{maxPrice.toLocaleString()}</span>
                 </div>
@@ -297,7 +330,7 @@ const Products = () => {
                   className={`w-full flex items-center justify-between p-5 rounded-2xl border transition-all ${inStockOnly ? 'border-yellow-500 bg-yellow-500/5' : 'border-yellow-900/20'
                     }`}
                 >
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                  <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
                     In Stock Only
                   </span>
                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${inStockOnly ? 'border-yellow-500' : 'border-gray-800'
@@ -314,24 +347,56 @@ const Products = () => {
           {/* ── Product Grid ─────────────────────────────────────────────── */}
           <main className="flex-1">
             <div className="flex items-center justify-between mb-8 border-b border-yellow-900/10 pb-4">
-              <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">
+              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.2em]">
                 {sortedProducts.length} items found
                 {hasLocalFilters && hasMore && (
                   <span className="ml-2 text-yellow-600/60">· more may exist</span>
                 )}
               </p>
-              <label htmlFor="product-sort" className="sr-only">Sort By</label>
-              <select
-                id="product-sort"
-                name="sort"
-                value={sort}
-                onChange={e => setSort(e.target.value)}
-                className="bg-transparent border-0 text-[10px] font-black text-yellow-500 uppercase tracking-widest focus:ring-0 cursor-pointer"
-              >
-                <option value="none">Sort: Newest</option>
-                <option value="price-asc">Price: Ascending</option>
-                <option value="price-desc">Price: Descending</option>
-              </select>
+              <div ref={dropdownRef} className="relative hidden lg:block">
+                <button
+                  type="button"
+                  onClick={() => setDropdownOpen(prev => !prev)}
+                  className="bg-[#0B1020] border border-[#D4AF37] rounded-[12px] py-3 px-4 text-white text-[15px] font-medium flex items-center justify-between gap-4 cursor-pointer select-none min-w-[220px] transition-all hover:bg-[#1A2238]"
+                >
+                  <span>{sortOptions.find(opt => opt.value === sort)?.label || 'Newest'}</span>
+                  <ChevronDown size={16} className={`text-[#D4AF37] transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                <AnimatePresence>
+                  {dropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1, transition: { duration: 0.2, ease: 'easeOut' } }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95, transition: { duration: 0.15, ease: 'easeIn' } }}
+                      className="absolute right-0 mt-2 z-30 w-full min-w-[220px] bg-[#0B1020] border border-[#D4AF37] rounded-[12px] shadow-2xl py-1 overflow-hidden"
+                    >
+                      {sortOptions.map((opt) => {
+                        const isSelected = sort === opt.value;
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => {
+                              setSort(opt.value);
+                              setDropdownOpen(false);
+                            }}
+                            className={`w-full flex items-center text-left py-3 px-4 text-[15px] font-medium transition-all ${
+                              isSelected
+                                ? 'text-[#D4AF37] bg-[#1A2238]'
+                                : 'text-white hover:bg-[#1A2238] hover:text-[#D4AF37]'
+                            }`}
+                          >
+                            <span className="w-5 flex items-center justify-center mr-2">
+                              {isSelected && <Check size={14} className="text-[#D4AF37]" />}
+                            </span>
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
 
             {/* Loading skeleton */}
@@ -346,12 +411,12 @@ const Products = () => {
             ) : isError ? (
               <div className="flex flex-col items-center justify-center py-32 bg-gray-900/30 rounded-[3rem] border border-red-900/20 text-center">
                 <AlertCircle size={48} className="text-red-500/50 mb-6" />
-                <p className="text-red-500 font-black uppercase tracking-widest text-[10px] mb-8">
+                <p className="text-red-500 font-semibold uppercase tracking-widest text-[10px] mb-8">
                   {error?.message || 'Failed to load products.'}
                 </p>
                 <button
                   onClick={() => refetch()}
-                  className="btn-glow bg-red-500/10 border border-red-500/30 text-red-500 px-10 py-3 rounded-full text-xs font-black"
+                  className="btn-glow bg-red-500/10 border border-red-500/30 text-red-500 px-10 py-3 rounded-full text-xs font-semibold"
                 >
                   Retry Fetch
                 </button>
@@ -361,7 +426,7 @@ const Products = () => {
             ) : sortedProducts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-32 bg-gray-900/30 rounded-[3rem] border border-yellow-900/10 text-center">
                 <Search size={48} className="text-gray-800 mb-6" />
-                <p className="text-gray-500 font-black uppercase tracking-widest text-[10px]">
+                <p className="text-gray-500 font-semibold uppercase tracking-widest text-[10px]">
                   No products found in the collection
                 </p>
               </div>
@@ -415,34 +480,64 @@ const Products = () => {
                             {showStock && (
                               <>
                                 {Number(product.soldCount || 0) >= 50 && (
-                                  <div className="absolute top-1.5 left-1.5 z-10 bg-yellow-500 text-black text-[6px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded shadow">
+                                  <div className="absolute top-1.5 left-1.5 z-10 bg-yellow-500 text-black text-[6px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded shadow">
                                     🏆 Best Seller
                                   </div>
                                 )}
-                                {Number(product.stock || 0) <= 0 ? (
-                                  <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/50">
-                                    <span className="bg-red-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider rotate-[-10deg]">
-                                      OUT OF STOCK
-                                    </span>
-                                  </div>
-                                ) : Number(product.stock || 0) <= 5 ? (
-                                  <div className="absolute bottom-1.5 left-1.5 z-10 bg-red-600 text-white text-[6px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded shadow">
-                                    ⚠ LOW STOCK ({product.stock})
-                                  </div>
-                                ) : null}
+                                {(() => {
+                                  const stock = Number(product.stock || 0);
+                                  if (stock <= 0) {
+                                    return (
+                                      <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/50">
+                                        <span className="bg-red-600 text-white text-[8px] font-semibold px-2.5 py-1 rounded uppercase tracking-wider rotate-[-10deg]">
+                                          Out of Stock
+                                        </span>
+                                      </div>
+                                    );
+                                  }
+                                  if (stock === 1) {
+                                    return (
+                                      <div className="absolute bottom-1.5 left-1.5 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
+                                        Only 1 Left
+                                      </div>
+                                    );
+                                  }
+                                  if (stock === 2) {
+                                    return (
+                                      <div className="absolute bottom-1.5 left-1.5 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
+                                        Only 2 Left
+                                      </div>
+                                    );
+                                  }
+                                  if (stock === 3) {
+                                    return (
+                                      <div className="absolute bottom-1.5 left-1.5 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
+                                        Only 3 Left
+                                      </div>
+                                    );
+                                  }
+                                  if (stock >= 4 && stock <= 10) {
+                                    return (
+                                      <div className="absolute bottom-1.5 left-1.5 z-10 bg-yellow-500 text-black text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
+                                        Limited Stock
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })()}
                               </>
                             )}
 
                             {showQuickView && (
                               <div className="absolute bottom-2 inset-x-2 bg-black/70 backdrop-blur-sm py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-10">
-                                <span className="text-[8px] font-black tracking-widest uppercase text-yellow-500">Quick View</span>
+                                <span className="text-[8px] font-semibold tracking-widest uppercase text-yellow-500">Quick View</span>
                               </div>
                             )}
                           </div>
 
-                          <div className="p-2 flex-grow flex flex-col gap-0.5 bg-black/10 text-left">
-                            <span className="text-[7px] font-bold text-yellow-500/60 uppercase tracking-widest">{product.category}</span>
-                            <h3 className="text-[11px] font-black text-white uppercase tracking-wide truncate group-hover:text-yellow-500 transition-colors">
+                          <div className="p-2 flex-grow flex flex-col gap-2 bg-black/10 text-left">
+                            <span className="text-[12px] font-semibold text-yellow-500 uppercase tracking-widest">{product.category}</span>
+                            <h3 className="type-product-title text-[#F8F8F8] line-clamp-2 group-hover:text-yellow-500 transition-colors" style={{ textTransform: 'none' }}>
                               {product.name}
                             </h3>
                             
@@ -452,16 +547,16 @@ const Products = () => {
                               </div>
                             )}
 
-                            <div className="mt-auto pt-1.5 border-t border-white/5 flex flex-wrap items-baseline gap-1">
-                              <span className="text-xs font-black premium-gold-price text-[#FFD700]">₹{effPrice.toLocaleString()}</span>
+                            <div className="mt-auto pt-1.5 border-t border-white/5 flex flex-wrap items-baseline gap-2">
+                              <span className="type-price premium-gold-price text-[#FFD700] leading-none">₹{effPrice.toLocaleString()}</span>
                               {showDiscount && discountPercent > 0 && (
                                 <>
-                                  <span className="text-[9px] text-gray-500 line-through font-medium">₹{origPrice.toLocaleString()}</span>
-                                  <span className="text-[9px] text-green-500 font-black">{discountPercent}% off</span>
+                                  <span className="text-xs text-gray-500 line-through font-normal">₹{origPrice.toLocaleString()}</span>
+                                  <span className="text-xs text-green-500 font-semibold">{discountPercent}% off</span>
                                 </>
                               )}
                               {!showDiscount && discountPercent > 0 && (
-                                <span className="text-[9px] text-gray-500 line-through font-medium">₹{origPrice.toLocaleString()}</span>
+                                <span className="text-xs text-gray-500 line-through font-normal">₹{origPrice.toLocaleString()}</span>
                               )}
                             </div>
                           </div>
@@ -481,7 +576,7 @@ const Products = () => {
                   >
                     Prev
                   </button>
-                  <span className="text-gray-400 font-black text-[10px] uppercase tracking-widest">
+                  <span className="text-gray-400 font-semibold text-[10px] uppercase tracking-widest">
                     Page {currentPageIndex + 1}
                   </span>
                   <button
@@ -518,11 +613,11 @@ const Products = () => {
               className="fixed bottom-0 left-0 right-0 max-h-[80vh] bg-slate-950 border-t border-yellow-950 rounded-t-[2rem] z-50 overflow-y-auto p-6 lg:hidden"
             >
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xs font-black uppercase tracking-widest text-white">Filters</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-widest text-white">Filters</h3>
                 <button
                   type="button"
                   onClick={() => setIsFilterOpen(false)}
-                  className="text-yellow-500 text-[10px] font-black uppercase tracking-widest"
+                  className="text-yellow-500 text-[10px] font-semibold uppercase tracking-widest"
                 >
                   Apply
                 </button>
@@ -533,7 +628,7 @@ const Products = () => {
                 <div>
                   <div className="flex items-center gap-3 mb-3 text-yellow-500">
                     <Search size={14} />
-                    <span className="text-[9px] font-black uppercase tracking-widest">Search</span>
+                    <span className="text-[9px] font-semibold uppercase tracking-widest">Search</span>
                   </div>
                   <label htmlFor="mobile-filter-search" className="sr-only">Search Filter</label>
                   <input
@@ -543,7 +638,7 @@ const Products = () => {
                     placeholder="Find in collection..."
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    className="w-full bg-black/60 border border-yellow-900/30 text-white rounded-xl py-2.5 px-4 text-xs font-bold focus:border-yellow-500 outline-none"
+                    className="w-full bg-black/60 border border-yellow-900/30 text-white rounded-xl py-2.5 px-4 text-xs font-semibold focus:border-yellow-500 outline-none"
                   />
                 </div>
 
@@ -551,7 +646,7 @@ const Products = () => {
                 <div>
                   <div className="flex items-center gap-3 mb-3 text-yellow-500">
                     <Filter size={14} />
-                    <span className="text-[9px] font-black uppercase tracking-widest">Category</span>
+                    <span className="text-[9px] font-semibold uppercase tracking-widest">Category</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {[{ name: 'All Collections', slug: 'all' }, ...categories].map(cat => (
@@ -559,7 +654,7 @@ const Products = () => {
                         key={cat.slug}
                         type="button"
                         onClick={() => handleFilterChange(cat.slug)}
-                        className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all ${filter === cat.slug
+                        className={`px-3 py-1.5 rounded-full text-[9px] font-semibold uppercase tracking-widest border transition-all ${filter === cat.slug
                           ? 'bg-yellow-500 border-yellow-500 text-black'
                           : 'border-yellow-900/20 text-gray-400 hover:text-white'
                         }`}
@@ -574,7 +669,7 @@ const Products = () => {
                 <div>
                   <div className="flex items-center gap-3 mb-3 text-yellow-500">
                     <SlidersHorizontal size={14} />
-                    <span className="text-[9px] font-black uppercase tracking-widest">Price Limit</span>
+                    <span className="text-[9px] font-semibold uppercase tracking-widest">Price Limit</span>
                   </div>
                   <label htmlFor="mobile-filter-price" className="sr-only">Max Price</label>
                   <input
@@ -587,7 +682,7 @@ const Products = () => {
                     onChange={e => setMaxPrice(Number(e.target.value))}
                     className="w-full h-1 bg-yellow-900/30 rounded-lg appearance-none cursor-pointer accent-yellow-500"
                   />
-                  <div className="flex justify-between mt-2 text-[9px] font-bold text-gray-500">
+                  <div className="flex justify-between mt-2 text-[9px] font-semibold text-gray-500">
                     <span>₹0</span>
                     <span className="text-yellow-500">₹{maxPrice.toLocaleString()}</span>
                   </div>
@@ -600,7 +695,7 @@ const Products = () => {
                     onClick={() => setInStockOnly(v => !v)}
                     className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${inStockOnly ? 'border-yellow-500 bg-yellow-500/5' : 'border-yellow-900/20'}`}
                   >
-                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">In Stock Only</span>
+                    <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest">In Stock Only</span>
                     <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${inStockOnly ? 'border-yellow-500' : 'border-gray-800'}`}>
                       {inStockOnly && <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full" />}
                     </div>
@@ -630,31 +725,28 @@ const Products = () => {
               className="fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-yellow-950 rounded-t-[2rem] z-50 p-6 lg:hidden"
             >
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xs font-black uppercase tracking-widest text-white">Sort By</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-widest text-white">Sort By</h3>
                 <button
                   type="button"
                   onClick={() => setIsSortOpen(false)}
-                  className="text-yellow-500 text-[10px] font-black uppercase tracking-widest"
+                  className="text-yellow-500 text-[10px] font-semibold uppercase tracking-widest"
                 >
                   Close
                 </button>
               </div>
               <div className="space-y-3">
-                {[
-                  { value: 'none', label: 'Sort: Newest' },
-                  { value: 'price-asc', label: 'Price: Low to High' },
-                  { value: 'price-desc', label: 'Price: High to Low' },
-                ].map(opt => (
+                {sortOptions.map(opt => (
                   <button
                     key={opt.value}
                     type="button"
                     onClick={() => { setSort(opt.value); setIsSortOpen(false); }}
-                    className={`w-full text-left py-3.5 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${sort === opt.value
+                    className={`w-full flex items-center justify-between py-3.5 px-4 rounded-xl text-xs font-semibold uppercase tracking-widest transition-all ${sort === opt.value
                       ? 'bg-yellow-500 text-black'
                       : 'text-gray-400 hover:bg-white/5'
                     }`}
                   >
-                    {opt.label}
+                    <span>{opt.label}</span>
+                    {sort === opt.value && <Check size={12} className={sort === opt.value ? "text-black" : "text-[#D4AF37]"} />}
                   </button>
                 ))}
               </div>

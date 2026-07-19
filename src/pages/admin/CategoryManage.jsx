@@ -24,9 +24,9 @@ const DeleteModal = ({ category, onConfirm, onCancel, loading }) => (
           <AlertTriangle size={28} className="text-red-500" />
         </div>
         <div>
-          <h3 className="text-lg font-black text-white uppercase tracking-wider">Delete Category?</h3>
+          <h3 className="text-lg font-semibold text-white uppercase tracking-wider">Delete Category?</h3>
           <p className="text-gray-400 text-sm mt-2 font-medium">
-            Are you sure you want to delete <span className="text-white font-black">"{category?.name}"</span>?
+            Are you sure you want to delete <span className="text-white font-semibold">"{category?.name}"</span>?
             This will not affect existing products.
           </p>
         </div>
@@ -34,7 +34,7 @@ const DeleteModal = ({ category, onConfirm, onCancel, loading }) => (
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 py-3 rounded-xl border border-white/10 text-gray-400 hover:text-white hover:border-white/30 font-black text-xs uppercase tracking-widest transition-all"
+            className="flex-1 py-3 rounded-xl border border-white/10 text-gray-400 hover:text-white hover:border-white/30 font-semibold text-xs uppercase tracking-widest transition-all"
           >
             Cancel
           </button>
@@ -42,7 +42,7 @@ const DeleteModal = ({ category, onConfirm, onCancel, loading }) => (
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs uppercase tracking-widest transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+            className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-semibold text-xs uppercase tracking-widest transition-all disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {loading ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
             Delete
@@ -72,10 +72,10 @@ const CategoryPreviewCard = ({ name, image, active }) => (
         </div>
       )}
     </div>
-    <span className={`text-[10px] font-black uppercase tracking-wider ${active ? 'text-gray-300' : 'text-gray-600'}`}>
+    <span className={`text-[10px] font-semibold uppercase tracking-wider ${active ? 'text-gray-300' : 'text-gray-600'}`}>
       {name || 'Category Name'}
     </span>
-    <span className={`text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${
+    <span className={`text-[8px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full ${
       active
         ? 'bg-green-500/10 text-green-400 border border-green-500/20'
         : 'bg-red-500/10 text-red-400 border border-red-500/20'
@@ -346,7 +346,7 @@ const CategoryManage = () => {
             <div className="w-8 h-8 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
               <Layers size={16} className="text-yellow-500" />
             </div>
-            <h1 className="text-2xl font-black text-white tracking-tight">Category Manager</h1>
+            <h1 className="text-2xl font-semibold text-white tracking-tight">Category Manager</h1>
           </div>
           <p className="text-gray-500 text-sm font-medium ml-11">
             {categories.length} categories · Drag rows to reorder · Changes reflect on homepage instantly
@@ -355,7 +355,7 @@ const CategoryManage = () => {
         <button
           type="button"
           onClick={() => { setShowAddForm(v => !v); setAddError(''); }}
-          className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black px-5 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-yellow-500/20 active:scale-95"
+          className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black px-5 py-3 rounded-xl font-semibold text-xs uppercase tracking-widest transition-all shadow-lg shadow-yellow-500/20 active:scale-95"
         >
           {showAddForm ? <X size={15} /> : <Plus size={15} />}
           {showAddForm ? 'Cancel' : 'Add Category'}
@@ -364,7 +364,7 @@ const CategoryManage = () => {
 
       {/* Success toast */}
       {addSuccess && (
-        <div className="mb-4 flex items-center gap-3 bg-green-500/10 border border-green-500/20 text-green-400 px-5 py-3 rounded-xl text-sm font-bold">
+        <div className="mb-4 flex items-center gap-3 bg-green-500/10 border border-green-500/20 text-green-400 px-5 py-3 rounded-xl text-sm font-semibold">
           <Check size={16} /> {addSuccess}
         </div>
       )}
@@ -372,7 +372,7 @@ const CategoryManage = () => {
       {/* ── ADD FORM ───────────────────────────────────────────────────────── */}
       {showAddForm && (
         <div className="mb-6 bg-gray-900 border border-yellow-500/20 rounded-2xl p-6 shadow-xl shadow-yellow-500/5">
-          <h2 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-white uppercase tracking-widest mb-6 flex items-center gap-2">
             <Plus size={14} className="text-yellow-500" /> New Category
           </h2>
           <form onSubmit={handleAddSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -380,7 +380,7 @@ const CategoryManage = () => {
             <div className="space-y-5">
               {/* Name */}
               <div>
-                <label htmlFor="cat-add-name" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                <label htmlFor="cat-add-name" className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">
                   Category Name *
                 </label>
                 <input
@@ -396,7 +396,7 @@ const CategoryManage = () => {
               </div>
               {/* Slug (auto) */}
               <div>
-                <label htmlFor="cat-add-slug" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                <label htmlFor="cat-add-slug" className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">
                   Slug (auto-generated)
                 </label>
                 <input
@@ -416,7 +416,7 @@ const CategoryManage = () => {
               {/* Active toggle */}
               <div className="flex items-center justify-between p-4 bg-slate-950/50 border border-yellow-900/10 rounded-xl">
                 <div>
-                  <p className="text-xs font-black text-white uppercase tracking-wider">Visible on Homepage</p>
+                  <p className="text-xs font-semibold text-white uppercase tracking-wider">Visible on Homepage</p>
                   <p className="text-[10px] text-gray-500 mt-0.5">Show this category to customers</p>
                 </div>
                 <button
@@ -430,7 +430,7 @@ const CategoryManage = () => {
 
               {/* Image upload */}
               <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">
                   Category Image *
                 </label>
                 <label
@@ -447,27 +447,27 @@ const CategoryManage = () => {
                     onChange={e => { if (e.target.files[0]) setAddFile(e.target.files[0]); }}
                   />
                   <UploadCloud size={22} className={addFile ? 'text-yellow-500' : 'text-gray-500'} />
-                  <p className={`text-[10px] font-bold uppercase tracking-widest mt-2 ${addFile ? 'text-yellow-500' : 'text-gray-500'}`}>
+                  <p className={`text-[10px] font-semibold uppercase tracking-widest mt-2 ${addFile ? 'text-yellow-500' : 'text-gray-500'}`}>
                     {addFile ? addFile.name : 'Click to upload image'}
                   </p>
                   <p className="text-[9px] text-gray-600 mt-0.5">PNG, JPG, WEBP</p>
                 </label>
                 {addFile && (
                   <button type="button" onClick={() => setAddFile(null)}
-                    className="mt-1.5 text-[9px] font-black text-red-400 hover:text-red-300 uppercase tracking-widest transition-colors">
+                    className="mt-1.5 text-[9px] font-semibold text-red-400 hover:text-red-300 uppercase tracking-widest transition-colors">
                     ✕ Remove
                   </button>
                 )}
               </div>
 
               {addError && (
-                <p className="text-red-400 text-[10px] font-bold uppercase tracking-wider">{addError}</p>
+                <p className="text-red-400 text-[10px] font-semibold uppercase tracking-wider">{addError}</p>
               )}
 
               <button
                 type="submit"
                 disabled={addUploading}
-                className="w-full flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black py-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all disabled:opacity-60 shadow-lg shadow-yellow-500/20"
+                className="w-full flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black py-4 rounded-xl font-semibold text-xs uppercase tracking-widest transition-all disabled:opacity-60 shadow-lg shadow-yellow-500/20"
               >
                 {addUploading ? <><Loader2 size={14} className="animate-spin" /> Uploading…</> : <><Check size={14} /> Add Category</>}
               </button>
@@ -475,7 +475,7 @@ const CategoryManage = () => {
 
             {/* Right: preview */}
             <div className="flex flex-col items-center justify-center bg-slate-950/50 border border-yellow-900/10 rounded-xl p-6">
-              <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-4">Live Preview</p>
+              <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest mb-4">Live Preview</p>
               <CategoryPreviewCard name={addForm.name} image={addPreview} active={addForm.active} />
               <p className="text-[8px] text-gray-600 mt-2 text-center">
                 This is how the category will appear on the homepage
@@ -495,7 +495,7 @@ const CategoryManage = () => {
       ) : categories.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 bg-gray-900/40 rounded-2xl border border-yellow-900/10 text-center">
           <Layers size={48} className="text-gray-700 mb-4" />
-          <p className="text-gray-500 font-black uppercase tracking-widest text-xs">No Categories Yet</p>
+          <p className="text-gray-500 font-semibold uppercase tracking-widest text-xs">No Categories Yet</p>
           <p className="text-gray-700 text-[10px] mt-2 font-medium">Click "Add Category" to create your first one</p>
         </div>
       ) : (
@@ -503,7 +503,7 @@ const CategoryManage = () => {
           {/* Column headers */}
           <div className="hidden sm:grid grid-cols-[40px_72px_1fr_120px_100px_100px_120px] gap-4 px-4 pb-2 border-b border-yellow-900/10">
             {['', '', 'Category', 'Slug', 'Products', 'Status', 'Actions'].map((h, i) => (
-              <p key={h || `header-${i}`} className="text-[9px] font-black text-gray-600 uppercase tracking-widest">{h}</p>
+              <p key={h || `header-${i}`} className="text-[9px] font-semibold text-gray-600 uppercase tracking-widest">{h}</p>
             ))}
           </div>
 
@@ -531,7 +531,7 @@ const CategoryManage = () => {
                   <div className="p-5 space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label htmlFor={`cat-edit-name-${cat.id}`} className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Name</label>
+                        <label htmlFor={`cat-edit-name-${cat.id}`} className="block text-[9px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Name</label>
                         <input
                           id={`cat-edit-name-${cat.id}`}
                           name="name"
@@ -543,7 +543,7 @@ const CategoryManage = () => {
                         />
                       </div>
                       <div>
-                        <label htmlFor={`cat-edit-slug-${cat.id}`} className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Slug</label>
+                        <label htmlFor={`cat-edit-slug-${cat.id}`} className="block text-[9px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Slug</label>
                         <input
                           id={`cat-edit-slug-${cat.id}`}
                           name="slug"
@@ -559,7 +559,7 @@ const CategoryManage = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Image upload in edit */}
                       <div>
-                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Category Image</label>
+                        <label className="block text-[9px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Category Image</label>
                         <label
                           htmlFor={`cat-edit-file-${cat.id}`}
                           className="flex items-center gap-3 px-4 py-3 border border-dashed border-yellow-900/20 hover:border-yellow-500/40 rounded-lg cursor-pointer bg-slate-950 hover:bg-gray-800 transition-all"
@@ -572,13 +572,13 @@ const CategoryManage = () => {
                             onChange={e => { if (e.target.files[0]) { setEditFile(e.target.files[0]); } }}
                           />
                           <UploadCloud size={16} className="text-gray-500 flex-shrink-0" />
-                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider truncate">
+                          <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider truncate">
                             {editFile ? editFile.name : 'Replace image'}
                           </span>
                         </label>
                         {editFile && (
                           <button type="button" onClick={() => setEditFile(null)}
-                            className="mt-1 text-[9px] font-black text-red-400 hover:text-red-300 uppercase tracking-widest">
+                            className="mt-1 text-[9px] font-semibold text-red-400 hover:text-red-300 uppercase tracking-widest">
                             ✕ Remove new file
                           </button>
                         )}
@@ -600,7 +600,7 @@ const CategoryManage = () => {
                           )}
                         </div>
                         <div>
-                          <p className="text-[10px] font-black text-white">{editForm.name || 'Category'}</p>
+                          <p className="text-[10px] font-semibold text-white">{editForm.name || 'Category'}</p>
                           <p className="text-[9px] text-gray-500 font-mono">{editForm.slug}</p>
                         </div>
                       </div>
@@ -608,7 +608,7 @@ const CategoryManage = () => {
 
                     {/* Active toggle in edit */}
                     <div className="flex items-center justify-between p-3 bg-slate-950/50 border border-yellow-900/10 rounded-lg">
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Visible on Homepage</span>
+                      <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Visible on Homepage</span>
                       <button
                         type="button"
                         onClick={() => setEditForm(prev => ({ ...prev, active: !prev.active }))}
@@ -619,14 +619,14 @@ const CategoryManage = () => {
                       </button>
                     </div>
 
-                    {editError && <p className="text-red-400 text-[10px] font-bold">{editError}</p>}
+                    {editError && <p className="text-red-400 text-[10px] font-semibold">{editError}</p>}
 
                     <div className="flex gap-3">
                       <button
                         type="button"
                         onClick={() => handleEditSave(cat)}
                         disabled={editSaving}
-                        className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black px-5 py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all disabled:opacity-60"
+                        className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black px-5 py-2.5 rounded-lg font-semibold text-[10px] uppercase tracking-widest transition-all disabled:opacity-60"
                       >
                         {editSaving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
                         Save Changes
@@ -634,7 +634,7 @@ const CategoryManage = () => {
                       <button
                         type="button"
                         onClick={cancelEdit}
-                        className="flex items-center gap-2 border border-white/10 text-gray-400 hover:text-white px-5 py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all"
+                        className="flex items-center gap-2 border border-white/10 text-gray-400 hover:text-white px-5 py-2.5 rounded-lg font-semibold text-[10px] uppercase tracking-widest transition-all"
                       >
                         <X size={12} /> Cancel
                       </button>
@@ -661,7 +661,7 @@ const CategoryManage = () => {
 
                     {/* Name + slug */}
                     <div className="min-w-0">
-                      <p className="text-sm font-black text-white truncate">{cat.name}</p>
+                      <p className="text-sm font-semibold text-white truncate">{cat.name}</p>
                       <p className="text-[10px] font-mono text-yellow-500/50 truncate">{cat.slug}</p>
                     </div>
 
@@ -673,7 +673,7 @@ const CategoryManage = () => {
                     {/* Product count — desktop only */}
                     <div className="hidden sm:flex items-center gap-1.5">
                       <Package size={12} className="text-yellow-500/60" />
-                      <span className="text-xs font-black text-gray-400">
+                      <span className="text-xs font-semibold text-gray-400">
                         {productCounts[cat.id] ?? '…'}
                       </span>
                     </div>
@@ -683,7 +683,7 @@ const CategoryManage = () => {
                       <button
                         type="button"
                         onClick={() => toggleActive(cat)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider border transition-all ${
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-semibold uppercase tracking-wider border transition-all ${
                           cat.active
                             ? 'bg-green-500/10 border-green-500/20 text-green-400 hover:bg-green-500/20'
                             : 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
@@ -733,7 +733,7 @@ const CategoryManage = () => {
 
       {/* Drag hint */}
       {categories.length > 1 && (
-        <p className="text-center text-[9px] text-gray-700 font-black uppercase tracking-widest mt-4 flex items-center justify-center gap-2">
+        <p className="text-center text-[9px] text-gray-700 font-semibold uppercase tracking-widest mt-4 flex items-center justify-center gap-2">
           <GripVertical size={10} /> Drag rows to reorder · Order updates homepage automatically
         </p>
       )}

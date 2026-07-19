@@ -18,7 +18,7 @@ const Wishlist = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] bg-black">
         <div className="w-12 h-12 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-gray-600 font-black uppercase tracking-[0.4em] text-[9px]">Loading Wishlist...</p>
+        <p className="text-gray-500 font-semibold uppercase tracking-[0.2em] text-[10px]">Loading Wishlist...</p>
       </div>
     );
   }
@@ -40,13 +40,13 @@ const Wishlist = () => {
             <div className="w-32 h-32 bg-yellow-500/5 text-yellow-500 rounded-full flex items-center justify-center mb-10 border border-yellow-500/20">
               <Heart size={48} strokeWidth={1} />
             </div>
-            <h2 className="text-3xl font-black text-white mb-4 uppercase tracking-tighter">Wishlist is Empty</h2>
-            <p className="text-gray-600 font-medium mb-12 max-w-sm uppercase text-[10px] tracking-[0.2em] leading-relaxed">
+            <h2 className="text-2xl font-semibold text-white mb-4 tracking-tight">Wishlist is Empty</h2>
+            <p className="text-gray-500 font-normal mb-12 max-w-sm text-[10px] tracking-[0.15em] leading-relaxed">
               Your curated wishlist awaits its first selection. Discover our products to build your wishlist.
             </p>
             <Link
               to="/products"
-              className="group flex items-center gap-4 bg-white text-black font-black py-4 px-12 rounded-full transition-all hover:bg-yellow-500 active:scale-95 uppercase tracking-[0.2em] text-[10px]"
+              className="group flex items-center gap-4 bg-white text-black font-semibold py-3.5 px-8 rounded-full transition-all hover:bg-yellow-500 active:scale-95 text-[15px] tracking-wider"
             >
               Browse Products
               <ArrowRight size={16} className="group-hover:translate-x-2 transition-transform" />
@@ -70,7 +70,7 @@ const Wishlist = () => {
                       alt={item.name}
                       loading="lazy"
                       className="w-full h-full object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-110"
-                      onError={(e) => { e.currentTarget.src = '/placeholder.png'; }} // fix #2
+                      onError={(e) => { e.currentTarget.src = '/placeholder.png'; }}
                     />
                     <button
                       onClick={() => removeFromWishlist(item.id)}
@@ -82,7 +82,7 @@ const Wishlist = () => {
                   </div>
 
                   <div className="px-2 pb-2">
-                    <h3 className="text-sm font-black text-white uppercase tracking-wider mb-2 truncate group-hover:text-yellow-500 transition-colors">
+                    <h3 className="type-product-title text-[#F8F8F8] line-clamp-2 group-hover:text-yellow-500 transition-colors mb-2" style={{ textTransform: 'none' }}>
                       {item.name}
                     </h3>
                     {/* Dynamic offer calculation */}
@@ -92,11 +92,11 @@ const Wishlist = () => {
                       const discountPercent = origPrice > effPrice ? Math.round(((origPrice - effPrice) / origPrice) * 100) : 0;
                       return (
                         <div className="flex items-baseline gap-2 mb-6">
-                          <span className="text-xl font-black premium-gold-price text-[#FFD700]">₹{effPrice.toLocaleString()}</span>
+                          <span className="type-price premium-gold-price text-[#FFD700] leading-none">₹{effPrice.toLocaleString()}</span>
                           {discountPercent > 0 && (
                             <>
-                              <span className="text-xs text-gray-500 line-through font-semibold">₹{origPrice.toLocaleString()}</span>
-                              <span className="text-xs text-green-500 font-black">{discountPercent}% OFF</span>
+                              <span className="text-xs text-gray-500 line-through font-normal">₹{origPrice.toLocaleString()}</span>
+                              <span className="text-xs text-green-500 font-semibold">{discountPercent}% OFF</span>
                             </>
                           )}
                         </div>
@@ -109,7 +109,7 @@ const Wishlist = () => {
                           addToCart(item);
                           removeFromWishlist(item.id);
                         }}
-                        className="flex-1 bg-white text-black font-black py-3.5 rounded-2xl flex items-center justify-center gap-3 text-[10px] uppercase tracking-widest hover:bg-yellow-500 transition-all"
+                        className="flex-1 bg-white text-black font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 text-[15px] tracking-wider hover:bg-yellow-500 transition-all"
                       >
                         <ShoppingCart size={14} /> Add to Cart
                       </button>

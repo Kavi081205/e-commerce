@@ -74,7 +74,7 @@ const WebsiteLayout = () => {
             <div className="flex items-center gap-3">
               <img src="/logo.png" alt="SMKP Traders" className="h-9 w-9 object-contain rounded-md" />
               <div>
-                <p className="text-white font-extrabold tracking-widest text-sm">SMKP TRADERS</p>
+                <p className="text-white font-semibold tracking-widest text-sm">SMKP TRADERS</p>
                 <p className="text-yellow-500/70 text-xs tracking-wider">Quality You Can Trust</p>
               </div>
             </div>
@@ -90,7 +90,7 @@ const WebsiteLayout = () => {
               href="https://wa.me/919677417185"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/30 text-[#25D366] text-xs font-bold px-4 py-2 rounded-full transition-all"
+              className="flex items-center gap-2 bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/30 text-[#25D366] text-xs font-semibold px-4 py-2 rounded-full transition-all"
               aria-label="WhatsApp Support"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -112,7 +112,7 @@ const WebsiteLayout = () => {
           <NavLink
             to="/"
             className={({ isActive }) =>
-              `flex flex-col items-center justify-center gap-1 text-[10px] font-black uppercase tracking-widest transition-all ${
+              `flex flex-col items-center justify-center gap-1 text-[10px] font-semibold uppercase tracking-widest transition-all ${
                 isActive ? 'text-yellow-500 scale-105' : 'text-gray-500 hover:text-white'
               }`
             }
@@ -124,7 +124,7 @@ const WebsiteLayout = () => {
           <NavLink
             to="/products"
             className={({ isActive }) =>
-              `flex flex-col items-center justify-center gap-1 text-[10px] font-black uppercase tracking-widest transition-all ${
+              `flex flex-col items-center justify-center gap-1 text-[10px] font-semibold uppercase tracking-widest transition-all ${
                 isActive ? 'text-yellow-500 scale-105' : 'text-gray-500 hover:text-white'
               }`
             }
@@ -136,7 +136,7 @@ const WebsiteLayout = () => {
           <NavLink
             to="/daily-notes"
             className={({ isActive }) =>
-              `flex flex-col items-center justify-center gap-1 text-[10px] font-black uppercase tracking-widest transition-all ${
+              `flex flex-col items-center justify-center gap-1 text-[10px] font-semibold uppercase tracking-widest transition-all ${
                 isActive ? 'text-yellow-500 scale-105' : 'text-gray-500 hover:text-white'
               }`
             }
@@ -148,14 +148,14 @@ const WebsiteLayout = () => {
           <NavLink
             to="/wishlist"
             className={({ isActive }) =>
-              `flex flex-col items-center justify-center gap-1 text-[10px] font-black uppercase tracking-widest transition-all relative ${
+              `flex flex-col items-center justify-center gap-1 text-[10px] font-semibold uppercase tracking-widest transition-all relative ${
                 isActive ? 'text-yellow-500 scale-105' : 'text-gray-500 hover:text-white'
               }`
             }
           >
             <Heart size={18} />
             {wishlistCount > 0 && (
-              <span className="absolute -top-1 -right-2 bg-yellow-500 text-black text-[9px] font-black rounded-full h-4 w-4 flex items-center justify-center shadow-md">
+              <span className="absolute -top-1 -right-2 bg-yellow-500 text-black text-[9px] font-semibold rounded-full h-4 w-4 flex items-center justify-center shadow-md">
                 {wishlistCount}
               </span>
             )}
@@ -166,14 +166,14 @@ const WebsiteLayout = () => {
           <NavLink
             to="/cart"
             className={({ isActive }) =>
-              `flex flex-col items-center justify-center gap-1 text-[10px] font-black uppercase tracking-widest transition-all relative ${
+              `flex flex-col items-center justify-center gap-1 text-[10px] font-semibold uppercase tracking-widest transition-all relative ${
                 isActive ? 'text-yellow-500 scale-105' : 'text-gray-500 hover:text-white'
               }`
             }
           >
             <ShoppingCart size={18} />
             {cartCount > 0 && (
-              <span className="absolute -top-1 -right-2 bg-yellow-600 text-white text-[9px] font-black rounded-full h-4 w-4 flex items-center justify-center shadow-md">
+              <span className="absolute -top-1 -right-2 bg-yellow-600 text-white text-[9px] font-semibold rounded-full h-4 w-4 flex items-center justify-center shadow-md">
                 {cartCount}
               </span>
             )}

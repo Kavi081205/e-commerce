@@ -137,7 +137,7 @@ const ProductsManage = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Products Catalog</h1>
+          <h1 className="text-3xl font-semibold text-white tracking-tight">Products Catalog</h1>
           <p className="text-gray-500 text-sm mt-1 font-medium">Manage your inventory and stock levels</p>
         </div>
         <div className="flex items-center gap-3">
@@ -150,7 +150,7 @@ const ProductsManage = () => {
           </button>
           <Link
             to="/admin/add-product"
-            className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3.5 px-6 rounded-2xl transition-all shadow-lg shadow-yellow-600/20 active:scale-95 flex items-center gap-2 uppercase tracking-widest text-xs"
+            className="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-3.5 px-6 rounded-2xl transition-all shadow-lg shadow-yellow-600/20 active:scale-95 flex items-center gap-2 uppercase tracking-widest text-xs"
           >
             <Plus size={18} />
             Add Product
@@ -175,7 +175,7 @@ const ProductsManage = () => {
             />
             <Search size={18} className="absolute left-4 top-3.5 text-gray-400" />
           </div>
-          <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest px-2">
+          <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-widest px-2">
             Total: {filteredProducts.length} Products
           </div>
         </div>
@@ -185,15 +185,15 @@ const ProductsManage = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-950/80 text-gray-500 text-xs uppercase tracking-widest border-b border-yellow-900/10">
-                <th className="px-6 py-4 font-bold">Image</th>
-                <th className="px-6 py-4 font-bold">Details</th>
-                <th className="px-6 py-4 font-bold">Category</th>
-                <th className="px-6 py-4 font-bold">Price</th>
-                <th className="px-6 py-4 font-bold">Cost</th>
-                <th className="px-6 py-4 font-bold">Margin</th>
-                <th className="px-6 py-4 font-bold">Stock</th>
-                <th className="px-6 py-4 font-bold">Sold</th>
-                <th className="px-6 py-4 font-bold text-right">Actions</th>
+                <th className="px-6 py-4 font-semibold">Image</th>
+                <th className="px-6 py-4 font-semibold">Details</th>
+                <th className="px-6 py-4 font-semibold">Category</th>
+                <th className="px-6 py-4 font-semibold">Price</th>
+                <th className="px-6 py-4 font-semibold">Cost</th>
+                <th className="px-6 py-4 font-semibold">Margin</th>
+                <th className="px-6 py-4 font-semibold">Stock</th>
+                <th className="px-6 py-4 font-semibold">Sold</th>
+                <th className="px-6 py-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
@@ -243,7 +243,7 @@ const ProductsManage = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="max-w-[200px]">
-                          <div className="font-bold text-white text-base truncate" title={product.name}>
+                          <div className="font-semibold text-white text-base truncate" title={product.name}>
                             {product.name}
                           </div>
                           <div className="text-gray-400 text-xs mt-0.5 truncate" title={product.description || 'No description'}>
@@ -252,12 +252,12 @@ const ProductsManage = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="bg-yellow-500/10 text-yellow-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-yellow-900/40">
+                        <span className="bg-yellow-500/10 text-yellow-600 px-4 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-widest border border-yellow-900/40">
                           {product.category}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="selling-price font-bold text-green-600 text-lg tracking-tight">
+                        <div className="selling-price font-semibold text-green-600 text-lg tracking-tight">
                           ₹{product.price}
                         </div>
                       </td>
@@ -267,16 +267,16 @@ const ProductsManage = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className={`profit font-black text-xs uppercase tracking-widest ${(product.price - product.costPrice) > 0 ? 'text-blue-500' : 'text-red-500'}`}>
+                        <div className={`profit font-semibold text-xs uppercase tracking-widest ${(product.price - product.costPrice) > 0 ? 'text-blue-500' : 'text-red-500'}`}>
                           ₹{product.price - product.costPrice}
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col gap-1">
-                          <span className={`text-sm font-black uppercase tracking-tight ${stockColor}`}>
+                          <span className={`text-sm font-semibold uppercase tracking-tight ${stockColor}`}>
                             {product.stock} Units
                           </span>
-                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
                             {stockStatus}
                           </p>
                         </div>
@@ -294,7 +294,7 @@ const ProductsManage = () => {
                               }
                             }}
                             disabled={updatingId === product.id}
-                            className="w-16 px-2 py-1.5 bg-gray-900 border border-yellow-900/20 rounded-xl focus:border-yellow-500 outline-none text-white text-sm font-black text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="w-16 px-2 py-1.5 bg-gray-900 border border-yellow-900/20 rounded-xl focus:border-yellow-500 outline-none text-white text-sm font-semibold text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                           <button
                             type="button"
@@ -380,11 +380,11 @@ const ProductsManage = () => {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="font-bold text-white text-base truncate" title={product.name}>
+                      <div className="font-semibold text-white text-base truncate" title={product.name}>
                         {product.name}
                       </div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="bg-yellow-500/10 text-yellow-600 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-yellow-900/40">
+                        <span className="bg-yellow-500/10 text-yellow-600 px-2.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-widest border border-yellow-900/40">
                           {product.category}
                         </span>
                       </div>
@@ -393,16 +393,16 @@ const ProductsManage = () => {
 
                   <div className="grid grid-cols-3 gap-4 pt-2 border-t border-white/5">
                     <div>
-                      <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">Price</p>
-                      <p className="font-bold text-green-600 text-base">₹{product.price}</p>
+                      <p className="text-[9px] text-gray-500 font-semibold uppercase tracking-widest mb-1">Price</p>
+                      <p className="font-semibold text-green-600 text-base">₹{product.price}</p>
                     </div>
                     <div>
-                      <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">Cost</p>
+                      <p className="text-[9px] text-gray-500 font-semibold uppercase tracking-widest mb-1">Cost</p>
                       <p className="font-medium text-gray-400 text-sm">₹{product.costPrice}</p>
                     </div>
                     <div>
-                      <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">Margin</p>
-                      <p className={`font-black text-xs uppercase tracking-widest ${(product.price - product.costPrice) > 0 ? 'text-blue-500' : 'text-red-500'}`}>
+                      <p className="text-[9px] text-gray-500 font-semibold uppercase tracking-widest mb-1">Margin</p>
+                      <p className={`font-semibold text-xs uppercase tracking-widest ${(product.price - product.costPrice) > 0 ? 'text-blue-500' : 'text-red-500'}`}>
                         ₹{product.price - product.costPrice}
                       </p>
                     </div>
@@ -411,13 +411,13 @@ const ProductsManage = () => {
                   <div className="flex items-center justify-between pt-2 border-t border-white/5">
                     <div className="flex items-center gap-4">
                       <div>
-                        <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-0.5">Stock</p>
-                        <span className={`text-xs font-black uppercase tracking-tight ${stockColor}`}>
+                        <p className="text-[9px] text-gray-500 font-semibold uppercase tracking-widest mb-0.5">Stock</p>
+                        <span className={`text-xs font-semibold uppercase tracking-tight ${stockColor}`}>
                           {product.stock} Units ({stockStatus})
                         </span>
                       </div>
                       <div>
-                        <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-0.5">Sold</p>
+                        <p className="text-[9px] text-gray-500 font-semibold uppercase tracking-widest mb-0.5">Sold</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <input
                             type="number"
@@ -430,7 +430,7 @@ const ProductsManage = () => {
                               }
                             }}
                             disabled={updatingId === product.id}
-                            className="w-16 px-2 py-1 bg-gray-900 border border-yellow-900/20 rounded-xl focus:border-yellow-500 outline-none text-white text-xs font-black text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="w-16 px-2 py-1 bg-gray-900 border border-yellow-900/20 rounded-xl focus:border-yellow-500 outline-none text-white text-xs font-semibold text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                           <button
                             type="button"
@@ -481,14 +481,14 @@ const ProductsManage = () => {
             <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-6 mx-auto">
               <AlertCircle size={32} />
             </div>
-            <h3 className="text-xl font-black text-white text-center mb-2">Delete Product?</h3>
+            <h3 className="text-xl font-semibold text-white text-center mb-2">Delete Product?</h3>
             <p className="text-gray-500 text-center text-sm font-medium mb-6">
               This action cannot be undone.
             </p>
 
             {/* ✅ Inline error — replaces blocking alert() */}
             {deleteError && (
-              <div className="mb-6 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-bold text-center">
+              <div className="mb-6 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-semibold text-center">
                 {deleteError}
               </div>
             )}
@@ -498,7 +498,7 @@ const ProductsManage = () => {
                 type="button"
                 onClick={handleCancelDelete}
                 disabled={isDeleting}
-                className="flex-1 py-4 bg-gray-800 text-gray-400 font-bold rounded-2xl hover:bg-gray-700 transition-colors uppercase tracking-widest text-xs disabled:opacity-50"
+                className="flex-1 py-4 bg-gray-800 text-gray-400 font-semibold rounded-2xl hover:bg-gray-700 transition-colors uppercase tracking-widest text-xs disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -506,7 +506,7 @@ const ProductsManage = () => {
                 type="button"
                 onClick={handleConfirmDelete}
                 disabled={isDeleting}
-                className="flex-1 py-4 bg-red-500 text-white font-bold rounded-2xl hover:bg-red-600 transition-all shadow-lg shadow-red-500/20 uppercase tracking-widest text-xs flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex-1 py-4 bg-red-500 text-white font-semibold rounded-2xl hover:bg-red-600 transition-all shadow-lg shadow-red-500/20 uppercase tracking-widest text-xs flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {isDeleting && <Loader2 size={14} className="animate-spin" />}
                 {isDeleting ? 'Deleting...' : 'Confirm Delete'}

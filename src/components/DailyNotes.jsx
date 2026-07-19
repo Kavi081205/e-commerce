@@ -161,14 +161,14 @@ export default function DailyNotes() {
       {/* Header with Title & Bookmark Drawer Button */}
       <div className="flex flex-row items-center justify-between border-b border-yellow-900/10 pb-4 mb-8">
         <div className="space-y-1 text-left">
-          <p className="text-yellow-500 text-[8px] sm:text-[10px] font-black uppercase tracking-[0.4em]">Daily Reading</p>
-          <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight uppercase flex items-center gap-2">
+          <p className="text-yellow-500 text-[8px] sm:text-[10px] font-semibold uppercase tracking-[0.4em]">Daily Reading</p>
+          <h2 className="text-xl sm:text-2xl font-semibold text-white tracking-tight uppercase flex items-center gap-2">
             <Sparkles size={16} className="text-yellow-500 animate-pulse" /> Daily Notes
           </h2>
         </div>
         <button
           onClick={() => setIsSavedDrawerOpen(true)}
-          className="flex items-center gap-2 bg-gradient-to-r from-yellow-600/10 to-yellow-600/20 hover:from-yellow-500 hover:to-yellow-600 text-yellow-500 hover:text-black border border-yellow-500/20 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wider transition-all duration-300 active:scale-95 shadow-md shadow-yellow-500/5 hover:shadow-yellow-500/20"
+          className="flex items-center gap-2 bg-gradient-to-r from-yellow-600/10 to-yellow-600/20 hover:from-yellow-500 hover:to-yellow-600 text-yellow-500 hover:text-black border border-yellow-500/20 px-4 py-2 rounded-full text-[10px] font-semibold uppercase tracking-wider transition-all duration-300 active:scale-95 shadow-md shadow-yellow-500/5 hover:shadow-yellow-500/20"
         >
           <Bookmark size={12} className="fill-current" />
           Saved Notes ({bookmarks.length})
@@ -185,7 +185,7 @@ export default function DailyNotes() {
         >
           <div>
             <div className="flex justify-between items-center mb-6">
-              <span className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+              <span className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[8px] sm:text-[9px] font-semibold uppercase tracking-widest px-3 py-1 rounded-full">
                 <Quote size={9} className="fill-current" /> Journey Pillar
               </span>
               <div className="flex gap-2">
@@ -212,9 +212,9 @@ export default function DailyNotes() {
                   {/* Share Tooltip */}
                   {activeShareCard === 'journey' && (
                     <div className="absolute right-0 top-10 z-50 bg-slate-950 border border-yellow-900/30 rounded-2xl p-2 flex flex-col gap-1 shadow-2xl min-w-[140px] animate-fadeIn">
-                      <button onClick={() => shareToSocial('whatsapp', todayJourneyQuote)} className="text-[10px] font-bold text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-xl text-left">WhatsApp</button>
-                      <button onClick={() => shareToSocial('facebook', todayJourneyQuote)} className="text-[10px] font-bold text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-xl text-left">Facebook</button>
-                      <button onClick={() => handleCopy(getShareText(todayJourneyQuote))} className="text-[10px] font-bold text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-xl text-left flex items-center justify-between">Copy Text <Clipboard size={10} /></button>
+                      <button onClick={() => shareToSocial('whatsapp', todayJourneyQuote)} className="text-[10px] font-semibold text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-xl text-left">WhatsApp</button>
+                      <button onClick={() => shareToSocial('facebook', todayJourneyQuote)} className="text-[10px] font-semibold text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-xl text-left">Facebook</button>
+                      <button onClick={() => handleCopy(getShareText(todayJourneyQuote))} className="text-[10px] font-semibold text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-xl text-left flex items-center justify-between">Copy Text <Clipboard size={10} /></button>
                     </div>
                   )}
                 </div>
@@ -223,7 +223,7 @@ export default function DailyNotes() {
 
             {/* Quote content */}
             <div className="space-y-4 text-left">
-              <p className="text-sm sm:text-base font-bold text-white leading-relaxed italic border-l border-yellow-500/20 pl-4">
+              <p className="text-sm sm:text-base font-semibold text-white leading-relaxed italic border-l border-yellow-500/20 pl-4">
                 "{todayJourneyQuote.quoteEn}"
               </p>
               <p className="text-xs sm:text-sm font-semibold text-gray-400 leading-relaxed italic border-l border-yellow-500/20 pl-4">
@@ -233,7 +233,7 @@ export default function DailyNotes() {
           </div>
 
           <div className="mt-8 pt-4 border-t border-white/5 text-left">
-            <span className="text-[9px] font-black text-yellow-500 uppercase tracking-widest">— {todayJourneyQuote.author}</span>
+            <span className="text-[9px] font-semibold text-yellow-500 uppercase tracking-widest">— {todayJourneyQuote.author}</span>
           </div>
         </motion.div>
 
@@ -250,7 +250,7 @@ export default function DailyNotes() {
             <>
               <div>
                 <div className="flex justify-between items-center mb-6">
-                  <span className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+                  <span className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[8px] sm:text-[9px] font-semibold uppercase tracking-widest px-3 py-1 rounded-full">
                     <BookOpen size={9} /> Daily Wisdom
                   </span>
                   <div className="flex gap-2">
@@ -276,9 +276,9 @@ export default function DailyNotes() {
                       
                       {activeShareCard === 'wisdom' && (
                         <div className="absolute right-0 top-10 z-50 bg-slate-950 border border-yellow-900/30 rounded-2xl p-2 flex flex-col gap-1 shadow-2xl min-w-[140px] animate-fadeIn">
-                          <button onClick={() => shareToSocial('whatsapp', todayKural)} className="text-[10px] font-bold text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-xl text-left">WhatsApp</button>
-                          <button onClick={() => shareToSocial('facebook', todayKural)} className="text-[10px] font-bold text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-xl text-left">Facebook</button>
-                          <button onClick={() => handleCopy(getShareText(todayKural))} className="text-[10px] font-bold text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-xl text-left flex items-center justify-between">Copy Text <Clipboard size={10} /></button>
+                          <button onClick={() => shareToSocial('whatsapp', todayKural)} className="text-[10px] font-semibold text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-xl text-left">WhatsApp</button>
+                          <button onClick={() => shareToSocial('facebook', todayKural)} className="text-[10px] font-semibold text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-xl text-left">Facebook</button>
+                          <button onClick={() => handleCopy(getShareText(todayKural))} className="text-[10px] font-semibold text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-xl text-left flex items-center justify-between">Copy Text <Clipboard size={10} /></button>
                         </div>
                       )}
                     </div>
@@ -288,10 +288,10 @@ export default function DailyNotes() {
                 {/* Thirukkural Content */}
                 <div className="space-y-4 text-left">
                   <div className="space-y-1">
-                    <p className="text-base sm:text-lg font-black text-white leading-relaxed tracking-wide font-tamil">
+                    <p className="text-base sm:text-lg font-semibold text-white leading-relaxed tracking-wide font-tamil">
                       {todayKural.line1}
                     </p>
-                    <p className="text-base sm:text-lg font-black text-white leading-relaxed tracking-wide font-tamil">
+                    <p className="text-base sm:text-lg font-semibold text-white leading-relaxed tracking-wide font-tamil">
                       {todayKural.line2}
                     </p>
                   </div>
@@ -304,7 +304,7 @@ export default function DailyNotes() {
                   <div className="pt-2">
                     <button
                       onClick={() => setKuralExpanded(!kuralExpanded)}
-                      className="text-[10px] font-black text-yellow-500 hover:text-yellow-400 uppercase tracking-widest flex items-center gap-1 transition-all"
+                      className="text-[10px] font-semibold text-yellow-500 hover:text-yellow-400 uppercase tracking-widest flex items-center gap-1 transition-all"
                     >
                       {kuralExpanded ? 'Hide Meanings' : 'Read Meaning'} 
                       {kuralExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -320,11 +320,11 @@ export default function DailyNotes() {
                           className="overflow-hidden space-y-3 mt-3 p-3 bg-white/5 border border-white/5 rounded-2xl"
                         >
                           <div>
-                            <p className="text-[8px] font-black text-yellow-500/60 uppercase tracking-widest mb-1">பொருள் (Tamil Meaning)</p>
-                            <p className="text-[11px] text-gray-300 font-bold leading-relaxed">{todayKural.tamilMeaning}</p>
+                            <p className="text-[8px] font-semibold text-yellow-500/60 uppercase tracking-widest mb-1">பொருள் (Tamil Meaning)</p>
+                            <p className="text-[11px] text-gray-300 font-semibold leading-relaxed">{todayKural.tamilMeaning}</p>
                           </div>
                           <div className="border-t border-white/5 pt-2">
-                            <p className="text-[8px] font-black text-yellow-500/60 uppercase tracking-widest mb-1">Explanation (English)</p>
+                            <p className="text-[8px] font-semibold text-yellow-500/60 uppercase tracking-widest mb-1">Explanation (English)</p>
                             <p className="text-[11px] text-gray-400 font-medium leading-relaxed">{todayKural.englishMeaning}</p>
                           </div>
                         </motion.div>
@@ -335,7 +335,7 @@ export default function DailyNotes() {
               </div>
 
               <div className="mt-8 pt-4 border-t border-white/5 text-left">
-                <span className="text-[9px] font-black text-yellow-500 uppercase tracking-widest">Kural {todayKural.number}</span>
+                <span className="text-[9px] font-semibold text-yellow-500 uppercase tracking-widest">Kural {todayKural.number}</span>
               </div>
             </>
           ) : (
@@ -350,7 +350,7 @@ export default function DailyNotes() {
         >
           <div>
             <div className="flex justify-between items-center mb-6">
-              <span className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+              <span className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[8px] sm:text-[9px] font-semibold uppercase tracking-widest px-3 py-1 rounded-full">
                 <Quote size={9} className="fill-current" /> Quote of the Day
               </span>
               <div className="flex gap-2">
@@ -376,9 +376,9 @@ export default function DailyNotes() {
                   
                   {activeShareCard === 'quote' && (
                     <div className="absolute right-0 top-10 z-50 bg-slate-950 border border-yellow-900/30 rounded-2xl p-2 flex flex-col gap-1 shadow-2xl min-w-[140px] animate-fadeIn">
-                      <button onClick={() => shareToSocial('whatsapp', todayQuote)} className="text-[10px] font-bold text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-xl text-left">WhatsApp</button>
-                      <button onClick={() => shareToSocial('facebook', todayQuote)} className="text-[10px] font-bold text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-xl text-left">Facebook</button>
-                      <button onClick={() => handleCopy(getShareText(todayQuote))} className="text-[10px] font-bold text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-xl text-left flex items-center justify-between">Copy Text <Clipboard size={10} /></button>
+                      <button onClick={() => shareToSocial('whatsapp', todayQuote)} className="text-[10px] font-semibold text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-xl text-left">WhatsApp</button>
+                      <button onClick={() => shareToSocial('facebook', todayQuote)} className="text-[10px] font-semibold text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-xl text-left">Facebook</button>
+                      <button onClick={() => handleCopy(getShareText(todayQuote))} className="text-[10px] font-semibold text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-xl text-left flex items-center justify-between">Copy Text <Clipboard size={10} /></button>
                     </div>
                   )}
                 </div>
@@ -387,7 +387,7 @@ export default function DailyNotes() {
 
             {/* Quote content */}
             <div className="space-y-4 text-left">
-              <p className="text-sm sm:text-base font-bold text-white leading-relaxed italic border-l border-yellow-500/20 pl-4">
+              <p className="text-sm sm:text-base font-semibold text-white leading-relaxed italic border-l border-yellow-500/20 pl-4">
                 "{todayQuote.quoteEn}"
               </p>
               <p className="text-xs sm:text-sm font-semibold text-gray-400 leading-relaxed italic border-l border-yellow-500/20 pl-4">
@@ -397,7 +397,7 @@ export default function DailyNotes() {
           </div>
 
           <div className="mt-8 pt-4 border-t border-white/5 text-left">
-            <span className="text-[9px] font-black text-yellow-500 uppercase tracking-widest">— {todayQuote.author}</span>
+            <span className="text-[9px] font-semibold text-yellow-500 uppercase tracking-widest">— {todayQuote.author}</span>
           </div>
         </motion.div>
 
@@ -427,10 +427,10 @@ export default function DailyNotes() {
               {/* Drawer Header */}
               <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/40">
                 <div>
-                  <h3 className="text-sm sm:text-base font-black text-white uppercase tracking-wider flex items-center gap-2">
+                  <h3 className="text-sm sm:text-base font-semibold text-white uppercase tracking-wider flex items-center gap-2">
                     <Bookmark size={14} className="fill-current text-yellow-500" /> Saved Notes
                   </h3>
-                  <p className="text-[8px] sm:text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Your Personal Readings Collection</p>
+                  <p className="text-[8px] sm:text-[10px] text-gray-500 font-semibold uppercase tracking-widest mt-1">Your Personal Readings Collection</p>
                 </div>
                 <button
                   onClick={() => setIsSavedDrawerOpen(false)}
@@ -446,7 +446,7 @@ export default function DailyNotes() {
                 {bookmarks.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-20 text-gray-600 gap-4">
                     <Bookmark size={40} className="opacity-20" />
-                    <p className="text-xs font-black uppercase tracking-widest text-center">No saved notes yet</p>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-center">No saved notes yet</p>
                     <p className="text-[10px] font-medium text-gray-600 max-w-[240px] text-center">Click the heart/bookmark icon on any daily note to save it here for offline reading.</p>
                   </div>
                 ) : (
@@ -457,14 +457,14 @@ export default function DailyNotes() {
                     >
                       <button
                         onClick={() => toggleBookmark(item)}
-                        className="absolute top-4 right-4 p-1.5 bg-red-950/20 text-red-500/80 hover:text-red-500 hover:bg-red-500/10 border border-red-500/10 rounded-lg transition-all text-[8px] font-black uppercase tracking-widest"
+                        className="absolute top-4 right-4 p-1.5 bg-red-950/20 text-red-500/80 hover:text-red-500 hover:bg-red-500/10 border border-red-500/10 rounded-lg transition-all text-[8px] font-semibold uppercase tracking-widest"
                       >
                         Remove
                       </button>
 
                       {/* Header */}
                       <div className="mb-3">
-                        <span className="text-[8px] font-black text-yellow-500/70 uppercase tracking-wider bg-yellow-500/5 px-2 py-0.5 border border-yellow-500/10 rounded-full">
+                        <span className="text-[8px] font-semibold text-yellow-500/70 uppercase tracking-wider bg-yellow-500/5 px-2 py-0.5 border border-yellow-500/10 rounded-full">
                           {item.type === 'kural' ? `Kural ${item.number}` : item.type === 'journey' ? 'Journey Quote' : 'Daily Quote'}
                         </span>
                       </div>
@@ -473,21 +473,21 @@ export default function DailyNotes() {
                       <div className="text-left space-y-2.5">
                         {item.type === 'kural' ? (
                           <>
-                            <div className="text-xs sm:text-sm font-bold text-white font-tamil leading-relaxed">
+                            <div className="text-xs sm:text-sm font-semibold text-white font-tamil leading-relaxed">
                               <p>{item.line1}</p>
                               <p>{item.line2}</p>
                             </div>
                             <p className="text-[10px] text-gray-500 italic">"{item.translation}"</p>
                             <div className="mt-3 p-3 bg-white/5 border border-white/5 rounded-xl space-y-2">
-                              <p className="text-[10px] text-gray-300 font-bold leading-relaxed">{item.tamilMeaning}</p>
+                              <p className="text-[10px] text-gray-300 font-semibold leading-relaxed">{item.tamilMeaning}</p>
                               <p className="text-[10px] text-gray-400 font-medium leading-relaxed">{item.englishMeaning}</p>
                             </div>
                           </>
                         ) : (
                           <>
-                            <p className="text-xs sm:text-sm font-bold text-white leading-relaxed italic">"{item.quoteEn}"</p>
+                            <p className="text-xs sm:text-sm font-semibold text-white leading-relaxed italic">"{item.quoteEn}"</p>
                             <p className="text-[11px] font-semibold text-gray-400 leading-relaxed italic">"{item.quoteTa}"</p>
-                            <p className="text-[9px] font-black text-yellow-500 uppercase tracking-widest">— {item.author}</p>
+                            <p className="text-[9px] font-semibold text-yellow-500 uppercase tracking-widest">— {item.author}</p>
                           </>
                         )}
                       </div>
@@ -496,7 +496,7 @@ export default function DailyNotes() {
                       <div className="mt-4 pt-3 border-t border-white/5 flex gap-2 justify-end">
                         <button
                           onClick={() => handleCopy(getShareText(item))}
-                          className="flex items-center gap-1 text-[8px] font-black text-gray-500 hover:text-white uppercase tracking-wider p-1"
+                          className="flex items-center gap-1 text-[8px] font-semibold text-gray-500 hover:text-white uppercase tracking-wider p-1"
                         >
                           <Clipboard size={10} /> Copy
                         </button>
@@ -506,7 +506,7 @@ export default function DailyNotes() {
                             const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
                             window.open(url, '_blank');
                           }}
-                          className="flex items-center gap-1 text-[8px] font-black text-gray-500 hover:text-white uppercase tracking-wider p-1"
+                          className="flex items-center gap-1 text-[8px] font-semibold text-gray-500 hover:text-white uppercase tracking-wider p-1"
                         >
                           <Share2 size={10} /> WhatsApp
                         </button>
@@ -517,7 +517,7 @@ export default function DailyNotes() {
               </div>
 
               {/* Drawer Footer */}
-              <div className="p-6 border-t border-white/5 bg-black/40 text-center text-[8px] sm:text-[9px] text-gray-600 font-black uppercase tracking-[0.2em]">
+              <div className="p-6 border-t border-white/5 bg-black/40 text-center text-[8px] sm:text-[9px] text-gray-600 font-semibold uppercase tracking-[0.2em]">
                 SMKP Traders Daily Wisdom & Reading
               </div>
             </motion.div>

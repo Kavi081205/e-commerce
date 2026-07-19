@@ -62,7 +62,7 @@ export default function FirebaseStatusBanner() {
             <Database size={14} className="text-orange-400" />
           </div>
           <div className="min-w-0">
-            <p className="text-orange-200 text-xs font-black uppercase tracking-widest leading-tight">
+            <p className="text-orange-200 text-xs font-semibold uppercase tracking-widest leading-tight">
               Service Temporarily Limited
             </p>
             <p className="text-orange-400/70 text-[10px] font-medium mt-0.5 leading-snug">
@@ -76,7 +76,7 @@ export default function FirebaseStatusBanner() {
             type="button"
             onClick={handleClearAndReload}
             disabled={clearing}
-            className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-400 active:scale-95 text-black text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-all disabled:opacity-60"
+            className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-400 active:scale-95 text-black text-[10px] font-semibold uppercase tracking-widest px-3 py-1.5 rounded-lg transition-all disabled:opacity-60"
           >
             <RefreshCw size={11} className={clearing ? 'animate-spin' : ''} />
             {clearing ? 'Clearing…' : 'Clear Cache'}

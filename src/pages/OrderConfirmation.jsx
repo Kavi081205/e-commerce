@@ -43,32 +43,32 @@ export default function OrderConfirmation() {
           </div>
         </div>
 
-        <p className="text-yellow-500 text-[9px] font-black uppercase tracking-[0.6em] mb-3 mt-12 relative z-10">
+        <p className="text-yellow-500 text-[9px] font-semibold uppercase tracking-[0.6em] mb-3 mt-12 relative z-10">
           Order Confirmed
         </p>
 
-        <h1 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tighter uppercase relative z-10">
+        <h1 className="text-4xl md:text-5xl font-semibold text-white mb-4 tracking-tighter uppercase relative z-10">
           Order Placed
         </h1>
 
-        <p className="text-gray-500 mb-12 text-xs font-black uppercase tracking-widest leading-relaxed relative z-10">
-          Order <span className="text-yellow-500 font-black">#{orderId}</span> has been successfully placed.
+        <p className="text-gray-500 mb-12 text-xs font-semibold uppercase tracking-widest leading-relaxed relative z-10">
+          Order <span className="text-yellow-500 font-semibold">#{orderId}</span> has been successfully placed.
         </p>
 
         <div className="bg-black/50 rounded-[2rem] p-8 flex justify-between items-center mb-12 border border-yellow-900/10 relative z-10">
           <div className="text-left">
-            <p className="text-[9px] text-gray-600 font-black uppercase tracking-[0.3em] mb-2">
+            <p className="text-[9px] text-gray-600 font-semibold uppercase tracking-[0.3em] mb-2">
               Payment Mode
             </p>
-            <p className="text-sm font-black text-white uppercase tracking-widest">
+            <p className="text-sm font-semibold text-white uppercase tracking-widest">
               Cash on Delivery
             </p>
           </div>
           <div className="text-right">
-            <p className="text-[9px] text-gray-600 font-black uppercase tracking-[0.3em] mb-2">
+            <p className="text-[9px] text-gray-600 font-semibold uppercase tracking-[0.3em] mb-2">
               Total Amount
             </p>
-            <p className="text-4xl font-black gold-text tracking-tighter">
+            <p className="text-4xl font-semibold gold-text tracking-tighter">
               Rs.{total?.toLocaleString()}
             </p>
           </div>
@@ -77,13 +77,13 @@ export default function OrderConfirmation() {
         <div className="flex flex-col sm:flex-row gap-4 mb-14 relative z-10">
           <Link
             to="/my-orders"
-            className="flex-1 bg-white/5 border border-white/10 hover:border-yellow-500/30 text-white py-5 rounded-2xl font-black flex items-center justify-center gap-3 uppercase tracking-[0.3em] text-[9px] transition-all active:scale-95"
+            className="flex-1 bg-white/5 border border-white/10 hover:border-yellow-500/30 text-white py-5 rounded-2xl font-semibold flex items-center justify-center gap-3 uppercase tracking-[0.3em] text-[9px] transition-all active:scale-95"
           >
             <Package size={16} /> My Orders
           </Link>
           <Link
             to="/"
-            className="flex-1 bg-yellow-500 hover:bg-yellow-400 text-black py-5 rounded-2xl font-black shadow-2xl shadow-yellow-500/20 flex items-center justify-center gap-3 uppercase tracking-[0.3em] text-[9px] transition-all active:scale-95"
+            className="flex-1 bg-yellow-500 hover:bg-yellow-400 text-black py-5 rounded-2xl font-semibold shadow-2xl shadow-yellow-500/20 flex items-center justify-center gap-3 uppercase tracking-[0.3em] text-[9px] transition-all active:scale-95"
           >
             Continue <ArrowRight size={16} />
           </Link>
@@ -111,7 +111,7 @@ export default function OrderConfirmation() {
             <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center text-gray-600 group-hover:text-yellow-500 group-hover:border-yellow-500/30 transition-all">
               <Download size={20} />
             </div>
-            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-700 group-hover:text-gray-500">
+            <span className="text-[9px] font-semibold uppercase tracking-[0.3em] text-gray-700 group-hover:text-gray-500">
               Invoice
             </span>
           </button>
@@ -120,7 +120,7 @@ export default function OrderConfirmation() {
             <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center text-gray-600 group-hover:text-yellow-500 group-hover:border-yellow-500/30 transition-all">
               <MessageCircle size={20} />
             </div>
-            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-700 group-hover:text-gray-500">
+            <span className="text-[9px] font-semibold uppercase tracking-[0.3em] text-gray-700 group-hover:text-gray-500">
               Support
             </span>
           </a>

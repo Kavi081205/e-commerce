@@ -45,7 +45,7 @@ const StoreLayout = () => (
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="SMKP TRADERS" className="h-9 w-9 object-contain rounded-md" />
             <div>
-              <p className="text-white font-extrabold tracking-widest text-sm">SMKP TRADERS</p>
+              <p className="text-white font-semibold tracking-widest text-sm">SMKP TRADERS</p>
               <p className="text-teal-400 text-xs tracking-wider">Quality You Can Trust</p>
             </div>
           </div>

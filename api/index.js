@@ -5,6 +5,7 @@ import paymentRoutes from './routes/payment.js';
 import ordersHandler from './orders.js';
 import complaintsHandler from './complaints.js';
 import updateSoldHandler from './update-sold.js';
+import validateCouponHandler from './validate-coupon.js';
 
 dotenv.config();
 
@@ -50,6 +51,7 @@ app.use(paymentRoutes);
 app.get('/api/orders', ordersHandler);
 app.get('/api/complaints', complaintsHandler);
 app.post('/api/update-sold', updateSoldHandler);
+app.post('/api/validate-coupon', validateCouponHandler);
 
 // Export for Vite dev server middleware and Vercel serverless integration
 export default app;

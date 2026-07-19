@@ -8,6 +8,7 @@ import { useNotification } from '../context/NotificationContext';
 import { usePromo } from '../context/PromoContext';
 import { getEffectivePrice } from '../utils/pricing';
 import { useSiteSettings } from '../context/SiteSettingsContext';
+import { useAuth } from '../context/AuthContext';
 import OrderSuccessPopup from '../components/OrderSuccessPopup';
 import { generateInvoice } from '../utils/invoiceGenerator';
 import { getOptimizedImage } from '../utils/cloudinary';
@@ -41,6 +42,8 @@ const Checkout = () => {
 
   const { promoSettings } = usePromo();
   const { showToast } = useNotification();
+  const { settings, welcomeOffer } = useSiteSettings();
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -72,7 +75,98 @@ const Checkout = () => {
     type: 'Home'
   });
 
-  const { settings } = useSiteSettings();
+  const activeAddress = showNewAddressForm ? formData : addresses.find(a => a.id === selectedAddressId);
+  const activePhone = activeAddress?.phone;
+
+  const [welcomeOfferEligible, setWelcomeOfferEligible] = useState(true);
+  const [checkingEligibility, setCheckingEligibility] = useState(false);
+
+  useEffect(() => {
+    const checkEligibility = async () => {
+      const code = welcomeOffer?.code || 'FIRSTORDER';
+      const userId = currentUser?.uid;
+      
+      if (!welcomeOffer?.enabled) {
+        setWelcomeOfferEligible(false);
+        return;
+      }
+
+      if (!userId && !activePhone) {
+        setWelcomeOfferEligible(true);
+        return;
+      }
+
+      setCheckingEligibility(true);
+      try {
+        if (userId) {
+          const q1 = query(
+            collection(db, 'orders'),
+            where('userId', '==', userId),
+            where('status', '==', 'delivered')
+          );
+          const snap1 = await getDocs(q1);
+          if (!snap1.empty) {
+            setWelcomeOfferEligible(false);
+            setCheckingEligibility(false);
+            return;
+          }
+
+          const q2 = query(
+            collection(db, 'orders'),
+            where('userId', '==', userId),
+            where('couponCode', '==', code)
+          );
+          const snap2 = await getDocs(q2);
+          const hasUsed = snap2.docs.some(doc => doc.data().status !== 'cancelled');
+          if (hasUsed) {
+            setWelcomeOfferEligible(false);
+            setCheckingEligibility(false);
+            return;
+          }
+        }
+
+        if (activePhone) {
+          const cleanPhone = activePhone.replace(/\D/g, '').slice(-10);
+          if (cleanPhone.length === 10) {
+            const q3 = query(
+              collection(db, 'orders'),
+              where('phone', '==', activePhone),
+              where('status', '==', 'delivered')
+            );
+            const snap3 = await getDocs(q3);
+            if (!snap3.empty) {
+              setWelcomeOfferEligible(false);
+              setCheckingEligibility(false);
+              return;
+            }
+
+            const q4 = query(
+              collection(db, 'orders'),
+              where('phone', '==', activePhone),
+              where('couponCode', '==', code)
+            );
+            const snap4 = await getDocs(q4);
+            const hasUsed = snap4.docs.some(doc => doc.data().status !== 'cancelled');
+            if (hasUsed) {
+              setWelcomeOfferEligible(false);
+              setCheckingEligibility(false);
+              return;
+            }
+          }
+        }
+        
+        setWelcomeOfferEligible(true);
+      } catch (err) {
+        console.error("Error checking welcome offer eligibility at checkout:", err);
+        setWelcomeOfferEligible(true);
+      } finally {
+        setCheckingEligibility(false);
+      }
+    };
+
+    checkEligibility();
+  }, [currentUser, activePhone, welcomeOffer]);
+
   const FREE_DELIVERY_THRESHOLD = settings?.delivery?.freeAbove ?? 499;
   const FIXED_DELIVERY_CHARGE = settings?.delivery?.charge ?? 29;
   const [buyNowItem, setBuyNowItem] = useState(null);
@@ -326,14 +420,77 @@ const Checkout = () => {
     }
   };
 
-  const applyCoupon = async () => {
-    const code = couponInput.trim().toUpperCase();
+  const applyCoupon = async (forcedCode = null) => {
+    const code = (forcedCode || couponInput).trim().toUpperCase();
     if (!code) return;
+    if (forcedCode) {
+      setCouponInput(code);
+    }
     setCouponError('');
     setCouponData(null);
     setCouponDiscount(0);
     setCouponLoading(true);
     try {
+      // Check welcome offer
+      const isWelcome = welcomeOffer?.enabled && code === (welcomeOffer.code || 'FIRSTORDER');
+      if (isWelcome) {
+        const currentSubtotal = buyNowItem
+          ? getEffectivePrice(buyNowItem, promoSettings) * (buyNowItem.quantity || 1)
+          : getCartTotal();
+
+        const phone = activePhone || '';
+        if (!phone) {
+          setCouponError('Please select or add a delivery address first.');
+          setCouponLoading(false);
+          return;
+        }
+
+        const email = currentUser?.email || 'unknown';
+        const userId = currentUser?.uid || 'guest';
+
+        try {
+          const response = await fetch(`/api/validate-coupon`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              code,
+              userId,
+              phone,
+              email,
+              subtotal: currentSubtotal
+            })
+          });
+
+          const resJson = await response.json();
+          if (!response.ok || !resJson.success) {
+            setCouponError(resJson.message || 'This coupon is only valid for first-time customers.');
+            setCouponLoading(false);
+            return;
+          }
+
+          const couponMock = {
+            id: 'welcome_offer',
+            code: welcomeOffer.code,
+            discountType: 'fixed',
+            discountValue: welcomeOffer.discountAmount,
+            minOrderAmount: welcomeOffer.minOrderValue,
+            isActive: true,
+            isWelcomeOffer: true
+          };
+          setCouponData(couponMock);
+          setCouponDiscount(Math.min(welcomeOffer.discountAmount, currentSubtotal));
+          showToast(resJson.message || `🎉 Congratulations! ₹${welcomeOffer.discountAmount} Welcome Discount Applied.`, 'success');
+          setCouponLoading(false);
+          return;
+        } catch (err) {
+          console.error('[Checkout] Secure coupon validation failed:', err);
+          setCouponError('This coupon is only valid for first-time customers.');
+          setCouponLoading(false);
+          return;
+        }
+      }
+
+      // Query standard coupons
       const q = query(collection(db, 'coupons'), where('code', '==', code));
       const snap = await getDocs(q);
       if (snap.empty) {
@@ -506,7 +663,7 @@ const Checkout = () => {
         landmark: activeAddress.landmark || '',
         district: activeAddress.district || parsedDistrict,
         state: activeAddress.state || parsedState,
-        userId: 'guest',
+        userId: currentUser?.uid || 'guest',
         items: enrichedItems,
         subtotal: subtotal,
         couponCode: couponData?.code || null,
@@ -516,7 +673,7 @@ const Checkout = () => {
         estimatedDeliveryDays: '--',
         totalPrice: Math.max(0, finalTotal),
         profit: totalProfit - couponDiscount,
-        userEmail: 'unknown',
+        userEmail: currentUser?.email || 'unknown',
         createdAt: new Date(),
         status: 'ordered',
         paymentMethod: paymentMethod === 'online' ? "ONLINE PAYMENT" : "COD",
@@ -525,7 +682,7 @@ const Checkout = () => {
         customerDetails: {
           name: activeAddress.name,
           phone: activeAddress.phone,
-          email: 'unknown',
+          email: currentUser?.email || 'unknown',
           address: activeAddress.address,
           district: activeAddress.district || parsedDistrict,
           state: activeAddress.state || parsedState,
@@ -825,7 +982,7 @@ const Checkout = () => {
                         : <Icon size={15} className={isActive ? 'text-yellow-500' : 'text-gray-700'} />
                       }
                     </div>
-                    <span className={`text-[9px] font-black uppercase tracking-[0.15em] transition-colors ${isActive ? 'text-yellow-500' : isDone ? 'text-yellow-600' : 'text-gray-700'
+                    <span className={`text-[9px] font-semibold uppercase tracking-[0.1em] transition-colors ${isActive ? 'text-yellow-500' : isDone ? 'text-yellow-600' : 'text-gray-600'
                       }`}>{step.label}</span>
                   </button>
                   {idx < steps.length - 1 && (
@@ -848,12 +1005,12 @@ const Checkout = () => {
                 <div className="space-y-4">
                   {/* Header */}
                   <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-sm font-black text-white uppercase tracking-[0.3em] flex items-center gap-2">
+                    <h2 className="text-sm font-semibold text-white uppercase tracking-[0.15em] flex items-center gap-2">
                       <MapPin size={15} className="text-yellow-500" /> Delivery Address
                     </h2>
                     <button
                       onClick={() => setShowNewAddressForm(!showNewAddressForm)}
-                      className="flex items-center gap-1.5 text-[9px] font-black text-yellow-500 uppercase tracking-widest border border-yellow-500/25 hover:bg-yellow-500/5 px-3 py-1.5 rounded-full transition-all"
+                      className="flex items-center gap-1.5 text-[9px] font-semibold text-yellow-500 uppercase tracking-widest border border-yellow-500/25 hover:bg-yellow-500/5 px-3 py-1.5 rounded-full transition-all"
                     >
                       {showNewAddressForm ? 'Cancel' : <><Plus size={12} /> Add New</>}
                     </button>
@@ -863,12 +1020,12 @@ const Checkout = () => {
                     <form onSubmit={handleAddNewAddress} className="bg-gray-900/40 border border-yellow-900/15 rounded-2xl p-5 space-y-5">
                       {/* Type selector */}
                       <div>
-                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">Address Type</p>
+                        <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Address Type</p>
                         <div className="flex gap-3">
                           {['Home', 'Office', 'Other'].map(type => (
                             <button key={type} type="button" aria-pressed={formData.type === type}
                               onClick={() => setFormData(prev => ({ ...prev, type }))}
-                              className={`flex-1 py-2.5 rounded-xl border text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${formData.type === type ? 'border-yellow-500 bg-yellow-500/8 text-yellow-500' : 'border-white/5 text-gray-600'
+                              className={`flex-1 py-2.5 rounded-xl border text-[9px] font-semibold uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${formData.type === type ? 'border-yellow-500 bg-yellow-500/8 text-yellow-500' : 'border-white/5 text-gray-600'
                                 }`}
                             >
                               {type === 'Home' && <Home size={12} />}{type === 'Office' && <Briefcase size={12} />}{type}
@@ -878,37 +1035,37 @@ const Checkout = () => {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <label htmlFor="address-name" className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Full Name</label>
+                          <label htmlFor="address-name" className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest">Full Name</label>
                           <input id="address-name" name="name" placeholder="Full Name" required autoComplete="name"
                             value={formData.name} onChange={handleChange}
                             className="w-full bg-black/60 border border-yellow-900/20 rounded-xl px-3.5 py-3 text-white text-xs outline-none focus:border-yellow-500 transition-all" />
                         </div>
                         <div className="space-y-1.5">
-                          <label htmlFor="address-phone" className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Phone</label>
+                          <label htmlFor="address-phone" className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest">Phone</label>
                           <input id="address-phone" name="phone" placeholder="Phone Number" required autoComplete="tel"
                             value={formData.phone} onChange={handleChange}
                             className="w-full bg-black/60 border border-yellow-900/20 rounded-xl px-3.5 py-3 text-white text-xs outline-none focus:border-yellow-500 transition-all" />
                         </div>
                         <div className="col-span-2 space-y-1.5">
-                          <label htmlFor="address-street" className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Street / Area</label>
+                          <label htmlFor="address-street" className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest">Street / Area</label>
                           <textarea id="address-street" name="address" placeholder="Door No, Street, Landmark" required autoComplete="street-address"
                             value={formData.address} onChange={handleChange} rows="2"
                             className="w-full bg-black/60 border border-yellow-900/20 rounded-xl px-3.5 py-3 text-white text-xs outline-none focus:border-yellow-500 transition-all resize-none" />
                         </div>
                         <div className="space-y-1.5">
-                          <label htmlFor="address-city" className="text-[9px] font-black text-gray-500 uppercase tracking-widest">City / District</label>
+                          <label htmlFor="address-city" className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest">City / District</label>
                           <input id="address-city" name="city" placeholder="City" required autoComplete="address-level2"
                             value={formData.city} onChange={handleChange}
                             className="w-full bg-black/60 border border-yellow-900/20 rounded-xl px-3.5 py-3 text-white text-xs outline-none focus:border-yellow-500 transition-all" />
                         </div>
                         <div className="space-y-1.5">
-                          <label htmlFor="address-pincode" className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Pincode</label>
+                          <label htmlFor="address-pincode" className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest">Pincode</label>
                           <input id="address-pincode" name="pincode" placeholder="6-Digit Pincode" required autoComplete="postal-code"
                             value={formData.pincode} onChange={handlePincodeChange} maxLength="6"
                             className="w-full bg-black/60 border border-yellow-900/20 rounded-xl px-3.5 py-3 text-white text-xs outline-none focus:border-yellow-500 transition-all" />
                         </div>
                       </div>
-                      <button type="submit" className="w-full bg-yellow-500 text-black font-black py-3.5 rounded-xl uppercase tracking-[0.2em] text-[10px] shadow-lg shadow-yellow-500/15 active:scale-95 transition-all">
+                      <button type="submit" className="w-full bg-yellow-500 text-black font-semibold py-3.5 rounded-xl uppercase tracking-[0.2em] text-[10px] shadow-lg shadow-yellow-500/15 active:scale-95 transition-all">
                         Save &amp; Deliver Here
                       </button>
                     </form>
@@ -928,11 +1085,11 @@ const Checkout = () => {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1.5">
-                                <span className="text-[7px] font-black uppercase tracking-widest bg-white/5 text-gray-600 px-2 py-0.5 rounded">{addr.type}</span>
-                                <p className="font-black text-white text-xs uppercase tracking-wider">{addr.name}</p>
+                                <span className="text-[7px] font-semibold uppercase tracking-widest bg-white/5 text-gray-600 px-2 py-0.5 rounded">{addr.type}</span>
+                                <p className="font-semibold text-white text-xs uppercase tracking-wider">{addr.name}</p>
                               </div>
                               <p className="text-[10px] text-gray-500 leading-relaxed">{addr.address}, {addr.city} – {addr.pincode}</p>
-                              <p className="text-[9px] font-black text-yellow-500/50 mt-1.5 flex items-center gap-1.5">
+                              <p className="text-[9px] font-semibold text-yellow-500/50 mt-1.5 flex items-center gap-1.5">
                                 <Smartphone size={10} /> {addr.phone}
                               </p>
                             </div>
@@ -946,9 +1103,9 @@ const Checkout = () => {
                       {addresses.length === 0 && (
                         <div className="text-center py-16 flex flex-col items-center">
                           <MapPin size={36} className="text-gray-800 mb-4" />
-                          <p className="text-gray-600 font-black uppercase tracking-widest text-[9px] mb-4">No saved addresses</p>
+                          <p className="text-gray-600 font-semibold uppercase tracking-widest text-[9px] mb-4">No saved addresses</p>
                           <button onClick={() => setShowNewAddressForm(true)}
-                            className="bg-yellow-500 text-black px-5 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all active:scale-95">
+                            className="bg-yellow-500 text-black px-5 py-2.5 rounded-full text-[9px] font-semibold uppercase tracking-widest transition-all active:scale-95">
                             Add Address
                           </button>
                         </div>
@@ -969,12 +1126,12 @@ const Checkout = () => {
                       <div className="flex items-start gap-3">
                         <MapPin size={14} className="text-yellow-500 mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="text-[10px] font-black text-white uppercase tracking-widest">{selectedAddr.name}</p>
+                          <p className="text-[10px] font-semibold text-white uppercase tracking-widest">{selectedAddr.name}</p>
                           <p className="text-[9px] text-gray-500 mt-0.5">{selectedAddr.address}, {selectedAddr.city} – {selectedAddr.pincode}</p>
                         </div>
                       </div>
                       <button onClick={() => setCheckoutStep(1)}
-                        className="text-[9px] font-black text-yellow-500 uppercase tracking-widest flex items-center gap-1 hover:opacity-80 transition-all">
+                        className="text-[9px] font-semibold text-yellow-500 uppercase tracking-widest flex items-center gap-1 hover:opacity-80 transition-all">
                         <Edit2 size={11} /> Change
                       </button>
                     </div>
@@ -982,7 +1139,7 @@ const Checkout = () => {
 
                   {/* Product list */}
                   <div>
-                    <h2 className="text-[10px] font-black text-white uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
+                    <h2 className="text-[10px] font-semibold text-white uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
                       <Package size={13} className="text-yellow-500" /> Order Items ({activeItems.reduce((a, i) => a + (i.quantity || 1), 0)})
                     </h2>
                     <div className="space-y-3">
@@ -992,8 +1149,8 @@ const Checkout = () => {
                             <img src={getOptimizedImage(item.image, 'thumbnail')} alt={item.name} loading="lazy" className="w-full h-full object-cover" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-black text-white truncate uppercase tracking-wider">{item.name}</p>
-                            <div className="flex flex-wrap gap-2 mt-1.5 text-[9px] font-bold text-gray-600 uppercase tracking-wider">
+                            <p className="text-xs font-semibold text-white truncate uppercase tracking-wider">{item.name}</p>
+                            <div className="flex flex-wrap gap-2 mt-1.5 text-[9px] font-semibold text-gray-600 uppercase tracking-wider">
                               <span>Qty: {item.quantity || 1}</span>
                               {(item.selectedColor || item.color) && (
                                 <span>• {typeof (item.selectedColor || item.color) === 'object' ? (item.selectedColor || item.color).name : (item.selectedColor || item.color)}</span>
@@ -1002,7 +1159,7 @@ const Checkout = () => {
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="text-sm font-black text-yellow-500">₹{(getEffectivePrice(item, promoSettings) * (item.quantity || 1)).toLocaleString()}</p>
+                            <p className="text-sm font-semibold text-yellow-500">₹{(getEffectivePrice(item, promoSettings) * (item.quantity || 1)).toLocaleString()}</p>
                             <p className="text-[9px] text-gray-700 mt-0.5">₹{getEffectivePrice(item, promoSettings).toLocaleString()} each</p>
                           </div>
                         </div>
@@ -1012,77 +1169,93 @@ const Checkout = () => {
 
                   {/* Coupon */}
                   <div className="bg-gray-900/40 border border-yellow-900/15 rounded-2xl p-4">
-                    <p className="text-[9px] font-black text-yellow-500/80 uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
+                    <p className="text-[9px] font-semibold text-yellow-500/80 uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
                       <Tag size={12} /> Coupon Code
                     </p>
                     {couponData ? (
                       <div className="flex items-center justify-between bg-green-500/5 border border-green-500/20 rounded-xl px-4 py-2.5">
                         <div>
-                          <p className="font-black text-green-400 text-xs tracking-widest">{couponData.code}</p>
-                          <p className="text-[8px] text-green-500/60 font-bold uppercase tracking-widest mt-0.5">
+                          <p className="font-semibold text-green-400 text-xs tracking-widest">{couponData.code}</p>
+                          <p className="text-[8px] text-green-500/60 font-semibold uppercase tracking-widest mt-0.5">
                             {couponData.discountType === 'percentage' ? `${couponData.discountValue}%` : `₹${couponData.discountValue}`} OFF applied
                           </p>
                         </div>
                         <button type="button" onClick={removeCoupon} className="text-gray-600 hover:text-red-400 p-1 transition-colors"><X size={14} /></button>
                       </div>
                     ) : (
-                      <div className="flex gap-2">
-                        <label htmlFor="coupon-code" className="sr-only">Coupon Code</label>
-                        <input id="coupon-code" name="couponCode" type="text" autoComplete="off"
-                          value={couponInput}
-                          onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponError(''); }}
-                          onKeyDown={e => e.key === 'Enter' && applyCoupon()}
-                          placeholder="Enter coupon code"
-                          className="flex-1 bg-black/50 border border-yellow-900/30 text-white rounded-xl px-3.5 py-2.5 text-xs font-black uppercase tracking-widest outline-none focus:border-yellow-500 transition-all placeholder:normal-case placeholder:font-normal placeholder:tracking-normal" />
-                        <button type="button" onClick={applyCoupon} disabled={couponLoading || !couponInput.trim()}
-                          className="px-4 py-2.5 bg-yellow-500 text-black font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-yellow-400 transition-all disabled:opacity-50 flex items-center gap-1">
-                          {couponLoading ? <Loader2 size={12} className="animate-spin" /> : 'Apply'}
-                        </button>
-                      </div>
+                      <>
+                        <div className="flex gap-2">
+                          <label htmlFor="coupon-code" className="sr-only">Coupon Code</label>
+                          <input id="coupon-code" name="couponCode" type="text" autoComplete="off"
+                            value={couponInput}
+                            onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponError(''); }}
+                            onKeyDown={e => e.key === 'Enter' && applyCoupon()}
+                            placeholder="Enter coupon code"
+                            className="flex-1 bg-black/50 border border-yellow-900/30 text-white rounded-xl px-3.5 py-2.5 text-xs font-semibold uppercase tracking-widest outline-none focus:border-yellow-500 transition-all placeholder:normal-case placeholder:font-normal placeholder:tracking-normal" />
+                          <button type="button" onClick={() => applyCoupon()} disabled={couponLoading || !couponInput.trim()}
+                            className="px-4 py-2.5 bg-yellow-500 text-black font-semibold text-[10px] uppercase tracking-widest rounded-xl hover:bg-yellow-400 transition-all disabled:opacity-50 flex items-center gap-1">
+                            {couponLoading ? <Loader2 size={12} className="animate-spin" /> : 'Apply'}
+                          </button>
+                        </div>
+                        {welcomeOffer?.enabled && welcomeOfferEligible && !couponData && (
+                          <div className="mt-3 text-left">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const code = welcomeOffer.code || 'FIRSTORDER';
+                                applyCoupon(code);
+                              }}
+                              className="inline-flex items-center gap-1.5 text-yellow-500 hover:text-yellow-400 text-[10px] font-semibold uppercase tracking-wider transition-all bg-yellow-500/10 border border-yellow-500/20 px-3 py-1.5 rounded-xl hover:shadow-[0_0_10px_rgba(234,179,8,0.1)] active:scale-95"
+                            >
+                              🎁 First Order? Use {welcomeOffer.code || 'FIRSTORDER'} to save ₹{welcomeOffer.discountAmount || 30}.
+                            </button>
+                          </div>
+                        )}
+                      </>
                     )}
-                    {couponError && <p className="text-red-400 text-[9px] font-bold mt-2 uppercase tracking-widest">{couponError}</p>}
+                    {couponError && <p className="text-red-400 text-[9px] font-semibold mt-2 uppercase tracking-widest">{couponError}</p>}
                   </div>
 
                   {/* Price summary */}
                   <div className="bg-gray-900/40 border border-white/5 rounded-2xl p-4 space-y-3">
-                    <h3 className="text-[9px] font-black text-white uppercase tracking-[0.3em] border-b border-white/5 pb-2 mb-3">Price Details</h3>
-                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                    <h3 className="text-[9px] font-semibold text-white uppercase tracking-[0.3em] border-b border-white/5 pb-2 mb-3">Price Details</h3>
+                    <div className="flex justify-between text-[10px] font-semibold uppercase tracking-widest">
                       <span className="text-gray-500">MRP ({activeItems.reduce((a, i) => a + (i.quantity || 1), 0)} items)</span>
                       <span className="text-white">₹{subtotalMRP.toLocaleString()}</span>
                     </div>
                     {totalSavings > couponDiscount && (
-                      <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                      <div className="flex justify-between text-[10px] font-semibold uppercase tracking-widest">
                         <span className="text-green-500">Product Discount</span>
                         <span className="text-green-500">- ₹{(subtotalMRP - subtotal).toLocaleString()}</span>
                       </div>
                     )}
                     {couponDiscount > 0 && (
-                      <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                      <div className="flex justify-between text-[10px] font-semibold uppercase tracking-widest">
                         <span className="text-green-400 flex items-center gap-1"><Tag size={9} /> Coupon</span>
                         <span className="text-green-400">- ₹{couponDiscount.toLocaleString()}</span>
                       </div>
                     )}
-                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                    <div className="flex justify-between text-[10px] font-semibold uppercase tracking-widest">
                       <span className="text-gray-500">Delivery</span>
                       {deliveryCharge === 0
-                        ? <span className="text-green-400 font-black">FREE DELIVERY</span>
+                        ? <span className="text-green-400 font-semibold">FREE DELIVERY</span>
                         : <span className="text-yellow-500">₹{deliveryCharge.toLocaleString()}</span>
                       }
                     </div>
                     {amountToFreeDelivery > 0 && (
                       <div className="bg-yellow-500/5 border border-yellow-500/15 rounded-xl p-2.5 text-center">
-                        <p className="text-[9px] font-black text-yellow-400 uppercase tracking-widest">
+                        <p className="text-[9px] font-semibold text-yellow-400 uppercase tracking-widest">
                           Add ₹{amountToFreeDelivery.toLocaleString()} more to unlock FREE DELIVERY
                         </p>
                       </div>
                     )}
-                    <div className="flex justify-between text-sm font-black pt-2 border-t border-white/5">
+                    <div className="flex justify-between text-sm font-semibold pt-2 border-t border-white/5">
                       <span className="text-gray-300 uppercase tracking-widest text-[10px]">Total</span>
                       <span className="gold-text text-lg">₹{total.toLocaleString()}</span>
                     </div>
                     {totalSavings > 0 && (
                       <div className="bg-green-500/5 border border-green-500/10 rounded-xl p-2.5 text-center">
-                        <p className="text-[9px] font-black text-green-500 uppercase tracking-widest">You save ₹{totalSavings.toLocaleString()} 🎉</p>
+                        <p className="text-[9px] font-semibold text-green-500 uppercase tracking-widest">You save ₹{totalSavings.toLocaleString()} 🎉</p>
                       </div>
                     )}
                   </div>
@@ -1100,11 +1273,11 @@ const Checkout = () => {
                       <div className="flex items-start gap-3">
                         <MapPin size={13} className="text-yellow-500 mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="text-[9px] font-black text-white uppercase tracking-widest">{selectedAddr.name}</p>
+                          <p className="text-[9px] font-semibold text-white uppercase tracking-widest">{selectedAddr.name}</p>
                           <p className="text-[8px] text-gray-600 mt-0.5">{selectedAddr.address}, {selectedAddr.pincode}</p>
                         </div>
                       </div>
-                      <button onClick={() => setCheckoutStep(1)} className="text-[8px] font-black text-yellow-500 uppercase tracking-widest flex items-center gap-1">
+                      <button onClick={() => setCheckoutStep(1)} className="text-[8px] font-semibold text-yellow-500 uppercase tracking-widest flex items-center gap-1">
                         <Edit2 size={10} /> Change
                       </button>
                     </div>
@@ -1112,7 +1285,7 @@ const Checkout = () => {
 
                   {/* Payment method selection */}
                   <div className="bg-gray-900/40 border border-yellow-900/15 rounded-2xl p-5">
-                    <p className="text-[9px] font-black text-yellow-500/80 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
+                    <p className="text-[9px] font-semibold text-yellow-500/80 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
                       <CreditCard size={12} /> Payment Method
                     </p>
                     <div className="space-y-3">
@@ -1131,12 +1304,12 @@ const Checkout = () => {
                           <CreditCard size={18} />
                         </div>
                         <div className="flex-1">
-                          <p className="font-black text-white uppercase tracking-widest text-xs">Pay Online</p>
+                          <p className="font-semibold text-white uppercase tracking-widest text-xs">Pay Online</p>
                           <p className="text-[9px] text-gray-500 mt-1 leading-relaxed">UPI, Cards, GPay, PhonePe, Netbanking, etc.</p>
                           {paymentMethod === 'online' && (
                             <div className="mt-2.5 flex items-center gap-1.5">
                               <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                              <span className="text-[9px] font-black text-green-500 uppercase tracking-widest">Selected</span>
+                              <span className="text-[9px] font-semibold text-green-500 uppercase tracking-widest">Selected</span>
                             </div>
                           )}
                         </div>
@@ -1158,12 +1331,12 @@ const Checkout = () => {
                             <ShieldCheck size={18} />
                           </div>
                           <div className="flex-1">
-                            <p className="font-black text-white uppercase tracking-widest text-xs">Cash on Delivery</p>
+                            <p className="font-semibold text-white uppercase tracking-widest text-xs">Cash on Delivery</p>
                             <p className="text-[9px] text-gray-500 mt-1 leading-relaxed">Pay securely when your order arrives at your doorstep.</p>
                             {paymentMethod === 'cod' && (
                               <div className="mt-2.5 flex items-center gap-1.5">
                                 <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                                <span className="text-[9px] font-black text-green-500 uppercase tracking-widest">Selected</span>
+                                <span className="text-[9px] font-semibold text-green-500 uppercase tracking-widest">Selected</span>
                               </div>
                             )}
                           </div>
@@ -1177,7 +1350,7 @@ const Checkout = () => {
                             <ShieldCheck size={18} />
                           </div>
                           <div className="flex-1">
-                            <p className="font-black text-gray-400 uppercase tracking-widest text-xs">Cash on Delivery</p>
+                            <p className="font-semibold text-gray-400 uppercase tracking-widest text-xs">Cash on Delivery</p>
                             <p className="text-[9px] text-gray-500 mt-1 leading-relaxed">Pay securely when your order arrives at your doorstep.</p>
                           </div>
                         </div>
@@ -1195,41 +1368,41 @@ const Checkout = () => {
 
                   {/* Final price summary */}
                   <div className="bg-gray-900/40 border border-white/5 rounded-2xl p-4 space-y-3">
-                    <h3 className="text-[9px] font-black text-white uppercase tracking-[0.3em] border-b border-white/5 pb-2">Order Total</h3>
-                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                    <h3 className="text-[9px] font-semibold text-white uppercase tracking-[0.3em] border-b border-white/5 pb-2">Order Total</h3>
+                    <div className="flex justify-between text-[10px] font-semibold uppercase tracking-widest">
                       <span className="text-gray-500">Subtotal</span>
                       <span className="text-white">₹{subtotal.toLocaleString()}</span>
                     </div>
                     {couponDiscount > 0 && (
-                      <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                      <div className="flex justify-between text-[10px] font-semibold uppercase tracking-widest">
                         <span className="text-green-400 flex items-center gap-1"><Tag size={9} /> Coupon</span>
                         <span className="text-green-400">- ₹{couponDiscount.toLocaleString()}</span>
                       </div>
                     )}
-                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                    <div className="flex justify-between text-[10px] font-semibold uppercase tracking-widest">
                       <span className="text-gray-500">Delivery</span>
                       {deliveryCharge === 0
-                        ? <span className="text-green-400 font-black">FREE DELIVERY</span>
+                        ? <span className="text-green-400 font-semibold">FREE DELIVERY</span>
                         : <span className="text-yellow-500">₹{deliveryCharge.toLocaleString()}</span>
                       }
                     </div>
                     {amountToFreeDelivery > 0 && (
                       <div className="bg-yellow-500/5 border border-yellow-500/15 rounded-xl p-2.5 text-center">
-                        <p className="text-[9px] font-black text-yellow-400 uppercase tracking-widest">
+                        <p className="text-[9px] font-semibold text-yellow-400 uppercase tracking-widest">
                           Add ₹{amountToFreeDelivery.toLocaleString()} more to unlock FREE DELIVERY
                         </p>
                       </div>
                     )}
                     <div className="flex justify-between pt-2 border-t border-white/5">
-                      <span className="text-xs font-black text-gray-300 uppercase tracking-widest">Amount to Pay</span>
-                      <span className="text-2xl font-black gold-text">₹{total.toLocaleString()}</span>
+                      <span className="text-xs font-semibold text-gray-300 uppercase tracking-widest">Amount to Pay</span>
+                      <span className="text-2xl font-semibold gold-text">₹{total.toLocaleString()}</span>
                     </div>
                   </div>
 
                   {/* Security badge */}
                   <div className="flex items-center gap-3 p-3.5 bg-black/30 border border-yellow-500/10 rounded-2xl">
                     <ShieldCheck size={16} className="text-yellow-500 flex-shrink-0" />
-                    <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest leading-relaxed">
+                    <p className="text-[8px] font-semibold text-gray-600 uppercase tracking-widest leading-relaxed">
                       256-bit encrypted checkout. Your data is safe.
                     </p>
                   </div>
@@ -1238,7 +1411,7 @@ const Checkout = () => {
                   <button
                     onClick={placeOrder}
                     disabled={loading || (!selectedAddressId && !showNewAddressForm)}
-                    className={`hidden md:flex w-full h-[56px] rounded-[14px] font-bold text-base uppercase tracking-wider transition-all duration-300 mt-2 items-center justify-center gap-3 active:scale-95 ${loading || (!selectedAddressId && !showNewAddressForm)
+                    className={`hidden md:flex w-full h-[56px] rounded-[14px] font-semibold text-base uppercase tracking-wider transition-all duration-300 mt-2 items-center justify-center gap-3 active:scale-95 ${loading || (!selectedAddressId && !showNewAddressForm)
                         ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
                         : 'bg-yellow-500 text-black shadow-[0_0_24px_rgba(255,196,0,0.3)] hover:shadow-[0_0_30px_rgba(255,196,0,0.45)] hover:scale-[1.02] hover:brightness-110'
                       }`}
@@ -1263,8 +1436,8 @@ const Checkout = () => {
       <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-[60] bg-gray-950 backdrop-blur-xl border-t border-yellow-900/30 shadow-[0_-4px_24px_rgba(0,0,0,0.6)]">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-4">
           <div className="text-left flex-shrink-0">
-            <p className="text-[8px] text-gray-600 font-black uppercase tracking-widest">Total</p>
-            <p className="text-xl font-black gold-text">₹{total.toLocaleString()}</p>
+            <p className="text-[8px] text-gray-600 font-semibold uppercase tracking-widest">Total</p>
+            <p className="text-xl font-semibold gold-text">₹{total.toLocaleString()}</p>
           </div>
           <div className="flex-1">
             {checkoutStep === 1 && (
@@ -1276,14 +1449,14 @@ const Checkout = () => {
                   }
                   setCheckoutStep(2);
                 }}
-                className="w-full h-[54px] rounded-[14px] bg-yellow-500 text-black font-black text-sm uppercase tracking-wider shadow-[0_0_22px_rgba(255,196,0,0.4)] hover:brightness-110 active:scale-[0.97] transition-all flex items-center justify-center gap-2">
+                className="w-full h-[54px] rounded-[14px] bg-yellow-500 text-black font-semibold text-sm uppercase tracking-wider shadow-[0_0_22px_rgba(255,196,0,0.4)] hover:brightness-110 active:scale-[0.97] transition-all flex items-center justify-center gap-2">
                 Continue <ChevronRight size={18} />
               </button>
             )}
             {checkoutStep === 2 && (
               <button
                 onClick={() => setCheckoutStep(3)}
-                className="w-full h-[54px] rounded-[14px] bg-yellow-500 text-black font-black text-sm uppercase tracking-wider shadow-[0_0_22px_rgba(255,196,0,0.4)] hover:brightness-110 active:scale-[0.97] transition-all flex items-center justify-center gap-2">
+                className="w-full h-[54px] rounded-[14px] bg-yellow-500 text-black font-semibold text-sm uppercase tracking-wider shadow-[0_0_22px_rgba(255,196,0,0.4)] hover:brightness-110 active:scale-[0.97] transition-all flex items-center justify-center gap-2">
                 Proceed to Payment <ChevronRight size={18} />
               </button>
             )}
@@ -1291,7 +1464,7 @@ const Checkout = () => {
               <button
                 onClick={placeOrder}
                 disabled={loading || (!selectedAddressId && !showNewAddressForm)}
-                className={`w-full h-[54px] rounded-[14px] font-bold text-sm uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 active:scale-[0.97] ${loading || (!selectedAddressId && !showNewAddressForm)
+                className={`w-full h-[54px] rounded-[14px] font-semibold text-sm uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 active:scale-[0.97] ${loading || (!selectedAddressId && !showNewAddressForm)
                     ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
                     : 'bg-yellow-500 text-black shadow-[0_0_24px_rgba(255,196,0,0.45)] hover:brightness-110'
                   }`}>
@@ -1332,8 +1505,8 @@ const Checkout = () => {
                 <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto shadow-2xl">
                   <Trash2 size={28} />
                 </div>
-                <h3 className="text-lg font-black text-white uppercase tracking-wider">Confirm Deletion</h3>
-                <p className="text-xs text-gray-400 font-bold leading-relaxed uppercase tracking-widest">
+                <h3 className="text-lg font-semibold text-white uppercase tracking-wider">Confirm Deletion</h3>
+                <p className="text-xs text-gray-400 font-semibold leading-relaxed uppercase tracking-widest">
                   Are you sure you want to delete this address?
                 </p>
               </div>
@@ -1343,7 +1516,7 @@ const Checkout = () => {
                   type="button"
                   disabled={isDeleting}
                   onClick={() => setAddressToDelete(null)}
-                  className="flex-1 py-4 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/5 active:scale-95 transition-all"
+                  className="flex-1 py-4 border border-white/10 rounded-2xl text-[10px] font-semibold uppercase tracking-widest text-white hover:bg-white/5 active:scale-95 transition-all"
                 >
                   Cancel
                 </button>
@@ -1351,7 +1524,7 @@ const Checkout = () => {
                   type="button"
                   disabled={isDeleting}
                   onClick={handleConfirmDelete}
-                  className="flex-1 py-4 bg-red-600 hover:bg-red-700 disabled:bg-gray-800 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-2xl shadow-red-600/20 flex items-center justify-center gap-3 active:scale-95 transition-all"
+                  className="flex-1 py-4 bg-red-600 hover:bg-red-700 disabled:bg-gray-800 text-white rounded-2xl text-[10px] font-semibold uppercase tracking-widest shadow-2xl shadow-red-600/20 flex items-center justify-center gap-3 active:scale-95 transition-all"
                 >
                   {isDeleting ? <Loader2 size={14} className="animate-spin" /> : 'Delete'}
                 </button>

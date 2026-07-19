@@ -101,7 +101,7 @@ const ComplaintDetailModal = ({ complaint, onClose, onUpdate }) => {
           {/* Modal Header */}
           <div className="sticky top-0 bg-gray-950 border-b border-gray-800 px-6 py-5 flex items-center justify-between rounded-t-3xl z-10">
             <div>
-              <h2 className="text-lg font-black text-white">Complaint Details</h2>
+              <h2 className="text-lg font-semibold text-white">Complaint Details</h2>
               <p className="text-xs text-gray-500 mt-0.5">ID: {complaint.id?.slice(-8).toUpperCase()}</p>
             </div>
             <div className="flex items-center gap-3">
@@ -110,7 +110,7 @@ const ComplaintDetailModal = ({ complaint, onClose, onUpdate }) => {
                 href={`https://wa.me/919677417185?text=${generateWhatsAppMsg(complaint)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 px-3 py-2 rounded-xl text-xs font-bold transition-all"
+                className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
               >
                 <Phone size={14} /> WhatsApp
               </a>
@@ -124,7 +124,7 @@ const ComplaintDetailModal = ({ complaint, onClose, onUpdate }) => {
             {/* Status + Priority Row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="complaint-detail-status" className="block text-xs font-black text-gray-400 uppercase tracking-wider mb-2">Status</label>
+                <label htmlFor="complaint-detail-status" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Status</label>
                 <div className="relative">
                   <select
                     id="complaint-detail-status"
@@ -139,7 +139,7 @@ const ComplaintDetailModal = ({ complaint, onClose, onUpdate }) => {
                 </div>
               </div>
               <div>
-                <label htmlFor="complaint-detail-priority" className="block text-xs font-black text-gray-400 uppercase tracking-wider mb-2">Priority</label>
+                <label htmlFor="complaint-detail-priority" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Priority</label>
                 <div className="relative">
                   <select
                     id="complaint-detail-priority"
@@ -157,49 +157,49 @@ const ComplaintDetailModal = ({ complaint, onClose, onUpdate }) => {
 
             {/* Customer Info */}
             <div className="bg-gray-900 rounded-2xl p-4">
-              <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                 <User size={12} /> Customer Information
               </p>
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
                   <p className="text-gray-500 mb-0.5">Name</p>
-                  <p className="text-white font-bold">{complaint.customerName || '—'}</p>
+                  <p className="text-white font-semibold">{complaint.customerName || '—'}</p>
                 </div>
                 <div>
                   <p className="text-gray-500 mb-0.5">Phone</p>
-                  <p className="text-white font-bold">{complaint.customerPhone || '—'}</p>
+                  <p className="text-white font-semibold">{complaint.customerPhone || '—'}</p>
                 </div>
               </div>
             </div>
 
             {/* Order Info */}
             <div className="bg-gray-900 rounded-2xl p-4">
-              <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                 <Package size={12} /> Order Information
               </p>
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
                   <p className="text-gray-500 mb-0.5">Order ID</p>
-                  <p className="text-white font-mono font-bold">#{complaint.orderShortId || complaint.orderId?.slice(-8).toUpperCase()}</p>
+                  <p className="text-white font-mono font-semibold">#{complaint.orderShortId || complaint.orderId?.slice(-8).toUpperCase()}</p>
                 </div>
                 <div>
                   <p className="text-gray-500 mb-0.5">Product(s)</p>
-                  <p className="text-white font-bold truncate">{complaint.productNames || '—'}</p>
+                  <p className="text-white font-semibold truncate">{complaint.productNames || '—'}</p>
                 </div>
                 <div>
                   <p className="text-gray-500 mb-0.5">Complaint Type</p>
-                  <p className="text-yellow-400 font-bold">{complaint.complaintType}</p>
+                  <p className="text-yellow-400 font-semibold">{complaint.complaintType}</p>
                 </div>
                 <div>
                   <p className="text-gray-500 mb-0.5">Submitted</p>
-                  <p className="text-white font-bold">{formatDate(complaint.createdAt)}</p>
+                  <p className="text-white font-semibold">{formatDate(complaint.createdAt)}</p>
                 </div>
               </div>
             </div>
 
             {/* Complaint Description */}
             <div>
-              <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
                 <FileText size={12} /> Complaint Description
               </p>
               <div className="bg-gray-900 rounded-2xl p-4 text-sm text-gray-200 leading-relaxed">
@@ -210,7 +210,7 @@ const ComplaintDetailModal = ({ complaint, onClose, onUpdate }) => {
             {/* Images */}
             {complaint.images?.length > 0 && (
               <div>
-                <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                   <ImageIcon size={12} /> Customer Images ({complaint.images.length})
                 </p>
                 <div className="flex flex-wrap gap-3">
@@ -231,7 +231,7 @@ const ComplaintDetailModal = ({ complaint, onClose, onUpdate }) => {
             {/* Video */}
             {complaint.video && (
               <div>
-                <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                   <Video size={12} /> Customer Video
                 </p>
                 <video src={complaint.video} controls className="w-full max-h-64 rounded-2xl bg-black border border-gray-700" />
@@ -240,7 +240,7 @@ const ComplaintDetailModal = ({ complaint, onClose, onUpdate }) => {
 
             {/* Admin Notes */}
             <div>
-              <label htmlFor="complaint-admin-notes" className="block text-xs font-black text-gray-400 uppercase tracking-wider mb-2">
+              <label htmlFor="complaint-admin-notes" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                 Internal Admin Notes (not visible to customer)
               </label>
               <textarea
@@ -256,7 +256,7 @@ const ComplaintDetailModal = ({ complaint, onClose, onUpdate }) => {
 
             {/* Reply to Customer */}
             <div>
-              <label htmlFor="complaint-admin-reply" className="block text-xs font-black text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+              <label htmlFor="complaint-admin-reply" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
                 <Send size={12} /> Reply to Customer (visible to customer)
               </label>
               <textarea
@@ -275,7 +275,7 @@ const ComplaintDetailModal = ({ complaint, onClose, onUpdate }) => {
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="w-full bg-yellow-500 hover:bg-yellow-400 disabled:opacity-60 text-black py-4 rounded-2xl font-black uppercase tracking-wider text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
+              className="w-full bg-yellow-500 hover:bg-yellow-400 disabled:opacity-60 text-black py-4 rounded-2xl font-semibold uppercase tracking-wider text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
             >
               {saving ? <Loader2 size={18} className="animate-spin" /> : saved ? <CheckCircle2 size={18} /> : null}
               {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
@@ -409,14 +409,14 @@ const ComplaintsManage = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Customer Complaints</h1>
+          <h1 className="text-3xl font-semibold text-white tracking-tight">Customer Complaints</h1>
           <p className="text-gray-500 text-sm font-medium mt-1">Manage and respond to customer issues</p>
         </div>
         <button
           type="button"
           onClick={load}
           disabled={loading}
-          className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-all"
+          className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           Refresh
@@ -432,8 +432,8 @@ const ComplaintsManage = () => {
           { label: 'Resolved', value: stats.resolved, color: 'bg-green-500/10 text-green-400', border: 'border-green-500/20' },
         ].map(s => (
           <div key={s.label} className={`bg-gray-900 border ${s.border} rounded-2xl p-4`}>
-            <p className="text-xs font-black text-gray-500 uppercase tracking-wider mb-1">{s.label}</p>
-            <p className={`text-3xl font-black ${s.color.split(' ')[1]}`}>{s.value}</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{s.label}</p>
+            <p className={`text-3xl font-semibold ${s.color.split(' ')[1]}`}>{s.value}</p>
           </div>
         ))}
       </div>
@@ -485,7 +485,7 @@ const ComplaintsManage = () => {
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 text-gray-600">
           <MessageSquare size={48} className="mx-auto mb-4 opacity-30" />
-          <p className="font-bold text-lg">No complaints found</p>
+          <p className="font-semibold text-lg">No complaints found</p>
         </div>
       ) : (
         <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
@@ -518,7 +518,7 @@ const ComplaintsManage = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <p className="font-bold text-white">{c.customerName || '—'}</p>
+                        <p className="font-semibold text-white">{c.customerName || '—'}</p>
                         <p className="text-xs text-gray-500">{c.customerPhone}</p>
                       </td>
                       <td className="px-4 py-3">
@@ -531,12 +531,12 @@ const ComplaintsManage = () => {
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-400">{formatDate(c.createdAt)}</td>
                       <td className="px-4 py-3">
-                        <span className={`text-[10px] font-black px-2 py-1 rounded-full border ${pColor}`}>
+                        <span className={`text-[10px] font-semibold px-2 py-1 rounded-full border ${pColor}`}>
                           {c.priority || 'Medium'}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`flex items-center gap-1.5 text-[10px] font-black px-2 py-1 rounded-full border w-fit ${cfg.bg} ${cfg.color}`}>
+                        <span className={`flex items-center gap-1.5 text-[10px] font-semibold px-2 py-1 rounded-full border w-fit ${cfg.bg} ${cfg.color}`}>
                           <StatusIcon size={10} />
                           {c.status}
                         </span>
@@ -547,7 +547,7 @@ const ComplaintsManage = () => {
                           <button
                             type="button"
                             onClick={() => setSelected(c)}
-                            className="flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                            className="flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
                             title="View Details"
                           >
                             <span>👁</span> View
@@ -558,7 +558,7 @@ const ComplaintsManage = () => {
                             <button
                               type="button"
                               onClick={() => setActiveStatusSelectId(activeStatusSelectId === c.id ? null : c.id)}
-                              className="flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                              className="flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
                               title="Edit Status"
                             >
                               <span>✏</span> Edit Status
@@ -579,7 +579,7 @@ const ComplaintsManage = () => {
                                         handleStatusChange(c.id, statusOpt);
                                         setActiveStatusSelectId(null);
                                       }}
-                                      className={`w-full text-left px-4 py-2 text-xs transition-colors font-bold ${
+                                      className={`w-full text-left px-4 py-2 text-xs transition-colors font-semibold ${
                                         c.status === statusOpt 
                                           ? 'bg-yellow-500 text-black' 
                                           : 'text-white hover:bg-yellow-500/20'
@@ -598,7 +598,7 @@ const ComplaintsManage = () => {
                             <button
                               type="button"
                               onClick={() => handleMarkResolved(c.id)}
-                              className="flex items-center gap-1.5 bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                              className="flex items-center gap-1.5 bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
                               title="Mark as Resolved"
                             >
                               <span>✅</span> Mark Resolved
@@ -609,7 +609,7 @@ const ComplaintsManage = () => {
                           <button
                             type="button"
                             onClick={() => handleDeleteClick(c)}
-                            className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                            className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
                             title="Delete Complaint"
                           >
                             <span>🗑</span> Delete
@@ -635,14 +635,14 @@ const ComplaintsManage = () => {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className={`flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full border ${cfg.bg} ${cfg.color}`}>
+                        <span className={`flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full border ${cfg.bg} ${cfg.color}`}>
                           <StatusIcon size={9} />{c.status}
                         </span>
-                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border ${pColor}`}>
+                        <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-full border ${pColor}`}>
                           {c.priority || 'Medium'}
                         </span>
                       </div>
-                      <p className="font-black text-white text-sm">{c.customerName}</p>
+                      <p className="font-semibold text-white text-sm">{c.customerName}</p>
                       <p className="text-xs text-gray-500">{c.customerPhone}</p>
                     </div>
                     <button
@@ -673,7 +673,7 @@ const ComplaintsManage = () => {
                     <button
                       type="button"
                       onClick={() => setSelected(c)}
-                      className="flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+                      className="flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
                     >
                       <span>👁</span> View
                     </button>
@@ -683,7 +683,7 @@ const ComplaintsManage = () => {
                       <button
                         type="button"
                         onClick={() => setActiveStatusSelectId(activeStatusSelectId === c.id ? null : c.id)}
-                        className="flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+                        className="flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
                       >
                         <span>✏</span> Edit Status
                       </button>
@@ -703,7 +703,7 @@ const ComplaintsManage = () => {
                                   handleStatusChange(c.id, statusOpt);
                                   setActiveStatusSelectId(null);
                                 }}
-                                className={`w-full text-left px-4 py-2 text-xs transition-colors font-bold ${
+                                className={`w-full text-left px-4 py-2 text-xs transition-colors font-semibold ${
                                   c.status === statusOpt 
                                     ? 'bg-yellow-500 text-black' 
                                     : 'text-white hover:bg-yellow-500/20'
@@ -722,7 +722,7 @@ const ComplaintsManage = () => {
                       <button
                         type="button"
                         onClick={() => handleMarkResolved(c.id)}
-                        className="flex items-center gap-1.5 bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+                        className="flex items-center gap-1.5 bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
                       >
                         <span>✅</span> Mark Resolved
                       </button>
@@ -732,7 +732,7 @@ const ComplaintsManage = () => {
                     <button
                       type="button"
                       onClick={() => handleDeleteClick(c)}
-                      className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ml-auto"
+                      className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ml-auto"
                     >
                       <span>🗑</span> Delete
                     </button>
@@ -757,20 +757,20 @@ const ComplaintsManage = () => {
       {deletingComplaint && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
           <div className="bg-gray-950 border border-gray-800 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
-            <h3 className="text-lg font-black text-white uppercase tracking-wider">Delete Complaint</h3>
+            <h3 className="text-lg font-semibold text-white uppercase tracking-wider">Delete Complaint</h3>
             <p className="text-sm text-gray-400">Are you sure you want to permanently delete this complaint?</p>
             <div className="flex gap-3 justify-center pt-2">
               <button
                 type="button"
                 onClick={() => setDeletingComplaint(null)}
-                className="bg-gray-800 hover:bg-gray-700 text-white font-bold text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all"
+                className="bg-gray-800 hover:bg-gray-700 text-white font-semibold text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={confirmDelete}
-                className="bg-red-600 hover:bg-red-500 text-white font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all"
+                className="bg-red-600 hover:bg-red-500 text-white font-semibold text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all"
               >
                 Delete
               </button>

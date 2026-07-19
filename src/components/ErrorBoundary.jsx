@@ -111,7 +111,7 @@ class ErrorBoundary extends React.Component {
             </div>
 
             {/* Title */}
-            <h2 className="text-xl font-black text-white uppercase tracking-wider mb-2">
+            <h2 className="text-xl font-semibold text-white uppercase tracking-wider mb-2">
               {isQuota
                 ? 'Service Temporarily Limited'
                 : isNetwork
@@ -134,7 +134,7 @@ class ErrorBoundary extends React.Component {
                 <button
                   type="button"
                   onClick={() => this.setState(s => ({ showDetails: !s.showDetails }))}
-                  className="text-[10px] text-yellow-500/80 hover:text-yellow-400 font-black uppercase tracking-wider transition-colors mb-2 focus:outline-none flex items-center gap-1 mx-auto"
+                  className="text-[10px] text-yellow-500/80 hover:text-yellow-400 font-semibold uppercase tracking-wider transition-colors mb-2 focus:outline-none flex items-center gap-1 mx-auto"
                 >
                   {this.state.showDetails
                     ? <><span>Hide Details</span> <ChevronUp size={12} /></>
@@ -142,7 +142,7 @@ class ErrorBoundary extends React.Component {
                 </button>
                 {this.state.showDetails && (
                   <div className="bg-slate-950 border border-gray-800 rounded-xl p-4 text-left overflow-x-auto text-[10px] font-mono text-red-400 leading-tight max-h-40 select-text">
-                    <p className="font-bold mb-1">{this.state.error.toString()}</p>
+                    <p className="font-semibold mb-1">{this.state.error.toString()}</p>
                     {this.state.errorInfo?.componentStack && (
                       <pre className="whitespace-pre text-neutral-500 mt-2 font-mono text-[9px]">
                         {this.state.errorInfo.componentStack}
@@ -160,7 +160,7 @@ class ErrorBoundary extends React.Component {
                   type="button"
                   onClick={this.handleClearCacheAndRetry}
                   disabled={this.state.clearingCache}
-                  className="w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-4 px-6 rounded-2xl transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 uppercase tracking-widest text-xs disabled:opacity-60"
+                  className="w-full bg-orange-600 hover:bg-orange-500 text-white font-semibold py-4 px-6 rounded-2xl transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 uppercase tracking-widest text-xs disabled:opacity-60"
                 >
                   <Database size={14} />
                   {this.state.clearingCache ? 'Clearing Cache...' : 'Clear Cache & Restart'}
@@ -169,7 +169,7 @@ class ErrorBoundary extends React.Component {
                 <button
                   type="button"
                   onClick={this.handleRetry}
-                  className="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-black py-4 px-6 rounded-2xl transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 uppercase tracking-widest text-xs"
+                  className="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-semibold py-4 px-6 rounded-2xl transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 uppercase tracking-widest text-xs"
                 >
                   <RefreshCw size={14} />
                   Reload Application
@@ -181,7 +181,7 @@ class ErrorBoundary extends React.Component {
                 <button
                   type="button"
                   onClick={this.handleRetry}
-                  className="w-full bg-neutral-800 hover:bg-neutral-700 text-gray-300 font-bold py-3.5 px-6 rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 uppercase tracking-widest text-[9px] border border-neutral-700"
+                  className="w-full bg-neutral-800 hover:bg-neutral-700 text-gray-300 font-semibold py-3.5 px-6 rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 uppercase tracking-widest text-[9px] border border-neutral-700"
                 >
                   <RefreshCw size={12} /> Simple Reload
                 </button>
@@ -190,7 +190,7 @@ class ErrorBoundary extends React.Component {
               {/* Report button — only for non-quota errors */}
               {!isQuota && (
                 this.state.reported ? (
-                  <div className="py-2.5 bg-green-500/10 border border-green-500/20 text-green-400 rounded-xl text-[9px] font-black uppercase tracking-widest text-center">
+                  <div className="py-2.5 bg-green-500/10 border border-green-500/20 text-green-400 rounded-xl text-[9px] font-semibold uppercase tracking-widest text-center">
                     ✓ Issue reported to admin
                   </div>
                 ) : (
@@ -198,7 +198,7 @@ class ErrorBoundary extends React.Component {
                     type="button"
                     onClick={this.handleReport}
                     disabled={this.state.reporting}
-                    className="w-full bg-neutral-800 hover:bg-neutral-700 text-gray-300 font-bold py-3.5 px-6 rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 uppercase tracking-widest text-[9px] disabled:opacity-50 border border-neutral-800"
+                    className="w-full bg-neutral-800 hover:bg-neutral-700 text-gray-300 font-semibold py-3.5 px-6 rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 uppercase tracking-widest text-[9px] disabled:opacity-50 border border-neutral-800"
                   >
                     {this.state.reporting ? 'Submitting...' : 'Report This Issue'}
                   </button>

@@ -45,11 +45,11 @@ const OrderTracker = ({ currentStatus = 'ordered' }) => {
 
               {/* Step Label */}
               <div className="mt-3 text-center px-0.5">
-                <p className={`text-[7px] md:text-[9px] font-black uppercase tracking-widest ${isCompleted ? 'text-neutral-200' : 'text-neutral-600'}`}>
+                <p className={`text-[7px] md:text-[9px] font-semibold uppercase tracking-widest ${isCompleted ? 'text-neutral-200' : 'text-neutral-600'}`}>
                   {step.label}
                 </p>
                 {isActive && (
-                  <span className="inline-block text-[6px] md:text-[8px] font-bold mt-0.5 px-1.5 py-0.2 bg-yellow-500/10 text-yellow-500 rounded border border-yellow-500/20 uppercase tracking-wider animate-pulse">
+                  <span className="inline-block text-[6px] md:text-[8px] font-semibold mt-0.5 px-1.5 py-0.2 bg-yellow-500/10 text-yellow-500 rounded border border-yellow-500/20 uppercase tracking-wider animate-pulse">
                     Active
                   </span>
                 )}

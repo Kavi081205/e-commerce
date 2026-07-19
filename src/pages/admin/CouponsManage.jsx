@@ -120,13 +120,13 @@ const CouponsManage = () => {
       {/* Header */}
       <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Coupon Management</h1>
+          <h1 className="text-3xl font-semibold text-white tracking-tight">Coupon Management</h1>
           <p className="text-gray-500 text-sm font-medium mt-1">Create and manage discount coupon codes</p>
         </div>
         <button
           type="button"
           onClick={() => setShowForm(prev => !prev)}
-          className="flex items-center gap-2 bg-yellow-500 text-black font-black px-6 py-3 rounded-xl text-sm uppercase tracking-widest hover:bg-yellow-400 transition-all active:scale-95 shadow-lg shadow-yellow-500/20"
+          className="flex items-center gap-2 bg-yellow-500 text-black font-semibold px-6 py-3 rounded-xl text-sm uppercase tracking-widest hover:bg-yellow-400 transition-all active:scale-95 shadow-lg shadow-yellow-500/20"
         >
           <Plus size={18} /> {showForm ? 'Cancel' : 'New Coupon'}
         </button>
@@ -135,12 +135,12 @@ const CouponsManage = () => {
       {/* Create Coupon Form */}
       {showForm && (
         <div className="bg-gray-900 border border-yellow-900/20 rounded-2xl p-8 mb-8 shadow-2xl">
-          <h2 className="text-lg font-black text-white uppercase tracking-widest mb-6 flex items-center gap-3">
+          <h2 className="text-lg font-semibold text-white uppercase tracking-widest mb-6 flex items-center gap-3">
             <Tag size={20} className="text-yellow-500" /> Create New Coupon
           </h2>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="space-y-2">
-              <label htmlFor="coupon-code" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Coupon Code *</label>
+              <label htmlFor="coupon-code" className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Coupon Code *</label>
               <input
                 id="coupon-code"
                 name="code"
@@ -149,24 +149,24 @@ const CouponsManage = () => {
                 required
                 autoComplete="off"
                 placeholder="e.g. SAVE100"
-                className="w-full bg-black/50 border border-yellow-900/30 text-white rounded-xl px-4 py-3 text-sm font-black uppercase tracking-widest outline-none focus:border-yellow-500 transition-all"
+                className="w-full bg-black/50 border border-yellow-900/30 text-white rounded-xl px-4 py-3 text-sm font-semibold uppercase tracking-widest outline-none focus:border-yellow-500 transition-all"
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="coupon-discount-type" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Discount Type *</label>
+              <label htmlFor="coupon-discount-type" className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Discount Type *</label>
               <select
                 id="coupon-discount-type"
                 name="discountType"
                 value={form.discountType}
                 onChange={handleChange}
-                className="w-full bg-black/50 border border-yellow-900/30 text-white rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-yellow-500 transition-all"
+                className="w-full bg-black/50 border border-yellow-900/30 text-white rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:border-yellow-500 transition-all"
               >
                 <option value="fixed">Fixed Amount (₹)</option>
                 <option value="percentage">Percentage (%)</option>
               </select>
             </div>
             <div className="space-y-2">
-              <label htmlFor="coupon-discount-value" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              <label htmlFor="coupon-discount-value" className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
                 Discount Value * {form.discountType === 'percentage' ? '(%)' : '(₹)'}
               </label>
               <input
@@ -179,11 +179,11 @@ const CouponsManage = () => {
                 onChange={handleChange}
                 required
                 placeholder={form.discountType === 'percentage' ? 'e.g. 10' : 'e.g. 100'}
-                className="w-full bg-black/50 border border-yellow-900/30 text-white rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-yellow-500 transition-all"
+                className="w-full bg-black/50 border border-yellow-900/30 text-white rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:border-yellow-500 transition-all"
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="coupon-min-order" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Min. Order Amount (₹)</label>
+              <label htmlFor="coupon-min-order" className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Min. Order Amount (₹)</label>
               <input
                 id="coupon-min-order"
                 name="minOrderAmount"
@@ -192,11 +192,11 @@ const CouponsManage = () => {
                 value={form.minOrderAmount}
                 onChange={handleChange}
                 placeholder="e.g. 500 (0 for no minimum)"
-                className="w-full bg-black/50 border border-yellow-900/30 text-white rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-yellow-500 transition-all"
+                className="w-full bg-black/50 border border-yellow-900/30 text-white rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:border-yellow-500 transition-all"
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="coupon-expiry" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Expiry Date *</label>
+              <label htmlFor="coupon-expiry" className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Expiry Date *</label>
               <input
                 id="coupon-expiry"
                 name="expiryDate"
@@ -205,11 +205,11 @@ const CouponsManage = () => {
                 onChange={handleChange}
                 required
                 min={new Date().toISOString().split('T')[0]}
-                className="w-full bg-black/50 border border-yellow-900/30 text-white rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-yellow-500 transition-all"
+                className="w-full bg-black/50 border border-yellow-900/30 text-white rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:border-yellow-500 transition-all"
               />
             </div>
             <div className="space-y-2 flex flex-col justify-end">
-              <label htmlFor="coupon-active" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</label>
+              <label htmlFor="coupon-active" className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Status</label>
               <div className="flex items-center gap-3 cursor-pointer bg-black/30 border border-yellow-900/20 rounded-xl px-4 py-3">
                 <input
                   id="coupon-active"
@@ -219,7 +219,7 @@ const CouponsManage = () => {
                   onChange={handleChange}
                   className="w-4 h-4 accent-yellow-500"
                 />
-                <span className="text-sm font-black text-white uppercase tracking-widest">
+                <span className="text-sm font-semibold text-white uppercase tracking-widest">
                   {form.isActive ? 'Active' : 'Disabled'}
                 </span>
               </div>
@@ -228,7 +228,7 @@ const CouponsManage = () => {
               <button
                 type="submit"
                 disabled={saving}
-                className="flex items-center gap-3 bg-yellow-500 text-black font-black px-10 py-3 rounded-xl text-sm uppercase tracking-widest hover:bg-yellow-400 transition-all active:scale-95 disabled:opacity-60 shadow-lg shadow-yellow-500/20"
+                className="flex items-center gap-3 bg-yellow-500 text-black font-semibold px-10 py-3 rounded-xl text-sm uppercase tracking-widest hover:bg-yellow-400 transition-all active:scale-95 disabled:opacity-60 shadow-lg shadow-yellow-500/20"
               >
                 {saving ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
                 {saving ? 'Creating...' : 'Create Coupon'}
@@ -242,8 +242,8 @@ const CouponsManage = () => {
       <div className="bg-gray-900 border border-yellow-900/10 rounded-2xl overflow-hidden shadow-sm">
         <div className="px-8 py-5 border-b border-yellow-900/10 bg-slate-950/30 flex items-center gap-3">
           <Tag size={18} className="text-yellow-500" />
-          <h2 className="text-sm font-black text-white uppercase tracking-widest">All Coupons</h2>
-          <span className="ml-auto text-xs font-black text-gray-500 uppercase tracking-widest">{coupons.length} total</span>
+          <h2 className="text-sm font-semibold text-white uppercase tracking-widest">All Coupons</h2>
+          <span className="ml-auto text-xs font-semibold text-gray-500 uppercase tracking-widest">{coupons.length} total</span>
         </div>
 
         {loading ? (
@@ -253,7 +253,7 @@ const CouponsManage = () => {
         ) : coupons.length === 0 ? (
           <div className="text-center py-20">
             <Tag size={40} className="text-gray-800 mx-auto mb-4" />
-            <p className="text-gray-500 font-black uppercase tracking-widest text-xs">No coupons yet. Create your first one.</p>
+            <p className="text-gray-500 font-semibold uppercase tracking-widest text-xs">No coupons yet. Create your first one.</p>
           </div>
         ) : (
           <>
@@ -261,12 +261,12 @@ const CouponsManage = () => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-950/50 text-gray-400 text-[10px] uppercase tracking-[0.2em] border-b border-yellow-900/10">
-                  <th className="px-6 py-4 font-bold">Code</th>
-                  <th className="px-6 py-4 font-bold">Discount</th>
-                  <th className="px-6 py-4 font-bold">Min. Order</th>
-                  <th className="px-6 py-4 font-bold">Expiry</th>
-                  <th className="px-6 py-4 font-bold">Status</th>
-                  <th className="px-6 py-4 font-bold text-right">Actions</th>
+                  <th className="px-6 py-4 font-semibold">Code</th>
+                  <th className="px-6 py-4 font-semibold">Discount</th>
+                  <th className="px-6 py-4 font-semibold">Min. Order</th>
+                  <th className="px-6 py-4 font-semibold">Expiry</th>
+                  <th className="px-6 py-4 font-semibold">Status</th>
+                  <th className="px-6 py-4 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-yellow-900/10">
@@ -276,7 +276,7 @@ const CouponsManage = () => {
                     <tr key={coupon.id} className="hover:bg-slate-950/40 transition-colors group">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <span className="font-black text-white tracking-widest text-sm bg-yellow-500/10 border border-yellow-500/20 px-3 py-1 rounded-lg">
+                          <span className="font-semibold text-white tracking-widest text-sm bg-yellow-500/10 border border-yellow-500/20 px-3 py-1 rounded-lg">
                             {coupon.code}
                           </span>
                           <button
@@ -290,21 +290,21 @@ const CouponsManage = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="font-black text-yellow-500 text-sm">
+                        <span className="font-semibold text-yellow-500 text-sm">
                           {coupon.discountType === 'percentage'
                             ? `${coupon.discountValue}% OFF`
                             : `₹${Number(coupon.discountValue).toLocaleString()} OFF`}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="font-bold text-gray-400 text-sm">
+                        <span className="font-semibold text-gray-400 text-sm">
                           {coupon.minOrderAmount > 0 ? `₹${Number(coupon.minOrderAmount).toLocaleString()}` : 'No minimum'}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`font-bold text-sm ${expired ? 'text-red-500' : 'text-gray-400'}`}>
+                        <span className={`font-semibold text-sm ${expired ? 'text-red-500' : 'text-gray-400'}`}>
                           {coupon.expiryDate ? new Date(coupon.expiryDate).toLocaleDateString('en-IN') : '—'}
-                          {expired && <span className="ml-2 text-[9px] font-black bg-red-500/10 border border-red-500/20 text-red-500 px-2 py-0.5 rounded-full uppercase">Expired</span>}
+                          {expired && <span className="ml-2 text-[9px] font-semibold bg-red-500/10 border border-red-500/20 text-red-500 px-2 py-0.5 rounded-full uppercase">Expired</span>}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -316,12 +316,12 @@ const CouponsManage = () => {
                           {coupon.isActive ? (
                             <>
                               <ToggleRight size={22} className="text-green-500" />
-                              <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">Active</span>
+                              <span className="text-[10px] font-semibold text-green-500 uppercase tracking-widest">Active</span>
                             </>
                           ) : (
                             <>
                               <ToggleLeft size={22} className="text-gray-600" />
-                              <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Disabled</span>
+                              <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest">Disabled</span>
                             </>
                           )}
                         </button>
@@ -351,7 +351,7 @@ const CouponsManage = () => {
                 <div key={coupon.id} className="p-6 flex flex-col gap-4 hover:bg-slate-950/40 transition-colors">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                      <span className="font-black text-white tracking-widest text-sm bg-yellow-500/10 border border-yellow-500/20 px-3 py-1 rounded-lg">
+                      <span className="font-semibold text-white tracking-widest text-sm bg-yellow-500/10 border border-yellow-500/20 px-3 py-1 rounded-lg">
                         {coupon.code}
                       </span>
                       <button
@@ -363,7 +363,7 @@ const CouponsManage = () => {
                         {copiedId === coupon.code ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
                       </button>
                     </div>
-                    <span className="font-black text-yellow-500 text-sm">
+                    <span className="font-semibold text-yellow-500 text-sm">
                       {coupon.discountType === 'percentage'
                         ? `${coupon.discountValue}% OFF`
                         : `₹${Number(coupon.discountValue).toLocaleString()} OFF`}
@@ -372,18 +372,18 @@ const CouponsManage = () => {
 
                   <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/5">
                     <div>
-                      <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">Min. Order</p>
-                      <p className="font-bold text-gray-400 text-sm">
+                      <p className="text-[9px] text-gray-500 font-semibold uppercase tracking-widest mb-1">Min. Order</p>
+                      <p className="font-semibold text-gray-400 text-sm">
                         {coupon.minOrderAmount > 0 ? `₹${Number(coupon.minOrderAmount).toLocaleString()}` : 'No minimum'}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">Expiry</p>
-                      <p className={`font-bold text-sm ${expired ? 'text-red-500' : 'text-gray-400'}`}>
+                      <p className="text-[9px] text-gray-500 font-semibold uppercase tracking-widest mb-1">Expiry</p>
+                      <p className={`font-semibold text-sm ${expired ? 'text-red-500' : 'text-gray-400'}`}>
                         {coupon.expiryDate ? new Date(coupon.expiryDate).toLocaleDateString('en-IN') : '—'}
                       </p>
                       {expired && (
-                        <span className="inline-block mt-1 text-[8px] font-black bg-red-500/10 border border-red-500/20 text-red-500 px-2 py-0.5 rounded-full uppercase">
+                        <span className="inline-block mt-1 text-[8px] font-semibold bg-red-500/10 border border-red-500/20 text-red-500 px-2 py-0.5 rounded-full uppercase">
                           Expired
                         </span>
                       )}
@@ -392,7 +392,7 @@ const CouponsManage = () => {
 
                   <div className="flex items-center justify-between pt-3 border-t border-white/5">
                     <div>
-                      <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1.5">Status</p>
+                      <p className="text-[9px] text-gray-500 font-semibold uppercase tracking-widest mb-1.5">Status</p>
                       <button
                         type="button"
                         onClick={() => toggleActive(coupon)}
@@ -401,18 +401,18 @@ const CouponsManage = () => {
                         {coupon.isActive ? (
                           <>
                             <ToggleRight size={22} className="text-green-500" />
-                            <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">Active</span>
+                            <span className="text-[10px] font-semibold text-green-500 uppercase tracking-widest">Active</span>
                           </>
                         ) : (
                           <>
                             <ToggleLeft size={22} className="text-gray-600" />
-                            <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Disabled</span>
+                            <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest">Disabled</span>
                           </>
                         )}
                       </button>
                     </div>
                     <div className="text-right">
-                      <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1.5">Actions</p>
+                      <p className="text-[9px] text-gray-500 font-semibold uppercase tracking-widest mb-1.5">Actions</p>
                       <button
                         type="button"
                         onClick={() => setDeleteId(coupon.id)}
@@ -439,15 +439,15 @@ const CouponsManage = () => {
               <Trash2 size={24} />
             </div>
             <div>
-              <h3 className="text-lg font-black text-white uppercase tracking-wider mb-2">Delete Coupon?</h3>
-              <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">This action cannot be undone.</p>
+              <h3 className="text-lg font-semibold text-white uppercase tracking-wider mb-2">Delete Coupon?</h3>
+              <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">This action cannot be undone.</p>
             </div>
             <div className="flex gap-3">
               <button
                 type="button"
                 disabled={deleting}
                 onClick={() => setDeleteId(null)}
-                className="flex-1 py-3 border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest text-white hover:bg-white/5 transition-all"
+                className="flex-1 py-3 border border-white/10 rounded-xl text-xs font-semibold uppercase tracking-widest text-white hover:bg-white/5 transition-all"
               >
                 Cancel
               </button>
@@ -455,7 +455,7 @@ const CouponsManage = () => {
                 type="button"
                 disabled={deleting}
                 onClick={handleDelete}
-                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
+                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-semibold uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
               >
                 {deleting ? <Loader2 size={14} className="animate-spin" /> : 'Delete'}
               </button>

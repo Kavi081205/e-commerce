@@ -117,7 +117,7 @@ const AdminLogin = () => {
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 mb-5">
               <ShieldCheck size={40} className="text-yellow-400" />
             </div>
-            <h2 className="text-3xl font-extrabold text-white tracking-tight">Admin Portal</h2>
+            <h2 className="text-3xl font-semibold text-white tracking-tight">Admin Portal</h2>
             <p className="text-yellow-500/60 mt-2 text-sm font-medium tracking-widest uppercase">Secure Login</p>
           </div>
 
@@ -126,7 +126,7 @@ const AdminLogin = () => {
             {/* ── Warning: customer session active ──────────────────────────── */}
             {currentUser && !isAdmin && (
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-6 flex flex-col gap-3">
-                <p className="text-yellow-400 text-xs font-bold uppercase tracking-widest">
+                <p className="text-yellow-400 text-xs font-semibold uppercase tracking-widest">
                   ⚠ Logged in as customer
                 </p>
                 <p className="text-gray-400 text-xs leading-relaxed">
@@ -136,7 +136,7 @@ const AdminLogin = () => {
                 <button
                   type="button"
                   onClick={async () => { await signOut(auth); }}
-                  className="self-start text-[11px] font-black uppercase tracking-widest text-yellow-400 border border-yellow-500/30 px-4 py-2 rounded-lg hover:bg-yellow-500/10 transition-all"
+                  className="self-start text-[11px] font-semibold uppercase tracking-widest text-yellow-400 border border-yellow-500/30 px-4 py-2 rounded-lg hover:bg-yellow-500/10 transition-all"
                 >
                   Sign Out
                 </button>
@@ -150,14 +150,14 @@ const AdminLogin = () => {
                   <AlertTriangle size={24} className="text-red-400" />
                 </div>
                 <div>
-                  <p className="text-red-400 font-black uppercase tracking-widest text-xs mb-1">Account Temporarily Locked</p>
+                  <p className="text-red-400 font-semibold uppercase tracking-widest text-xs mb-1">Account Temporarily Locked</p>
                   <p className="text-gray-400 text-xs leading-relaxed">
                     Too many failed attempts. Please wait before trying again.
                   </p>
                 </div>
                 <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-5 py-3">
                   <Clock size={16} className="text-red-400" />
-                  <span className="text-red-300 font-black text-xl tracking-widest font-mono">
+                  <span className="text-red-300 font-semibold text-xl tracking-widest font-mono">
                     {formatLockoutTime(remainingMs)}
                   </span>
                 </div>
@@ -168,7 +168,7 @@ const AdminLogin = () => {
             {!isBlocked && attemptsLeft < 5 && attemptsLeft > 0 && (
               <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-3 mb-4 flex items-center gap-3">
                 <AlertTriangle size={14} className="text-orange-400 shrink-0" />
-                <p className="text-orange-400 text-xs font-bold">
+                <p className="text-orange-400 text-xs font-semibold">
                   {attemptsLeft} attempt{attemptsLeft !== 1 ? 's' : ''} remaining before lockout
                 </p>
               </div>
@@ -185,7 +185,7 @@ const AdminLogin = () => {
             {/* ── Login Form ─────────────────────────────────────────────────── */}
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="admin-email" className="block text-xs font-bold text-yellow-500/70 uppercase tracking-widest mb-2 ml-1">
+                <label htmlFor="admin-email" className="block text-xs font-semibold text-yellow-500/70 uppercase tracking-widest mb-2 ml-1">
                   Email Address
                 </label>
                 <div className="relative group">
@@ -208,7 +208,7 @@ const AdminLogin = () => {
               </div>
 
               <div>
-                <label htmlFor="admin-password" className="block text-xs font-bold text-yellow-500/70 uppercase tracking-widest mb-2 ml-1">
+                <label htmlFor="admin-password" className="block text-xs font-semibold text-yellow-500/70 uppercase tracking-widest mb-2 ml-1">
                   Password
                 </label>
                 <div className="relative group">
@@ -242,7 +242,7 @@ const AdminLogin = () => {
               <button
                 type="submit"
                 disabled={loading || isBlocked}
-                className={`w-full flex justify-center py-4 px-4 border border-transparent rounded-xl shadow-lg text-base font-bold text-white tracking-wide transition-all ${
+                className={`w-full flex justify-center py-4 px-4 border border-transparent rounded-xl shadow-lg text-base font-semibold text-white tracking-wide transition-all ${
                   loading || isBlocked
                     ? 'bg-yellow-600/50 cursor-not-allowed'
                     : 'bg-yellow-600 hover:bg-yellow-500 shadow-yellow-900/20 active:scale-[0.98]'

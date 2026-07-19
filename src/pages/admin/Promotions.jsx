@@ -175,7 +175,7 @@ const Promotions = () => {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 md:p-10 space-y-8 md:space-y-10 min-w-0 w-full">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-2">Campaign Manager</h1>
+          <h1 className="text-3xl sm:text-4xl font-semibold text-white tracking-tight mb-2">Campaign Manager</h1>
           <p className="text-gray-500 text-xs sm:text-sm font-medium">Control your website's featured content and global offers.</p>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
@@ -183,7 +183,7 @@ const Promotions = () => {
             onClick={fetchAll}
             disabled={loading}
             title="Refresh data"
-            className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-yellow-400 px-4 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest border border-yellow-900/20 transition-all active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-yellow-400 px-4 py-3.5 rounded-2xl font-semibold text-[10px] uppercase tracking-widest border border-yellow-900/20 transition-all active:scale-95 disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             Refresh
@@ -191,7 +191,7 @@ const Promotions = () => {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center justify-center gap-3 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl font-black transition-all shadow-xl shadow-yellow-600/20 active:scale-95 flex-1 sm:flex-none text-center"
+            className="flex items-center justify-center gap-3 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl font-semibold transition-all shadow-xl shadow-yellow-600/20 active:scale-95 flex-1 sm:flex-none text-center"
           >
             {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
             {saving ? 'Syncing...' : 'Save Slider Selection'}
@@ -205,7 +205,7 @@ const Promotions = () => {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className={`p-4 rounded-2xl flex items-center gap-3 font-bold ${message.type === 'success'
+            className={`p-4 rounded-2xl flex items-center gap-3 font-semibold ${message.type === 'success'
               ? 'bg-green-50 text-green-700 border border-green-100'
               : 'bg-red-50 text-red-700 border border-red-100'
               }`}
@@ -225,8 +225,8 @@ const Promotions = () => {
                 <Layout size={24} />
               </div>
               <div>
-                <h2 className="text-xl font-black text-white uppercase tracking-widest">Hero Banner Selection</h2>
-                <p className="text-xs text-gray-400 font-bold uppercase mt-1">Select products to show in the homepage slider</p>
+                <h2 className="text-xl font-semibold text-white uppercase tracking-widest">Hero Banner Selection</h2>
+                <p className="text-xs text-gray-400 font-semibold uppercase mt-1">Select products to show in the homepage slider</p>
               </div>
             </div>
 
@@ -240,7 +240,7 @@ const Promotions = () => {
                 placeholder="Search products to feature..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-950 border-none rounded-2xl py-4 pl-12 pr-4 text-sm font-bold focus:ring-2 focus:ring-yellow-500/20 transition-all"
+                className="w-full bg-slate-950 border-none rounded-2xl py-4 pl-12 pr-4 text-sm font-semibold focus:ring-2 focus:ring-yellow-500/20 transition-all"
               />
             </div>
 
@@ -272,11 +272,11 @@ const Promotions = () => {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-black text-yellow-600 uppercase tracking-widest leading-none mb-1">
+                        <p className="text-[10px] font-semibold text-yellow-600 uppercase tracking-widest leading-none mb-1">
                           {product.category ?? 'Uncategorized'}
                         </p>
-                        <h4 className="font-black text-white text-sm truncate">{product.name ?? 'Unnamed Product'}</h4>
-                        <p className="text-xs text-gray-400 font-bold">
+                        <h4 className="font-semibold text-white text-sm truncate">{product.name ?? 'Unnamed Product'}</h4>
+                        <p className="text-xs text-gray-400 font-semibold">
                           Rs.{Number(product.price ?? 0).toLocaleString()}
                         </p>
                       </div>
@@ -304,14 +304,14 @@ const Promotions = () => {
                 <Plus size={24} />
               </div>
               <div>
-                <h2 className="text-xl font-black uppercase tracking-widest text-white">Create Offer</h2>
-                <p className="text-[10px] font-black text-yellow-400 uppercase tracking-widest mt-1">Schedule new campaign</p>
+                <h2 className="text-xl font-semibold uppercase tracking-widest text-white">Create Offer</h2>
+                <p className="text-[10px] font-semibold text-yellow-400 uppercase tracking-widest mt-1">Schedule new campaign</p>
               </div>
             </div>
 
             <form onSubmit={handleAddOffer} className="space-y-6">
               <div>
-                <label htmlFor="offer-title" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-2">
+                <label htmlFor="offer-title" className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3 ml-2">
                   Offer Title
                 </label>
                 <input
@@ -321,13 +321,13 @@ const Promotions = () => {
                   placeholder="e.g. Pink Saree Flash Deal"
                   value={newOffer.title}
                   onChange={(e) => setNewOffer(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full bg-gray-900 border border-white/10 rounded-2xl py-4 px-4 text-sm font-bold text-white focus:ring-2 focus:ring-yellow-500/50"
+                  className="w-full bg-gray-900 border border-white/10 rounded-2xl py-4 px-4 text-sm font-semibold text-white focus:ring-2 focus:ring-yellow-500/50"
                   required
                 />
               </div>
 
               <div>
-                <label htmlFor="offer-product" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-2">
+                <label htmlFor="offer-product" className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3 ml-2">
                   Target Product
                 </label>
                 <select
@@ -335,7 +335,7 @@ const Promotions = () => {
                   name="offerProductId"
                   value={newOffer.productId}
                   onChange={(e) => setNewOffer(prev => ({ ...prev, productId: e.target.value }))}
-                  className="w-full bg-gray-900 border border-white/10 rounded-2xl py-4 px-4 text-sm font-bold text-white focus:ring-2 focus:ring-yellow-500/50"
+                  className="w-full bg-gray-900 border border-white/10 rounded-2xl py-4 px-4 text-sm font-semibold text-white focus:ring-2 focus:ring-yellow-500/50"
                   required
                 >
                   <option value="" className="text-white">Select a product...</option>
@@ -349,7 +349,7 @@ const Promotions = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="offer-discount" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-2">
+                  <label htmlFor="offer-discount" className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3 ml-2">
                     Discount %
                   </label>
                   <input
@@ -360,13 +360,13 @@ const Promotions = () => {
                     max={99}
                     value={newOffer.discount}
                     onChange={(e) => setNewOffer(prev => ({ ...prev, discount: parseInt(e.target.value) || 0 }))}
-                    className="w-full bg-gray-900 border border-white/10 rounded-2xl py-4 px-4 text-sm font-bold text-white focus:ring-2 focus:ring-yellow-500/50"
+                    className="w-full bg-gray-900 border border-white/10 rounded-2xl py-4 px-4 text-sm font-semibold text-white focus:ring-2 focus:ring-yellow-500/50"
                     required
                   />
                 </div>
                 <div className="flex flex-col justify-end">
                   <div className="flex items-center justify-between p-4 bg-gray-900 border border-white/10 rounded-2xl h-[54px]">
-                    <span className="font-black text-[10px] uppercase tracking-widest text-gray-400">Active</span>
+                    <span className="font-semibold text-[10px] uppercase tracking-widest text-gray-400">Active</span>
                     <button
                       type="button"
                       onClick={() => setNewOffer(prev => ({ ...prev, isActive: !prev.isActive }))}
@@ -380,7 +380,7 @@ const Promotions = () => {
               </div>
 
               <div>
-                <label htmlFor="offer-end" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-2">
+                <label htmlFor="offer-end" className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3 ml-2">
                   Expiry Date &amp; Time
                 </label>
                 <input
@@ -389,14 +389,14 @@ const Promotions = () => {
                   type="datetime-local"
                   value={newOffer.offerEndDate}
                   onChange={(e) => setNewOffer(prev => ({ ...prev, offerEndDate: e.target.value }))}
-                  className="w-full bg-gray-900 border border-white/10 rounded-2xl py-4 px-4 text-sm font-bold text-white focus:ring-2 focus:ring-yellow-500/50"
+                  className="w-full bg-gray-900 border border-white/10 rounded-2xl py-4 px-4 text-sm font-semibold text-white focus:ring-2 focus:ring-yellow-500/50"
                   required
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-yellow-500 hover:bg-yellow-600 active:scale-95 text-black font-black uppercase tracking-widest text-xs py-4 rounded-2xl transition-all shadow-xl shadow-yellow-500/10"
+                className="w-full bg-yellow-500 hover:bg-yellow-600 active:scale-95 text-black font-semibold uppercase tracking-widest text-xs py-4 rounded-2xl transition-all shadow-xl shadow-yellow-500/10"
               >
                 Add Live Offer
               </button>
@@ -410,8 +410,8 @@ const Promotions = () => {
                 <Calendar size={24} />
               </div>
               <div>
-                <h2 className="text-xl font-black uppercase tracking-widest">Offers Ledger</h2>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+                <h2 className="text-xl font-semibold uppercase tracking-widest">Offers Ledger</h2>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mt-1">
                   Active Campaigns ({offersList.length})
                 </p>
               </div>
@@ -419,7 +419,7 @@ const Promotions = () => {
 
             <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
               {offersList.length === 0 ? (
-                <p className="text-center text-gray-500 text-xs font-bold py-6">No offers registered.</p>
+                <p className="text-center text-gray-500 text-xs font-semibold py-6">No offers registered.</p>
               ) : (
                 offersList.map(offer => {
                   const targetProduct = products.find(p => p.id === offer.productId);
@@ -435,15 +435,15 @@ const Promotions = () => {
                     >
                       <div className="flex justify-between items-start">
                         <div className="min-w-0 flex-1">
-                          <h4 className="font-black text-sm text-white truncate">{offer.title}</h4>
+                          <h4 className="font-semibold text-sm text-white truncate">{offer.title}</h4>
                           <p className="text-[9px] text-gray-500 uppercase tracking-widest mt-1">
-                            Prod: <span className="text-yellow-500 font-bold">{targetProduct?.name || 'Unknown'}</span>
+                            Prod: <span className="text-yellow-500 font-semibold">{targetProduct?.name || 'Unknown'}</span>
                           </p>
                         </div>
                         <button
                           type="button"
                           onClick={() => handleDeleteOffer(offer.id)}
-                          className="text-red-500 hover:text-red-400 font-black text-[10px] uppercase tracking-widest ml-2"
+                          className="text-red-500 hover:text-red-400 font-semibold text-[10px] uppercase tracking-widest ml-2"
                         >
                           Delete
                         </button>
@@ -451,11 +451,11 @@ const Promotions = () => {
 
                       <div className="flex justify-between items-center pt-2 border-t border-white/5">
                         <div className="text-[9px] text-gray-500 uppercase tracking-widest space-y-0.5">
-                          <div>Discount: <span className="text-white font-bold">{offer.discount}%</span></div>
-                          <div>Ends: <span className="text-white font-bold">{new Date(offer.offerEndDate).toLocaleString()}</span></div>
+                          <div>Discount: <span className="text-white font-semibold">{offer.discount}%</span></div>
+                          <div>Ends: <span className="text-white font-semibold">{new Date(offer.offerEndDate).toLocaleString()}</span></div>
                           <div>
                             Status:{' '}
-                            <span className={isExpired ? 'text-red-500 font-bold' : offer.isActive ? 'text-green-500 font-bold' : 'text-gray-500 font-bold'}>
+                            <span className={isExpired ? 'text-red-500 font-semibold' : offer.isActive ? 'text-green-500 font-semibold' : 'text-gray-500 font-semibold'}>
                               {isExpired ? 'EXPIRED' : offer.isActive ? 'ACTIVE' : 'INACTIVE'}
                             </span>
                           </div>
@@ -465,7 +465,7 @@ const Promotions = () => {
                           <button
                             type="button"
                             onClick={() => handleToggleOfferActive(offer.id, offer.isActive)}
-                            className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                            className={`px-3 py-1.5 rounded-xl text-[9px] font-semibold uppercase tracking-widest transition-all ${
                               offer.isActive
                                 ? 'bg-yellow-500 text-black hover:bg-yellow-400'
                                 : 'bg-gray-800 text-gray-400 hover:bg-gray-700'

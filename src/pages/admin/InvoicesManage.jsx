@@ -126,7 +126,7 @@ const InvoicesManage = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-gray-400">
         <Loader2 size={40} className="animate-spin text-yellow-500 mb-4" />
-        <p className="font-black uppercase tracking-widest text-sm">Retrieving Invoice Ledger...</p>
+        <p className="font-semibold uppercase tracking-widest text-sm">Retrieving Invoice Ledger...</p>
       </div>
     );
   }
@@ -181,7 +181,7 @@ const InvoicesManage = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-12">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Invoice Repository</h1>
+          <h1 className="text-3xl font-semibold text-white tracking-tight">Invoice Repository</h1>
           <p className="text-gray-500 text-sm font-medium">Verify, audit, print, and download generated retail invoices</p>
         </div>
       </div>
@@ -204,17 +204,17 @@ const InvoicesManage = () => {
       {/* Grid List / Table */}
       <div className="bg-gray-900/50 backdrop-blur-xl rounded-[2.5rem] border border-yellow-900/20 overflow-hidden">
         <div className="px-8 py-6 border-b border-yellow-900/10 bg-slate-950/30">
-          <h2 className="text-lg font-black text-white uppercase tracking-widest">Invoices ({filteredInvoices.length})</h2>
+          <h2 className="text-lg font-semibold text-white uppercase tracking-widest">Invoices ({filteredInvoices.length})</h2>
         </div>
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-950/50 text-gray-500 text-[10px] uppercase tracking-[0.2em] border-b border-yellow-900/10">
-                <th className="px-8 py-4 font-black">Invoice #</th>
-                <th className="px-8 py-4 font-black">Order ID</th>
-                <th className="px-8 py-4 font-black">Customer</th>
-                <th className="px-8 py-4 font-black">Date</th>
-                <th className="px-8 py-4 font-black text-right">Valuation</th>
+                <th className="px-8 py-4 font-semibold">Invoice #</th>
+                <th className="px-8 py-4 font-semibold">Order ID</th>
+                <th className="px-8 py-4 font-semibold">Customer</th>
+                <th className="px-8 py-4 font-semibold">Date</th>
+                <th className="px-8 py-4 font-semibold text-right">Valuation</th>
                 <th className="px-8 py-4 text-right"></th>
               </tr>
             </thead>
@@ -228,10 +228,10 @@ const InvoicesManage = () => {
               ) : (
                 filteredInvoices.map((inv) => (
                   <tr key={inv.id} className="hover:bg-slate-950/30 transition-colors group">
-                    <td className="px-8 py-6 font-bold text-yellow-500">{inv.invoiceNumber}</td>
+                    <td className="px-8 py-6 font-semibold text-yellow-500">{inv.invoiceNumber}</td>
                     <td className="px-8 py-6 text-gray-400 font-mono text-xs">#{inv.orderId ? inv.orderId.slice(-8).toUpperCase() : ''}</td>
                     <td className="px-8 py-6">
-                      <div className="font-bold text-white">{inv.customerName}</div>
+                      <div className="font-semibold text-white">{inv.customerName}</div>
                       <div className="text-[10px] text-gray-500 mt-0.5">{inv.phone}</div>
                     </td>
                     <td className="px-8 py-6 text-gray-400 text-xs">
@@ -239,7 +239,7 @@ const InvoicesManage = () => {
                         day: 'numeric', month: 'short', year: 'numeric'
                       })}
                     </td>
-                    <td className="px-8 py-6 text-right font-black text-white">
+                    <td className="px-8 py-6 text-right font-semibold text-white">
                       Rs.{(inv.pricing?.grandTotal || 0).toLocaleString()}
                     </td>
                     <td className="px-8 py-6 text-right">
@@ -287,7 +287,7 @@ const InvoicesManage = () => {
             filteredInvoices.map((inv) => (
               <div key={inv.id} className="p-6 flex flex-col gap-4 hover:bg-slate-950/30 transition-colors">
                 <div className="flex justify-between items-center">
-                  <span className="font-bold text-yellow-500">{inv.invoiceNumber}</span>
+                  <span className="font-semibold text-yellow-500">{inv.invoiceNumber}</span>
                   <span className="text-gray-400 font-mono text-xs">
                     #{inv.orderId ? inv.orderId.slice(-8).toUpperCase() : ''}
                   </span>
@@ -295,13 +295,13 @@ const InvoicesManage = () => {
 
                 <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/5">
                   <div>
-                    <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">Customer</p>
-                    <div className="font-bold text-white text-sm">{inv.customerName}</div>
+                    <p className="text-[9px] text-gray-500 font-semibold uppercase tracking-widest mb-1">Customer</p>
+                    <div className="font-semibold text-white text-sm">{inv.customerName}</div>
                     <div className="text-[10px] text-gray-500 mt-0.5">{inv.phone}</div>
                   </div>
                   <div className="text-right">
-                    <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">Valuation</p>
-                    <p className="font-black text-white text-base">
+                    <p className="text-[9px] text-gray-500 font-semibold uppercase tracking-widest mb-1">Valuation</p>
+                    <p className="font-semibold text-white text-base">
                       Rs.{(inv.pricing?.grandTotal || 0).toLocaleString()}
                     </p>
                     <p className="text-gray-500 text-[10px] mt-0.5">
@@ -313,7 +313,7 @@ const InvoicesManage = () => {
                 </div>
 
                 <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                  <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Actions</span>
+                  <span className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest">Actions</span>
                   <div className="flex gap-2">
                     <button
                       type="button"
@@ -359,7 +359,7 @@ const InvoicesManage = () => {
           >
             {/* Modal Header (Hidden on actual print) */}
             <div className="flex items-center justify-between px-8 py-5 border-b border-gray-100 bg-gray-50 no-print">
-              <h2 className="text-sm font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-gray-800 uppercase tracking-widest flex items-center gap-2">
                 <FileText size={18} className="text-yellow-600" /> Invoice Sheet Preview
               </h2>
               <button
@@ -382,7 +382,7 @@ const InvoicesManage = () => {
                     {/* Logo with fallback */}
                     <BrandLogoModal />
                     <div>
-                      <h3 className="text-base font-black text-white uppercase tracking-tight">
+                      <h3 className="text-base font-semibold text-white uppercase tracking-tight">
                         {getSenderDetails(selectedInvoice).name}
                       </h3>
                       <p className="text-[9px] font-semibold text-yellow-400 tracking-widest uppercase mt-0.5">
@@ -397,10 +397,10 @@ const InvoicesManage = () => {
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <span className="inline-block px-2 py-0.5 bg-yellow-500 text-[#0f0f0f] rounded text-[8px] font-black uppercase tracking-widest">
+                    <span className="inline-block px-2 py-0.5 bg-yellow-500 text-[#0f0f0f] rounded text-[8px] font-semibold uppercase tracking-widest">
                       RETAIL INVOICE
                     </span>
-                    <p className="text-xs font-mono font-bold text-white mt-1.5">
+                    <p className="text-xs font-mono font-semibold text-white mt-1.5">
                       {selectedInvoice.invoiceNumber}
                     </p>
                     <p className="text-[8px] text-gray-400 mt-0.5">
@@ -418,26 +418,26 @@ const InvoicesManage = () => {
                 {/* Shipping Metadata Strip */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 py-1.5 px-3 bg-slate-50 rounded-2xl text-[9px] print-light-bg print-border-dark border border-gray-100">
                   <div>
-                    <span className="font-bold text-gray-400 uppercase tracking-widest block mb-0">Order ID</span>
-                    <span className="font-mono text-slate-950 font-bold uppercase print-text-dark">
+                    <span className="font-semibold text-gray-400 uppercase tracking-widest block mb-0">Order ID</span>
+                    <span className="font-mono text-slate-950 font-semibold uppercase print-text-dark">
                       #{selectedInvoice.orderId ? selectedInvoice.orderId.toUpperCase() : 'N/A'}
                     </span>
                   </div>
                   <div>
-                    <span className="font-bold text-gray-400 uppercase tracking-widest block mb-0">Date Placed</span>
-                    <span className="text-slate-950 font-bold print-text-dark">
+                    <span className="font-semibold text-gray-400 uppercase tracking-widest block mb-0">Date Placed</span>
+                    <span className="text-slate-950 font-semibold print-text-dark">
                       {new Date(selectedInvoice.invoiceDate).toLocaleDateString('en-IN')}
                     </span>
                   </div>
                   <div>
-                    <span className="font-bold text-gray-400 uppercase tracking-widest block mb-0">Payment Method</span>
-                    <span className="text-slate-950 font-bold uppercase print-text-dark">
+                    <span className="font-semibold text-gray-400 uppercase tracking-widest block mb-0">Payment Method</span>
+                    <span className="text-slate-950 font-semibold uppercase print-text-dark">
                       {selectedInvoice.paymentMethod}
                     </span>
                   </div>
                   <div>
-                    <span className="font-bold text-gray-400 uppercase tracking-widest block mb-0">Payment Status</span>
-                    <span className={`font-black uppercase ${selectedInvoice.paymentStatus?.toLowerCase() === 'paid' ? 'text-green-700' : 'text-orange-600'}`}>
+                    <span className="font-semibold text-gray-400 uppercase tracking-widest block mb-0">Payment Status</span>
+                    <span className={`font-semibold uppercase ${selectedInvoice.paymentStatus?.toLowerCase() === 'paid' ? 'text-green-700' : 'text-orange-600'}`}>
                       {selectedInvoice.paymentStatus}
                     </span>
                   </div>
@@ -447,10 +447,10 @@ const InvoicesManage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[9px]">
                   {/* FROM Section */}
                   <div className="p-3.5 border border-yellow-500/20 bg-yellow-500/[0.02] rounded-2xl print-bg-white print-border-dark">
-                    <h4 className="text-[8px] font-black text-yellow-600 uppercase tracking-widest mb-1.5 border-b border-yellow-500/10 pb-1 print-text-dark">
+                    <h4 className="text-[8px] font-semibold text-yellow-600 uppercase tracking-widest mb-1.5 border-b border-yellow-500/10 pb-1 print-text-dark">
                       SENDER (FROM)
                     </h4>
-                    <p className="font-black text-slate-950 text-xs print-text-dark uppercase">
+                    <p className="font-semibold text-slate-950 text-xs print-text-dark uppercase">
                       {getSenderDetails(selectedInvoice).name}
                     </p>
                     <p className="text-gray-500 mt-0.5 font-medium print-text-dark">
@@ -477,17 +477,17 @@ const InvoicesManage = () => {
 
                   {/* TO Section */}
                   <div className="p-3.5 border border-slate-200 bg-slate-500/[0.02] rounded-2xl print-bg-white print-border-dark">
-                    <h4 className="text-[8px] font-black text-slate-700 uppercase tracking-widest mb-1.5 border-b border-slate-200 pb-1 print-text-dark">
+                    <h4 className="text-[8px] font-semibold text-slate-700 uppercase tracking-widest mb-1.5 border-b border-slate-200 pb-1 print-text-dark">
                       SHIP TO (TO / RECEIVER)
                     </h4>
-                    <p className="font-black text-slate-950 text-xs print-text-dark uppercase">
+                    <p className="font-semibold text-slate-950 text-xs print-text-dark uppercase">
                       {selectedInvoice.customerName}
                     </p>
 
                     <div className="mt-2 space-y-0.5 text-gray-500 font-medium print-text-dark">
                       <div className="flex items-center gap-1.5">
                         <Phone size={10} className="text-slate-600 shrink-0 print-text-dark" />
-                        <span className="font-bold text-slate-800 print-text-dark">Phone: {selectedInvoice.phone}</span>
+                        <span className="font-semibold text-slate-800 print-text-dark">Phone: {selectedInvoice.phone}</span>
                       </div>
                       {selectedInvoice.email && (
                         <div className="flex items-center gap-1.5">
@@ -500,10 +500,10 @@ const InvoicesManage = () => {
                         <span>
                           {selectedInvoice.address}
                           {selectedInvoice.landmark && <span className="block text-gray-400 text-[8px]">Landmark: {selectedInvoice.landmark}</span>}
-                          <span className="block mt-0.5 font-bold text-slate-700 print-text-dark">
+                          <span className="block mt-0.5 font-semibold text-slate-700 print-text-dark">
                             {selectedInvoice.city}{selectedInvoice.district ? ', ' + selectedInvoice.district : ''}
                           </span>
-                          <span className="block font-bold text-slate-700 print-text-dark">
+                          <span className="block font-semibold text-slate-700 print-text-dark">
                             {selectedInvoice.state} - {selectedInvoice.pincode}
                           </span>
                         </span>
@@ -517,7 +517,7 @@ const InvoicesManage = () => {
                   <div className="p-2 bg-yellow-50 border border-yellow-200 rounded-2xl text-[9px] text-yellow-800 print-light-bg print-border-dark print-text-dark flex items-start gap-2">
                     <Truck size={14} className="shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-black uppercase tracking-wider text-[8px] block mb-0">Courier Instructions</span>
+                      <span className="font-semibold uppercase tracking-wider text-[8px] block mb-0">Courier Instructions</span>
                       <span className="font-semibold">{courierNotes}</span>
                     </div>
                   </div>
@@ -527,7 +527,7 @@ const InvoicesManage = () => {
                 <div className="overflow-x-auto">
                   <table className="w-full text-[9px] text-left">
                     <thead>
-                      <tr className="border-b border-gray-200 text-gray-400 font-bold uppercase text-[8px] tracking-wider print-border-dark print-text-dark">
+                      <tr className="border-b border-gray-200 text-gray-400 font-semibold uppercase text-[8px] tracking-wider print-border-dark print-text-dark">
                         <th className="py-1.5">Item Details</th>
                         <th className="py-1.5 text-center">Qty</th>
                         <th className="py-1.5 text-right">Unit Price</th>
@@ -551,7 +551,7 @@ const InvoicesManage = () => {
                                   />
                                 )}
                                 <div>
-                                  <span className="font-bold text-gray-800 print-text-dark block text-[10px]">{item.name}</span>
+                                  <span className="font-semibold text-gray-800 print-text-dark block text-[10px]">{item.name}</span>
                                   {item.color || item.size ? (
                                     <span className="text-[8px] text-gray-400 mt-0.5 block uppercase tracking-wider">
                                       {item.color} {item.size ? `· Size ${item.size}` : ''}
@@ -562,7 +562,7 @@ const InvoicesManage = () => {
                             </td>
                             <td className="py-1.5 text-center text-gray-600 print-text-dark font-medium">{qty}</td>
                             <td className="py-1.5 text-right text-gray-600 print-text-dark font-mono">Rs.{Number(eff).toFixed(2)}</td>
-                            <td className="py-1.5 text-right font-bold text-gray-800 print-text-dark font-mono">Rs.{(eff * qty).toFixed(2)}</td>
+                            <td className="py-1.5 text-right font-semibold text-gray-800 print-text-dark font-mono">Rs.{(eff * qty).toFixed(2)}</td>
                           </tr>
                         );
                       })}
@@ -582,12 +582,12 @@ const InvoicesManage = () => {
                       <span className="font-mono">Rs.{(selectedInvoice.pricing?.shipping || 0).toFixed(2)}</span>
                     </div>
                     {selectedInvoice.pricing?.couponDiscount > 0 && (
-                      <div className="flex justify-between text-red-500 font-bold">
+                      <div className="flex justify-between text-red-500 font-semibold">
                         <span>Coupon Discount:</span>
                         <span className="font-mono">-Rs.{(selectedInvoice.pricing?.couponDiscount || 0).toFixed(2)}</span>
                       </div>
                     )}
-                    <div className="flex justify-between font-black text-[10px] text-black pt-1 border-t border-gray-200 print-border-dark print-text-dark">
+                    <div className="flex justify-between font-semibold text-[10px] text-black pt-1 border-t border-gray-200 print-border-dark print-text-dark">
                       <span>GRAND TOTAL:</span>
                       <span className="font-mono text-xs">Rs.{(selectedInvoice.pricing?.grandTotal || 0).toFixed(2)}</span>
                     </div>
@@ -598,7 +598,7 @@ const InvoicesManage = () => {
 
               {/* Edit Courier Notes Panel (Hidden on actual print) */}
               <div className="mt-8 bg-gray-50 rounded-3xl p-6 border border-gray-150 space-y-4 no-print">
-                <label htmlFor="courier-notes" className="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                <label htmlFor="courier-notes" className="text-xs font-semibold text-gray-800 uppercase tracking-widest flex items-center gap-2">
                   <Truck size={16} className="text-yellow-600" /> Edit Courier Instructions
                 </label>
                 <p className="text-[10px] text-gray-500">Add instructions (e.g. courier routing, gate notes, time slots) to appear on the PDF download and printed copies.</p>
@@ -620,14 +620,14 @@ const InvoicesManage = () => {
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold uppercase tracking-wider text-[10px] transition-all"
+                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold uppercase tracking-wider text-[10px] transition-all"
               >
                 <Printer size={14} /> Print Invoice
               </button>
               <button
                 type="button"
                 onClick={() => generateInvoice({ ...selectedInvoice, id: selectedInvoice.orderId }, { action: 'download', courierNotes })}
-                className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-slate-950 px-5 py-2.5 rounded-xl font-bold uppercase tracking-wider text-[10px] transition-all"
+                className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-slate-950 px-5 py-2.5 rounded-xl font-semibold uppercase tracking-wider text-[10px] transition-all"
               >
                 <Download size={14} /> Download PDF
               </button>
@@ -640,8 +640,8 @@ const InvoicesManage = () => {
       {isPrinting && (
         <div className="fixed inset-0 z-[300] bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center text-white no-print">
           <Loader2 size={48} className="animate-spin text-yellow-500 mb-4" />
-          <h3 className="text-xl font-black uppercase tracking-widest">Generating Invoice...</h3>
-          <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">Preparing printable document view</p>
+          <h3 className="text-xl font-semibold uppercase tracking-widest">Generating Invoice...</h3>
+          <p className="text-xs text-gray-500 font-semibold uppercase tracking-widest mt-1">Preparing printable document view</p>
         </div>
       )}
 

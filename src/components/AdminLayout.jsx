@@ -4,7 +4,7 @@ import { Routes, Route, Navigate, Link, useNavigate, useLocation } from 'react-r
 import {
   LayoutDashboard, Package,
   ShoppingCart, LogOut, Menu, X, Zap, IndianRupee, Tag, Layers,
-  Settings as SettingsIcon, MessageSquareWarning
+  Settings as SettingsIcon, MessageSquareWarning, Gift
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { PageSkeleton } from './Skeleton';
@@ -26,6 +26,7 @@ const CouponsManage       = lazyWithRetry(() => import('../pages/admin/CouponsMa
 const CategoryManage      = lazyWithRetry(() => import('../pages/admin/CategoryManage'));
 const Settings            = lazyWithRetry(() => import('../pages/admin/Settings'));
 const ComplaintsManage    = lazyWithRetry(() => import('../pages/admin/ComplaintsManage'));
+const WelcomeOfferManage  = lazyWithRetry(() => import('../pages/admin/WelcomeOfferManage'));
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen]           = useState(false);
@@ -58,6 +59,7 @@ const AdminLayout = () => {
     { name: 'Products',    href: '/admin/products',    icon: Package },
     { name: 'Categories',  href: '/admin/categories',  icon: Layers },
     { name: 'Coupons',     href: '/admin/coupons',     icon: Tag },
+    { name: 'Welcome Offer', href: '/admin/welcome-offer', icon: Gift },
     { name: 'Promotions',  href: '/admin/promotions',  icon: Zap },
     { name: 'Expenses',    href: '/admin/expenses',    icon: IndianRupee },
     {
@@ -119,7 +121,7 @@ const AdminLayout = () => {
         <div className="flex items-center justify-between h-20 px-6 border-b border-yellow-900/20 shrink-0">
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="SMKP Traders" className="w-8 h-8 object-contain rounded-lg" />
-            <span className="text-lg font-black tracking-widest uppercase">SMKP Admin</span>
+            <span className="text-lg font-semibold tracking-widest uppercase">SMKP Admin</span>
           </div>
           <button
             type="button"
@@ -154,7 +156,7 @@ const AdminLayout = () => {
                 <span className="font-semibold flex-1">{item.name}</span>
                 {/* Notification badge */}
                 {item.badge && (
-                  <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-black min-w-[18px] text-center ${
+                  <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold min-w-[18px] text-center ${
                     active ? 'bg-white text-yellow-600' : 'bg-red-500 text-white'
                   }`}>
                     {item.badge > 9 ? '9+' : item.badge}
@@ -203,20 +205,20 @@ const AdminLayout = () => {
                 title={`${unreadComplaints} new complaint(s)`}
               >
                 <MessageSquareWarning size={18} />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5">
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-semibold rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5">
                   {unreadComplaints > 9 ? '9+' : unreadComplaints}
                 </span>
               </Link>
             )}
 
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-bold text-white leading-none">
+              <p className="text-sm font-semibold text-white leading-none">
                 {currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Admin'}
               </p>
               <p className="text-xs text-yellow-600 font-medium mt-1">Admin · Full Access</p>
             </div>
             <div
-              className="w-10 h-10 rounded-xl bg-yellow-500 flex items-center justify-center text-white font-black shadow-md shadow-yellow-500/20 shrink-0"
+              className="w-10 h-10 rounded-xl bg-yellow-500 flex items-center justify-center text-white font-semibold shadow-md shadow-yellow-500/20 shrink-0"
               aria-hidden="true"
             >
               {(currentUser?.displayName?.[0] || currentUser?.email?.[0] || 'A').toUpperCase()}
@@ -239,6 +241,7 @@ const AdminLayout = () => {
                 <Route path="expenses" element={<Expenses />} />
                 <Route path="categories" element={<CategoryManage />} />
                 <Route path="coupons" element={<CouponsManage />} />
+                <Route path="welcome-offer" element={<WelcomeOfferManage />} />
                 <Route path="advanced-dashboard" element={<AdvancedDashboard />} />
                 <Route path="setup" element={<SetupAdmin />} />
                 <Route path="settings" element={<Settings />} />

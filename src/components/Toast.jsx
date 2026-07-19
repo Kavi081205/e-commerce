@@ -29,7 +29,7 @@ const Toast = ({ message, type, onClose }) => {
         {iconMap[resolvedType]}
       </div>
       <div className="flex-1">
-        <p className="text-xs font-black text-white uppercase tracking-widest leading-tight">{message}</p>
+        <p className="text-xs font-semibold text-white uppercase tracking-widest leading-tight">{message}</p>
       </div>
       <button
         onClick={onClose}

@@ -29,13 +29,13 @@ const About = () => {
       >
         {/* Header Hero */}
         <motion.div variants={sectionVariants} className="text-center space-y-3 pb-6 border-b border-yellow-900/10">
-          <span className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 text-[10px] font-black uppercase tracking-[0.3em] px-4 py-1.5 rounded-full">
+          <span className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 text-[10px] font-semibold uppercase tracking-[0.2em] px-4 py-1.5 rounded-full">
             Our Legacy & Journey
           </span>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight uppercase">
+          <h1 className="text-product md:text-product-sm lg:text-[27px] font-semibold text-white tracking-normal">
             About SMKP Traders
           </h1>
-          <p className="max-w-2xl mx-auto text-xs sm:text-sm text-gray-500 font-medium leading-relaxed uppercase tracking-wider">
+          <p className="max-w-2xl mx-auto text-xs sm:text-sm text-gray-500 font-normal leading-relaxed tracking-wide">
             Blending technology with traditional values to create happiness, build trust, and deliver absolute premium quality.
           </p>
         </motion.div>
@@ -45,9 +45,9 @@ const About = () => {
           <div className="md:col-span-7 space-y-4">
             <div className="flex items-center gap-3">
               <Award className="text-yellow-500 shrink-0" size={20} />
-              <h2 className="text-lg sm:text-xl font-black text-white uppercase tracking-widest">Our Story</h2>
+              <h2 className="text-product-sm lg:text-price font-semibold text-white tracking-normal">Our Story</h2>
             </div>
-            <div className="space-y-3 text-xs sm:text-sm leading-relaxed text-gray-400 font-medium">
+            <div className="space-y-3 text-xs sm:text-sm leading-relaxed text-gray-400 font-normal">
               <p>
                 SMKP Traders is not just an online store; it is the manifestation of a dream built from code, persistence, and determination. Our founder, a dedicated college student pursuing his Master of Computer Applications (MCA), set out to build something that would make a difference. 
               </p>
@@ -64,13 +64,13 @@ const About = () => {
               <div className="absolute top-4 right-6 text-yellow-500/10" aria-hidden="true">
                 <Quote size={80} strokeWidth={1} />
               </div>
-              <p className="text-sm font-black text-white uppercase tracking-wider mb-2">A Student's Dream</p>
-              <p className="text-xs text-gray-500 leading-relaxed font-medium">
+              <p className="text-sm font-semibold text-white tracking-wide mb-2">A Student's Dream</p>
+              <p className="text-xs text-gray-500 leading-relaxed font-normal">
                 "I didn't have a budget to hire builders or marketers. All I had was a keyboard, a screen, and a vision of building a transparent shop for local families. This platform is my tribute to the power of self-taught learning."
               </p>
               <div className="mt-4 pt-3 border-t border-yellow-900/10">
-                <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Kaviyarasan M.</p>
-                <p className="text-[8px] text-gray-600 font-bold uppercase tracking-wider">MCA Student & Founder</p>
+                <p className="text-[10px] font-semibold text-yellow-500 uppercase tracking-widest">Kaviyarasan M.</p>
+                <p className="text-[8px] text-gray-600 font-semibold uppercase tracking-wider">MCA Student & Founder</p>
               </div>
             </div>
           </div>
@@ -84,7 +84,7 @@ const About = () => {
               <div className="p-2 bg-yellow-500/10 rounded-xl border border-yellow-500/20 text-yellow-500">
                 <Compass size={20} />
               </div>
-              <h2 className="text-sm sm:text-base font-black text-white uppercase tracking-widest">Our Mission</h2>
+              <h2 className="text-sm sm:text-base font-semibold text-white uppercase tracking-widest">Our Mission</h2>
             </div>
             <ul className="space-y-3.5">
               {[
@@ -96,8 +96,8 @@ const About = () => {
                 <li key={idx} className="flex gap-3">
                   <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 mt-1.5 shrink-0 animate-pulse" />
                   <div className="text-xs sm:text-sm">
-                    <strong className="text-white font-black uppercase tracking-wider block sm:inline mr-1">{item.title}:</strong>
-                    <span className="text-gray-400 font-medium">{item.desc}</span>
+                    <strong className="text-white font-semibold uppercase tracking-wider block sm:inline mr-1">{item.title}:</strong>
+                    <span className="text-gray-400 font-normal">{item.desc}</span>
                   </div>
                 </li>
               ))}
@@ -110,7 +110,7 @@ const About = () => {
               <div className="p-2 bg-yellow-500/10 rounded-xl border border-yellow-500/20 text-yellow-500">
                 <Eye size={20} />
               </div>
-              <h2 className="text-sm sm:text-base font-black text-white uppercase tracking-widest">Our Vision</h2>
+              <h2 className="text-sm sm:text-base font-semibold text-white uppercase tracking-widest">Our Vision</h2>
             </div>
             <ul className="space-y-3.5">
               {[
@@ -122,8 +122,8 @@ const About = () => {
                 <li key={idx} className="flex gap-3">
                   <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 mt-1.5 shrink-0 animate-pulse" />
                   <div className="text-xs sm:text-sm">
-                    <strong className="text-white font-black uppercase tracking-wider block sm:inline mr-1">{item.title}:</strong>
-                    <span className="text-gray-400 font-medium">{item.desc}</span>
+                    <strong className="text-white font-semibold uppercase tracking-wider block sm:inline mr-1">{item.title}:</strong>
+                    <span className="text-gray-400 font-normal">{item.desc}</span>
                   </div>
                 </li>
               ))}
@@ -139,18 +139,18 @@ const About = () => {
           <div className="max-w-3xl space-y-4 relative z-10">
             <div className="flex items-center gap-3">
               <MessageSquare className="text-yellow-500" size={20} />
-              <h2 className="text-sm sm:text-base font-black text-white uppercase tracking-widest">A Heartfelt Message</h2>
+              <h2 className="text-sm sm:text-base font-semibold text-white uppercase tracking-widest">A Heartfelt Message</h2>
             </div>
-            <blockquote className="text-xs sm:text-sm text-gray-300 font-medium leading-relaxed italic border-l-2 border-yellow-500/40 pl-4 py-1">
+            <blockquote className="text-xs sm:text-sm text-gray-300 font-normal leading-relaxed italic border-l-2 border-yellow-500/40 pl-4 py-1">
               "To every parent, grandparent, and customer who visits our store: thank you. When I started coding this website late at night between college classes, I wasn't sure if anyone would buy a single product. Today, every order we pack and ship is a reminder that sincerity finds its way. Your support is not just sales; it feeds our passion and pays the wages of our hard work. We pledge to keep improving, selecting products that delight your kids and maintaining the absolute honesty you deserve."
             </blockquote>
             <div className="pt-2 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center font-black text-yellow-500 text-xs shadow-md">
+              <div className="w-9 h-9 rounded-full bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center font-semibold text-yellow-500 text-xs shadow-md">
                 KM
               </div>
               <div>
-                <p className="text-[10px] font-black text-white uppercase tracking-widest">Kaviyarasan Murugan</p>
-                <p className="text-[8px] text-gray-500 font-bold uppercase tracking-wider">Founder, SMKP Traders</p>
+                <p className="text-[10px] font-semibold text-white uppercase tracking-widest">Kaviyarasan Murugan</p>
+                <p className="text-[8px] text-gray-500 font-semibold uppercase tracking-wider">Founder, SMKP Traders</p>
               </div>
             </div>
           </div>

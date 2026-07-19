@@ -65,8 +65,8 @@ export default function MyComplaints() {
       <div className="max-w-2xl mx-auto w-full">
         {/* Header */}
         <div className="text-center mb-12">
-          <p className="text-yellow-500 text-[9px] font-black uppercase tracking-[0.5em] mb-3">Customer Support</p>
-          <h1 className="text-4xl font-black uppercase tracking-tighter mb-3">My Complaints</h1>
+          <p className="text-yellow-500 text-[9px] font-semibold uppercase tracking-[0.5em] mb-3">Customer Support</p>
+          <h1 className="text-4xl font-semibold uppercase tracking-tighter mb-3">My Complaints</h1>
           <p className="text-gray-500 text-sm">Track the status of your complaints</p>
         </div>
 
@@ -83,7 +83,7 @@ export default function MyComplaints() {
             placeholder="Enter your phone number"
             className="flex-1 min-w-0 bg-gray-900 border border-gray-800 rounded-2xl px-5 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-yellow-500 transition-colors box-border"
           />
-          <button type="submit" disabled={loading} className="shrink-0 w-full sm:w-auto bg-yellow-500 text-black px-6 py-4 rounded-2xl font-black uppercase tracking-wider text-sm hover:bg-yellow-400 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+          <button type="submit" disabled={loading} className="shrink-0 w-full sm:w-auto bg-yellow-500 text-black px-6 py-4 rounded-2xl font-semibold uppercase tracking-wider text-sm hover:bg-yellow-400 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
             {loading ? <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" /> : <Search size={18} />}
           </button>
         </form>
@@ -97,7 +97,7 @@ export default function MyComplaints() {
         {!loading && searched && complaints.length === 0 && (
           <div className="text-center py-20 text-gray-600">
             <MessageSquare size={48} className="mx-auto mb-4 opacity-30" />
-            <p className="font-bold">No complaints found for this number</p>
+            <p className="font-semibold">No complaints found for this number</p>
           </div>
         )}
 
@@ -125,14 +125,14 @@ export default function MyComplaints() {
                       <Icon size={16} className={cfg.color} />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-black text-white truncate">{c.complaintType}</p>
+                      <p className="text-sm font-semibold text-white truncate">{c.complaintType}</p>
                       <p className="text-xs text-gray-500 mt-0.5">
                         Order #{c.orderShortId || c.orderId?.slice(-8).toUpperCase()} · {formatDate(c.createdAt)}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-full border ${cfg.bg} ${cfg.color} hidden sm:block`}>
+                    <span className={`text-[10px] font-semibold uppercase px-2 py-1 rounded-full border ${cfg.bg} ${cfg.color} hidden sm:block`}>
                       {cfg.label}
                     </span>
                     {isOpen ? <ChevronUp size={14} className="text-gray-500" /> : <ChevronDown size={14} className="text-gray-500" />}
@@ -150,21 +150,21 @@ export default function MyComplaints() {
                     >
                       <div className="px-5 pb-5 border-t border-gray-800 pt-4 space-y-4">
                         {/* Status badge mobile */}
-                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-black ${cfg.bg} ${cfg.color}`}>
+                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold ${cfg.bg} ${cfg.color}`}>
                           <Icon size={12} />
                           {cfg.label}
                         </div>
 
                         {/* Description */}
                         <div>
-                          <p className="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">Your Complaint</p>
+                          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Your Complaint</p>
                           <p className="text-sm text-gray-300 leading-relaxed">{c.description}</p>
                         </div>
 
                         {/* Products */}
                         {c.productNames && (
                           <div>
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">Product(s)</p>
+                            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Product(s)</p>
                             <p className="text-sm text-gray-300">{c.productNames}</p>
                           </div>
                         )}
@@ -172,7 +172,7 @@ export default function MyComplaints() {
                         {/* Images */}
                         {c.images?.length > 0 && (
                           <div>
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2">Your Images</p>
+                            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Your Images</p>
                             <div className="flex flex-wrap gap-2">
                               {c.images.map((img, i) => (
                                 <a key={i} href={img} target="_blank" rel="noopener noreferrer">
@@ -186,7 +186,7 @@ export default function MyComplaints() {
                         {/* Admin Reply */}
                         {c.adminReply && (
                           <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-4">
-                            <p className="text-[10px] font-black text-yellow-500 uppercase tracking-wider mb-1">Response from SMKP TRADERS</p>
+                            <p className="text-[10px] font-semibold text-yellow-500 uppercase tracking-wider mb-1">Response from SMKP TRADERS</p>
                             <p className="text-sm text-gray-200 leading-relaxed">{c.adminReply}</p>
                           </div>
                         )}

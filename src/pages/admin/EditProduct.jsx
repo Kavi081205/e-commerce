@@ -481,7 +481,7 @@ const EditProduct = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-gray-400">
         <Loader2 size={40} className="animate-spin text-yellow-500 mb-4" />
-        <p className="font-black uppercase tracking-widest text-sm">Loading Product Data...</p>
+        <p className="font-semibold uppercase tracking-widest text-sm">Loading Product Data...</p>
       </div>
     );
   }
@@ -490,11 +490,11 @@ const EditProduct = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-4">
         <AlertCircle size={48} className="text-red-500 mb-4" />
-        <h2 className="text-2xl font-black text-white mb-2">Error</h2>
+        <h2 className="text-2xl font-semibold text-white mb-2">Error</h2>
         <p className="text-gray-500 mb-6">{error}</p>
         <button
           onClick={() => navigate('/admin/products')}
-          className="bg-gray-900 text-white font-bold py-3 px-8 rounded-xl"
+          className="bg-gray-900 text-white font-semibold py-3 px-8 rounded-xl"
         >
           Back to Products
         </button>
@@ -513,7 +513,7 @@ const EditProduct = () => {
         ]}
       />
       <div className="mb-4 flex items-center gap-2 px-2">
-        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Document ID:</span>
+        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Document ID:</span>
         <code className="text-[10px] font-mono text-yellow-500/50 bg-yellow-500/5 px-2 py-0.5 rounded border border-yellow-500/10">
           {id}
         </code>
@@ -524,7 +524,7 @@ const EditProduct = () => {
           {/* Image Preview Sidebar */}
           <div className="md:w-1/3 bg-slate-950 p-8 border-r border-yellow-900/10">
             <div className="sticky top-8">
-              <h3 className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Image Preview</h3>
+              <h3 className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Image Preview</h3>
               <div className="aspect-square rounded-2xl bg-gray-900 border-2 border-dashed border-yellow-900/20 overflow-hidden flex items-center justify-center">
                 {formData.image ? (
                   <img
@@ -538,7 +538,7 @@ const EditProduct = () => {
                 ) : (
                   <div className="text-gray-300 flex flex-col items-center">
                     <ImageIcon size={48} strokeWidth={1.5} />
-                    <p className="text-[10px] font-bold uppercase mt-2">No Image</p>
+                    <p className="text-[10px] font-semibold uppercase mt-2">No Image</p>
                   </div>
                 )}
               </div>
@@ -554,33 +554,33 @@ const EditProduct = () => {
               {success && (
                 <div className="bg-green-500/10 border border-green-500/20 text-green-500 p-4 rounded-xl flex items-center gap-3 animate-fadeIn">
                   <CheckCircle size={20} />
-                  <p className="text-sm font-bold">{success}</p>
+                  <p className="text-sm font-semibold">{success}</p>
                 </div>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
-                  <label htmlFor="name" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Product Name</label>
+                  <label htmlFor="name" className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2 ml-1">Product Name</label>
                   <input
                     id="name" type="text" name="name" autoComplete="off"
                     value={formData.name} onChange={handleChange}
                     placeholder="e.g. Premium Wireless Headphones"
                     className={`w-full bg-slate-950 border rounded-xl py-4 px-5 text-white font-medium focus:ring-4 outline-none transition-all ${errors.name ? 'border-red-500 focus:ring-red-500/10' : 'border-yellow-900/20 focus:ring-yellow-500/10 focus:border-yellow-500'}`}
                   />
-                  {errors.name && <p className="text-red-500 text-[10px] font-bold uppercase tracking-wider mt-1.5 ml-1">{errors.name}</p>}
+                  {errors.name && <p className="text-red-500 text-[10px] font-semibold uppercase tracking-wider mt-1.5 ml-1">{errors.name}</p>}
                 </div>
 
                 <div>
-                  <label htmlFor="price" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Price (₹)</label>
+                  <label htmlFor="price" className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2 ml-1">Price (₹)</label>
                   <input
                     id="price" type="number" name="price" autoComplete="off"
                     value={formData.price} onChange={handleChange} placeholder="2999"
                     className={`w-full bg-slate-950 border rounded-xl py-4 px-5 text-white font-medium focus:ring-4 outline-none transition-all ${errors.price ? 'border-red-500 focus:ring-red-500/10' : 'border-yellow-900/20 focus:ring-yellow-500/10 focus:border-yellow-500'}`}
                   />
-                  {errors.price && <p className="text-red-500 text-[10px] font-bold uppercase tracking-wider mt-1.5 ml-1">{errors.price}</p>}
+                  {errors.price && <p className="text-red-500 text-[10px] font-semibold uppercase tracking-wider mt-1.5 ml-1">{errors.price}</p>}
                 </div>
 
                 <div>
-                  <label htmlFor="costPrice" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Cost Price (₹)</label>
+                  <label htmlFor="costPrice" className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2 ml-1">Cost Price (₹)</label>
                   <input
                     id="costPrice"
                     type="number"
@@ -590,11 +590,11 @@ const EditProduct = () => {
                     placeholder="1500"
                     className={`w-full bg-slate-950 border rounded-xl py-4 px-5 text-white font-medium focus:ring-4 outline-none transition-all ${errors.costPrice ? 'border-red-500 focus:ring-red-500/10' : 'border-yellow-900/20 focus:ring-yellow-500/10 focus:border-yellow-500'}`}
                   />
-                  {errors.costPrice && <p className="text-red-500 text-[10px] font-bold uppercase tracking-wider mt-1.5 ml-1">{errors.costPrice}</p>}
+                  {errors.costPrice && <p className="text-red-500 text-[10px] font-semibold uppercase tracking-wider mt-1.5 ml-1">{errors.costPrice}</p>}
                 </div>
 
                 <div>
-                    <label htmlFor="stock" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Total Stock (Admin Entry)</label>
+                    <label htmlFor="stock" className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2 ml-1">Total Stock (Admin Entry)</label>
                     <input
                       id="stock" type="number" name="stock" autoComplete="off"
                       value={hasVariants ? variants.reduce((sum, v) => sum + (formData.category === 'sarees' ? Number(v.stock || 0) : (v.enableSizes ? Object.values(v.sizes || {}).reduce((s, qty) => s + Number(qty), 0) : Number(v.stock || 0))), 0) : formData.stock}
@@ -602,10 +602,10 @@ const EditProduct = () => {
                       disabled={hasVariants}
                       className={`w-full bg-slate-950 border rounded-xl py-4 px-5 text-white font-medium focus:ring-4 outline-none transition-all ${hasVariants ? 'opacity-50 cursor-not-allowed border-yellow-900/10' : (errors.stock ? 'border-red-500 focus:ring-red-500/10' : 'border-yellow-900/20 focus:ring-yellow-500/10 focus:border-yellow-500')}`}
                     />
-                    {errors.stock && !hasVariants && <p className="text-red-500 text-[10px] font-bold uppercase tracking-wider mt-1.5 ml-1">{errors.stock}</p>}
-                    {hasVariants && <p className="text-yellow-500/60 text-[9px] font-bold uppercase tracking-wider mt-1.5 ml-1">Managed via variants below</p>}
+                    {errors.stock && !hasVariants && <p className="text-red-500 text-[10px] font-semibold uppercase tracking-wider mt-1.5 ml-1">{errors.stock}</p>}
+                    {hasVariants && <p className="text-yellow-500/60 text-[9px] font-semibold uppercase tracking-wider mt-1.5 ml-1">Managed via variants below</p>}
                     {/* Read-only inventory summary — never used in save logic */}
-                    <div className="mt-2 flex gap-3 text-[10px] font-black uppercase tracking-widest">
+                    <div className="mt-2 flex gap-3 text-[10px] font-semibold uppercase tracking-widest">
                       <span className="text-gray-500">Sold: <span className="text-yellow-500">{soldCount}</span></span>
                       <span className="text-gray-500">Available: <span className="text-green-500">
                         {hasVariants 
@@ -617,7 +617,7 @@ const EditProduct = () => {
                  </div>
 
                 <div>
-                  <label htmlFor="category" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Category</label>
+                  <label htmlFor="category" className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2 ml-1">Category</label>
                   <select
                     id="category" name="category" autoComplete="off"
                     value={formData.category} onChange={handleChange}
@@ -628,12 +628,12 @@ const EditProduct = () => {
                       <option key={cat.id} value={cat.slug}>{cat.name}</option>
                     ))}
                   </select>
-                  {errors.category && <p className="text-red-500 text-[10px] font-bold uppercase tracking-wider mt-1.5 ml-1">{errors.category}</p>}
+                  {errors.category && <p className="text-red-500 text-[10px] font-semibold uppercase tracking-wider mt-1.5 ml-1">{errors.category}</p>}
                 </div>
 
                 {/* ── Cloudinary Video Upload ────────────────────────── */}
                 <div className="md:col-span-2">
-                  <p className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                  <p className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2 ml-1">
                     Upload Product Video <span className="text-gray-600 font-medium normal-case tracking-normal">(Optional)</span>
                   </p>
 
@@ -645,7 +645,7 @@ const EditProduct = () => {
                         href={formData.video}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[10px] font-bold text-green-400 uppercase tracking-wider truncate flex-1 hover:text-green-300 transition-colors"
+                        className="text-[10px] font-semibold text-green-400 uppercase tracking-wider truncate flex-1 hover:text-green-300 transition-colors"
                       >
                         Current Video (click to preview)
                       </a>
@@ -683,7 +683,7 @@ const EditProduct = () => {
                       className="sr-only"
                     />
                     <Video className={`w-7 h-7 mb-2 ${videoFile ? 'text-yellow-500' : 'text-gray-400'}`} />
-                    <p className={`text-xs font-bold uppercase tracking-widest ${videoFile ? 'text-yellow-600' : 'text-gray-500'}`}>
+                    <p className={`text-xs font-semibold uppercase tracking-widest ${videoFile ? 'text-yellow-600' : 'text-gray-500'}`}>
                       {videoUploading ? 'Uploading to Cloudinary...' : videoFile ? videoFile.name : (formData.video ? 'Replace Video' : 'Select Product Video')}
                     </p>
                     <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-tighter">MP4, MOV, WEBM · Max 100 MB</p>
@@ -693,7 +693,7 @@ const EditProduct = () => {
                     <button
                       type="button"
                       onClick={() => setVideoFile(null)}
-                      className="mt-2 text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 transition-colors"
+                      className="mt-2 text-[10px] font-semibold text-red-400 uppercase tracking-widest hover:text-red-300 transition-colors"
                     >
                       ✕ Remove video file
                     </button>
@@ -701,13 +701,13 @@ const EditProduct = () => {
                   {videoUploading && (
                     <div className="mt-2 flex items-center gap-2 text-yellow-500">
                       <Loader2 size={14} className="animate-spin" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Uploading video...</span>
+                      <span className="text-[10px] font-semibold uppercase tracking-widest">Uploading video...</span>
                     </div>
                   )}
                 </div>
 
                 <div className="md:col-span-2">
-                  <p className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                  <p className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2 ml-1">
                     Product Image
                   </p>
 
@@ -726,7 +726,7 @@ const EditProduct = () => {
                     />
                     <div className="flex flex-col items-center justify-center pt-5 pb-6 pointer-events-none">
                       <FilePlus className={`w-8 h-8 mb-2 ${file ? 'text-yellow-600' : 'text-gray-400'}`} />
-                      <p className={`text-xs font-bold uppercase tracking-widest ${file ? 'text-yellow-700' : 'text-gray-500'}`}>
+                      <p className={`text-xs font-semibold uppercase tracking-widest ${file ? 'text-yellow-700' : 'text-gray-500'}`}>
                         {file ? file.name : 'Select New Image File'}
                       </p>
                       <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-tighter">PNG, JPG, WEBP up to 5MB</p>
@@ -735,7 +735,7 @@ const EditProduct = () => {
 
                   <div className="flex items-center gap-4 my-4">
                     <div className="h-[1px] flex-1 bg-gray-800" />
-                    <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">OR</span>
+                    <span className="text-[10px] font-semibold text-gray-300 uppercase tracking-[0.3em]">OR</span>
                     <div className="h-[1px] flex-1 bg-gray-800" />
                   </div>
 
@@ -753,25 +753,25 @@ const EditProduct = () => {
                         } ${errors.image ? 'border-red-500 focus:ring-red-500/10' : 'border-yellow-900/20 focus:ring-yellow-500/10 focus:border-yellow-500'}`}
                     />
                   </div>
-                  {errors.image && <p className="text-red-500 text-[10px] font-bold uppercase tracking-wider mt-1.5 ml-1">{errors.image}</p>}
+                  {errors.image && <p className="text-red-500 text-[10px] font-semibold uppercase tracking-wider mt-1.5 ml-1">{errors.image}</p>}
                 </div>
 
                 <div className="md:col-span-2">
-                  <label htmlFor="description" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Description</label>
+                  <label htmlFor="description" className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2 ml-1">Description</label>
                   <textarea
                     id="description" name="description" autoComplete="off"
                     rows="4" value={formData.description} onChange={handleChange}
                     placeholder="Describe the product features and specifications..."
                     className={`w-full bg-slate-950 border rounded-xl py-4 px-5 text-white font-medium focus:ring-4 outline-none transition-all resize-none ${errors.description ? 'border-red-500 focus:ring-red-500/10' : 'border-yellow-900/20 focus:ring-yellow-500/10 focus:border-yellow-500'}`}
                   />
-                  {errors.description && <p className="text-red-500 text-[10px] font-bold uppercase tracking-wider mt-1.5 ml-1">{errors.description}</p>}
+                  {errors.description && <p className="text-red-500 text-[10px] font-semibold uppercase tracking-wider mt-1.5 ml-1">{errors.description}</p>}
                 </div>
               </div>
 
               {/* Has Variants Toggle */}
               <div className="flex items-center justify-between p-4 sm:p-6 bg-slate-950/50 border border-yellow-900/10 rounded-2xl mb-8 mt-8 gap-4">
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider">Product Variants</h3>
+                  <h3 className="text-sm font-semibold text-white uppercase tracking-wider">Product Variants</h3>
                   <p className="text-[10px] text-gray-500 font-medium mt-1">This product has different colors or sizes</p>
                 </div>
                 <label htmlFor="has-variants" className="toggle-wrap shrink-0" aria-label="Enable product variants">
@@ -790,23 +790,23 @@ const EditProduct = () => {
               {hasVariants && (
                 <div className="space-y-6 sm:space-y-8 p-4 sm:p-8 bg-slate-950/30 border border-yellow-900/10 rounded-3xl mb-8">
                   <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 pb-4 border-b border-yellow-900/10">
-                    <h3 className="text-xs font-black text-white uppercase tracking-widest">Variant Manager</h3>
+                    <h3 className="text-xs font-semibold text-white uppercase tracking-widest">Variant Manager</h3>
                     <button
                       type="button"
                       onClick={handleAddVariantColor}
-                      className="w-full sm:w-auto px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
+                      className="w-full sm:w-auto px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-[10px] font-semibold uppercase tracking-widest rounded-xl transition-all"
                     >
                       + Add Color
                     </button>
                   </div>
 
                   {errors.variants && (
-                    <p className="text-red-500 text-[10px] font-bold uppercase tracking-wider">{errors.variants}</p>
+                    <p className="text-red-500 text-[10px] font-semibold uppercase tracking-wider">{errors.variants}</p>
                   )}
 
                   {variants.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
-                      <p className="text-[10px] font-black uppercase tracking-widest">No Color Variants Added</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-widest">No Color Variants Added</p>
                       <p className="text-[9px] mt-1 font-medium text-gray-600">Click "+ Add Color" to define product variants</p>
                     </div>
                   ) : (
@@ -822,7 +822,7 @@ const EditProduct = () => {
                         <button
                           type="button"
                           onClick={() => handleRemoveVariantColor(colorIdx)}
-                          className="absolute top-4 right-4 text-[10px] font-black text-red-500 hover:text-red-400 uppercase tracking-widest transition-colors"
+                          className="absolute top-4 right-4 text-[10px] font-semibold text-red-500 hover:text-red-400 uppercase tracking-widest transition-colors"
                         >
                           ✕ Remove
                         </button>
@@ -832,7 +832,7 @@ const EditProduct = () => {
                           
                           {/* 1. Color Name */}
                           <div>
-                            <label htmlFor={`variant-color-name-${colorIdx}`} className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Color Name</label>
+                            <label htmlFor={`variant-color-name-${colorIdx}`} className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">Color Name</label>
                             <div className="flex flex-col sm:flex-row gap-3">
                               <input
                                 id={`variant-color-name-${colorIdx}`}
@@ -848,7 +848,7 @@ const EditProduct = () => {
                                 const hex = multi ? null : (v.colorCode || getColorCode(v.colorName));
                                 return (
                                   <div className="flex items-center justify-between sm:justify-start gap-2 bg-slate-950 p-2.5 rounded-xl border border-white/5 w-full sm:w-auto">
-                                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                                    <span className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest">
                                       {multi ? 'Multicolour' : 'Auto Color:'}
                                     </span>
                                     {multi ? (
@@ -872,7 +872,7 @@ const EditProduct = () => {
 
                           {/* 2. Upload Images (Primary File Upload box) */}
                           <div className="space-y-3">
-                            <p className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Upload Images</p>
+                            <p className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Upload Images</p>
                             <label 
                               htmlFor={`variant-file-upload-${colorIdx}`} 
                               className={`flex flex-col items-center justify-center w-full h-28 border border-dashed rounded-xl cursor-pointer transition-all ${
@@ -890,7 +890,7 @@ const EditProduct = () => {
                                 className="sr-only"
                               />
                               <UploadCloud className="w-6 h-6 mb-1 text-gray-400" />
-                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
                                 {uploadingVariantColorIdx === colorIdx ? 'Uploading to Cloudinary...' : 'Select Variant Image File'}
                               </span>
                               <span className="text-[8px] text-gray-600 uppercase tracking-tight mt-0.5">PNG, JPG, WEBP up to 5MB</span>
@@ -905,7 +905,7 @@ const EditProduct = () => {
                                     <button
                                       type="button"
                                       onClick={() => handleRemoveVariantImage(colorIdx, imgIdx)}
-                                      className="absolute inset-0 bg-red-600/80 text-white text-[9px] font-black uppercase tracking-wider flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"
+                                      className="absolute inset-0 bg-red-600/80 text-white text-[9px] font-semibold uppercase tracking-wider flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"
                                     >
                                       Remove
                                     </button>
@@ -919,7 +919,7 @@ const EditProduct = () => {
                           <div className="border-t border-white/5 pt-4">
                             {formData.category === 'sarees' ? (
                               <div className="bg-slate-950/40 p-4 rounded-xl border border-white/5 space-y-2">
-                                <label htmlFor={`variant-stock-${colorIdx}`} className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                <label htmlFor={`variant-stock-${colorIdx}`} className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
                                   Stock Quantity
                                 </label>
                                 <input
@@ -937,7 +937,7 @@ const EditProduct = () => {
                             ) : (
                               <div className="space-y-4">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Enable sizes (for clothing)</span>
+                                  <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Enable sizes (for clothing)</span>
                                   <label htmlFor={`variant-enable-sizes-${colorIdx}`} className="relative inline-flex items-center cursor-pointer">
                                     <input 
                                       id={`variant-enable-sizes-${colorIdx}`}
@@ -953,7 +953,7 @@ const EditProduct = () => {
 
                                 {v.enableSizes ? (
                                   <div className="space-y-3 bg-slate-950/40 p-4 rounded-xl border border-white/5">
-                                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Add Sizes & Stock</p>
+                                    <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest">Add Sizes & Stock</p>
                                     <div className="flex flex-col sm:flex-row gap-2">
                                       <label htmlFor={`variant-size-${colorIdx}`} className="sr-only">Variant Size</label>
                                       <input
@@ -990,7 +990,7 @@ const EditProduct = () => {
                                             [colorIdx]: { size: '', stock: '' }
                                           }));
                                         }}
-                                        className="w-full sm:w-auto px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all"
+                                        className="w-full sm:w-auto px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-[10px] font-semibold uppercase tracking-widest rounded-lg transition-all"
                                       >
                                         + Add
                                       </button>
@@ -1000,12 +1000,12 @@ const EditProduct = () => {
                                       <div className="flex flex-wrap gap-2 pt-2">
                                         {Object.entries(v.sizes).map(([szName, szQty]) => (
                                           <div key={szName} className="flex items-center gap-2 px-3 py-1 bg-black/60 border border-yellow-500/20 rounded-full">
-                                            <span className="text-[10px] font-black text-white">{szName}</span>
-                                            <span className="text-[10px] font-bold text-yellow-500">{szQty}</span>
+                                            <span className="text-[10px] font-semibold text-white">{szName}</span>
+                                            <span className="text-[10px] font-semibold text-yellow-500">{szQty}</span>
                                             <button
                                               type="button"
                                               onClick={() => handleRemoveVariantSize(colorIdx, szName)}
-                                              className="text-red-500 hover:text-red-400 font-bold ml-1 text-xs"
+                                              className="text-red-500 hover:text-red-400 font-semibold ml-1 text-xs"
                                             >
                                               ✕
                                             </button>
@@ -1016,7 +1016,7 @@ const EditProduct = () => {
                                   </div>
                                 ) : (
                                   <div className="space-y-2 bg-slate-950/40 p-4 rounded-xl border border-white/5">
-                                    <label htmlFor={`variant-stock-${colorIdx}`} className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                    <label htmlFor={`variant-stock-${colorIdx}`} className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
                                       Stock Quantity
                                     </label>
                                     <input
@@ -1040,7 +1040,7 @@ const EditProduct = () => {
                             <button
                               type="button"
                               onClick={() => handleUpdateVariantColorField(colorIdx, 'showAdvanced', !v.showAdvanced)}
-                              className="text-[10px] font-black text-yellow-500/80 hover:text-yellow-500 uppercase tracking-widest flex items-center gap-1 transition-colors"
+                              className="text-[10px] font-semibold text-yellow-500/80 hover:text-yellow-500 uppercase tracking-widest flex items-center gap-1 transition-colors"
                             >
                               {v.showAdvanced ? 'Hide Advanced Settings ▴' : 'Show Advanced Settings ▾'}
                             </button>
@@ -1049,7 +1049,7 @@ const EditProduct = () => {
                               <div className="space-y-4 mt-4 p-4 bg-slate-950/50 border border-white/5 rounded-xl animate-fadeIn">
                                 {/* Custom HEX override */}
                                 <div>
-                                  <label htmlFor={`variant-color-code-${colorIdx}`} className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Color Code (Hex Override)</label>
+                                  <label htmlFor={`variant-color-code-${colorIdx}`} className="block text-[9px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Color Code (Hex Override)</label>
                                   <div className="flex gap-2">
                                     <input
                                       id={`variant-color-picker-${colorIdx}`}
@@ -1074,7 +1074,7 @@ const EditProduct = () => {
 
                                 {/* Price Difference */}
                                 <div>
-                                  <label htmlFor={`variant-price-diff-${colorIdx}`} className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Price Difference (Optional)</label>
+                                  <label htmlFor={`variant-price-diff-${colorIdx}`} className="block text-[9px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Price Difference (Optional)</label>
                                   <input
                                     id={`variant-price-diff-${colorIdx}`}
                                     name={`variantPriceDiff-${colorIdx}`}
@@ -1088,7 +1088,7 @@ const EditProduct = () => {
 
                                 {/* Image URL fallback */}
                                 <div>
-                                  <label htmlFor={`variant-image-url-${colorIdx}`} className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Or Paste Image URL</label>
+                                  <label htmlFor={`variant-image-url-${colorIdx}`} className="block text-[9px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Or Paste Image URL</label>
                                   <div className="flex flex-col sm:flex-row gap-2">
                                     <input
                                       id={`variant-image-url-${colorIdx}`}
@@ -1105,7 +1105,7 @@ const EditProduct = () => {
                                         handleAddVariantImageUrl(colorIdx, tempUrl);
                                         setTempUrls(prev => ({ ...prev, [colorIdx]: '' }));
                                       }}
-                                      className="w-full sm:w-auto px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white text-[9px] font-black uppercase tracking-widest rounded-lg transition-all"
+                                      className="w-full sm:w-auto px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white text-[9px] font-semibold uppercase tracking-widest rounded-lg transition-all"
                                     >
                                       Add URL
                                     </button>
@@ -1127,14 +1127,14 @@ const EditProduct = () => {
               <div className="pt-6 flex flex-col sm:flex-row gap-3">
                 <button
                   type="submit" disabled={isSaving}
-                  className="w-full sm:flex-1 bg-yellow-600 hover:bg-yellow-700 disabled:bg-yellow-400 text-white font-black uppercase tracking-widest py-4 px-8 rounded-xl transition-all shadow-lg shadow-yellow-600/20 active:scale-95 flex items-center justify-center gap-2"
+                  className="w-full sm:flex-1 bg-yellow-600 hover:bg-yellow-700 disabled:bg-yellow-400 text-white font-semibold uppercase tracking-widest py-4 px-8 rounded-xl transition-all shadow-lg shadow-yellow-600/20 active:scale-95 flex items-center justify-center gap-2"
                 >
                   {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
                   {isSaving ? 'Updating...' : 'Update Product'}
                 </button>
                 <button
                   type="button" onClick={() => navigate('/admin/products')}
-                  className="w-full sm:w-auto bg-gray-800 hover:bg-gray-700 text-gray-400 font-black uppercase tracking-widest py-4 px-8 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto bg-gray-800 hover:bg-gray-700 text-gray-400 font-semibold uppercase tracking-widest py-4 px-8 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
                   <X size={20} /> Cancel
                 </button>

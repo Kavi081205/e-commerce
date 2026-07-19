@@ -72,10 +72,10 @@ export default function MyOrders() {
       <div className="max-w-3xl mx-auto w-full">
         {/* Header */}
         <div className="text-center mb-12">
-          <p className="text-yellow-500 text-[9px] font-black uppercase tracking-[0.5em] mb-3">
+          <p className="text-yellow-500 text-[9px] font-semibold uppercase tracking-[0.25em] mb-3">
             Order History
           </p>
-          <h1 className="text-4xl font-black uppercase tracking-tighter mb-3">My Orders</h1>
+          <h1 className="text-product md:text-product-sm lg:text-[27px] font-semibold text-white tracking-normal mb-3">My Orders</h1>
           <p className="text-gray-500 text-sm">Enter your phone number to view your orders</p>
         </div>
 
@@ -95,7 +95,7 @@ export default function MyOrders() {
           <button
             type="submit"
             disabled={loading}
-            className="shrink-0 w-full sm:w-auto bg-yellow-500 text-black px-6 py-4 rounded-2xl font-black uppercase tracking-wider text-sm hover:bg-yellow-400 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="shrink-0 w-full sm:w-auto bg-yellow-500 text-black px-6 py-3.5 rounded-xl font-semibold tracking-wider text-[15px] hover:bg-yellow-400 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Searching...' : 'Search'}
           </button>
@@ -111,7 +111,7 @@ export default function MyOrders() {
         {!loading && searched && orders.length === 0 && (
           <div className="text-center py-20 text-gray-600">
             <ShoppingBag size={48} className="mx-auto mb-4 opacity-30" />
-            <p className="font-bold text-lg">No orders found</p>
+            <p className="font-semibold text-lg">No orders found</p>
             <p className="text-sm mt-2">Try a different phone number or <Link to="/products" className="text-yellow-500 underline">shop now</Link></p>
           </div>
         )}
@@ -144,14 +144,14 @@ export default function MyOrders() {
                       <Icon size={18} className={cfg.color} />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-black text-white text-sm">#{shortId}</p>
+                      <p className="font-semibold text-white text-sm">#{shortId}</p>
                       <p className="text-xs text-gray-500 mt-0.5">{formatDate(order.createdAt)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4 shrink-0">
                     <div className="text-right hidden sm:block">
-                      <p className="text-yellow-400 font-black">₹{(order.totalPrice || 0).toLocaleString()}</p>
-                      <span className={`text-[10px] font-bold uppercase ${cfg.color}`}>{cfg.label}</span>
+                      <p className="text-yellow-400 font-semibold">₹{(order.totalPrice || 0).toLocaleString()}</p>
+                      <span className={`text-[10px] font-semibold uppercase ${cfg.color}`}>{cfg.label}</span>
                     </div>
                     {isExpanded ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
                   </div>
@@ -170,7 +170,7 @@ export default function MyOrders() {
                       <div className="px-5 pb-5 border-t border-gray-800 pt-4 space-y-4">
                         {/* Items */}
                         <div>
-                          <p className="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-3">Items Ordered</p>
+                          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Items Ordered</p>
                           <div className="space-y-2">
                             {items.map((item, i) => (
                               <div key={i} className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3">
@@ -178,7 +178,7 @@ export default function MyOrders() {
                                   <img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover shrink-0" />
                                 )}
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-sm font-bold text-white truncate">{item.name || item.productName}</p>
+                                  <p className="text-sm font-semibold text-white truncate">{item.name || item.productName}</p>
                                   <p className="text-xs text-gray-500">
                                     Qty: {item.quantity || 1}
                                     {item.color && ` · Color: ${typeof item.color === 'object' ? item.color.name : item.color}`}
@@ -194,7 +194,7 @@ export default function MyOrders() {
                         {/* Address */}
                         {order.address && (
                           <div>
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1">Delivery Address</p>
+                            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Delivery Address</p>
                             <p className="text-sm text-gray-300">{order.address}, {order.city}, {order.state} - {order.pincode}</p>
                           </div>
                         )}
@@ -202,7 +202,7 @@ export default function MyOrders() {
                         {/* Summary */}
                         <div className="flex items-center justify-between bg-gray-800/40 rounded-xl p-3">
                           <div className="text-xs text-gray-500">Total</div>
-                          <div className="font-black text-yellow-400">₹{(order.totalPrice || 0).toLocaleString()}</div>
+                          <div className="font-semibold text-yellow-400">₹{(order.totalPrice || 0).toLocaleString()}</div>
                         </div>
 
                         {/* Raise Complaint — only for delivered orders */}
@@ -210,7 +210,7 @@ export default function MyOrders() {
                           <button
                             type="button"
                             onClick={() => setComplaintOrder(order)}
-                            className="w-full flex items-center justify-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-all rounded-xl py-3 font-bold text-sm"
+                            className="w-full flex items-center justify-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-all rounded-xl py-3 font-semibold text-sm"
                           >
                             <MessageSquarePlus size={16} />
                             Raise a Complaint
@@ -230,7 +230,7 @@ export default function MyOrders() {
           <div className="mt-8 text-center">
             <Link
               to="/my-complaints"
-              className="text-yellow-500 text-sm font-bold underline underline-offset-4 hover:text-yellow-400 transition-colors"
+              className="text-yellow-500 text-sm font-semibold underline underline-offset-4 hover:text-yellow-400 transition-colors"
             >
               View My Complaints →
             </Link>

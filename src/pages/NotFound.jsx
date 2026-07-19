@@ -9,7 +9,7 @@ export default function NotFound() {
       {/* Glowing number */}
       <div className="relative select-none mb-2">
         <span
-          className="text-[10rem] sm:text-[14rem] font-extrabold tracking-tighter leading-none"
+          className="text-[10rem] sm:text-[14rem] font-semibold tracking-tighter leading-none"
           style={{
             background: 'linear-gradient(135deg, #14b8a6 0%, #0f766e 50%, #134e4a 100%)',
             WebkitBackgroundClip: 'text',
@@ -28,7 +28,7 @@ export default function NotFound() {
       </div>
 
       {/* Heading */}
-      <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-3 text-center">
+      <h1 className="text-2xl sm:text-3xl font-semibold text-gray-800 mb-3 text-center">
         Page Not Found
       </h1>
       <p className="text-gray-500 text-center max-w-sm mb-10 leading-relaxed">

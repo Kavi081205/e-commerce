@@ -53,7 +53,7 @@ const SuggestionDropdown = ({ suggestions, handleProductClick }) => (
         className="search-suggestion-item flex items-center gap-4 p-4 hover:bg-yellow-500/10 transition-colors border-b border-yellow-900/20 last:border-0"
       >
         <img src={product.image} className="w-12 h-12 rounded-lg object-cover border border-yellow-900/20 flex-shrink-0" />
-        <span className="text-sm font-bold text-white">{product.name}</span>
+        <span className="text-sm font-semibold text-white">{product.name}</span>
       </div>
     ))}
   </div>
@@ -156,10 +156,10 @@ const Navbar = () => {
 
   /* ── nav link style helpers ── */
   const getNavCls = (isActive) =>
-    `text-xs font-black tracking-widest uppercase transition-all duration-300 relative group ${isActive ? 'text-yellow-500' : 'text-gray-400 hover:text-white'
+    `text-xs font-semibold tracking-widest uppercase transition-all duration-300 relative group ${isActive ? 'text-yellow-500' : 'text-gray-400 hover:text-white'
     }`;
   const getMobileCls = (isActive) =>
-    `block text-lg font-black tracking-widest uppercase py-4 transition-all ${isActive ? 'text-yellow-500' : 'text-gray-400 hover:text-white'
+    `block text-lg font-semibold tracking-widest uppercase py-4 transition-all ${isActive ? 'text-yellow-500' : 'text-gray-400 hover:text-white'
     }`;
   const underline = (isActive) =>
     `absolute -bottom-1 left-0 h-[1px] bg-yellow-500 transition-all duration-300 group-hover:w-full ${isActive ? 'w-full' : 'w-0'
@@ -228,7 +228,7 @@ const Navbar = () => {
                   className="group-hover:scale-110 transition-transform"
                 />
                 {wishlistItems.length > 0 && (
-                  <span className="absolute -top-2.5 -right-2.5 bg-yellow-500 text-black text-[10px] font-black rounded-full h-4 w-4 flex items-center justify-center shadow-lg shadow-yellow-500/20">
+                  <span className="absolute -top-2.5 -right-2.5 bg-yellow-500 text-black text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center shadow-lg shadow-yellow-500/20">
                     {wishlistItems.length}
                   </span>
                 )}
@@ -244,7 +244,7 @@ const Navbar = () => {
                   className={`group-hover:scale-110 transition-transform ${bump ? 'animate-bounce text-yellow-500' : ''}`}
                 />
                 {cartCount > 0 && (
-                  <span className="absolute -top-2.5 -right-2.5 bg-yellow-600 text-white text-[10px] font-black rounded-full h-4 w-4 flex items-center justify-center shadow-lg shadow-yellow-600/30">
+                  <span className="absolute -top-2.5 -right-2.5 bg-yellow-600 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center shadow-lg shadow-yellow-600/30">
                     {cartCount}
                   </span>
                 )}
@@ -284,7 +284,7 @@ const Navbar = () => {
               <Link to="/wishlist" className="relative text-gray-400 hover:text-yellow-500 transition-colors" aria-label="Wishlist">
                 <Heart size={20} />
                 {wishlistItems.length > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-yellow-500 text-black text-[9px] font-black rounded-full h-3.5 w-3.5 flex items-center justify-center shadow-md">
+                  <span className="absolute -top-1.5 -right-1.5 bg-yellow-500 text-black text-[9px] font-semibold rounded-full h-3.5 w-3.5 flex items-center justify-center shadow-md">
                     {wishlistItems.length}
                   </span>
                 )}
@@ -292,7 +292,7 @@ const Navbar = () => {
               <Link to="/cart" className="relative text-gray-400 hover:text-yellow-500 transition-colors" aria-label="Cart">
                 <ShoppingCart size={20} className={bump ? 'animate-bounce text-yellow-500' : ''} />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-yellow-600 text-white text-[9px] font-black rounded-full h-3.5 w-3.5 flex items-center justify-center shadow-md">
+                  <span className="absolute -top-1.5 -right-1.5 bg-yellow-600 text-white text-[9px] font-semibold rounded-full h-3.5 w-3.5 flex items-center justify-center shadow-md">
                     {cartCount}
                   </span>
                 )}

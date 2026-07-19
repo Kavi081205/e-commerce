@@ -24,7 +24,7 @@ const PageHeader = ({ title, breadcrumbs = [], showBack = true }) => {
       {/* Breadcrumbs */}
       <nav
         aria-label="Breadcrumb"
-        className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.3em] text-gray-700 mb-8 overflow-x-auto whitespace-nowrap pb-2 no-scrollbar"
+        className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.2em] text-gray-500 mb-8 overflow-x-auto whitespace-nowrap pb-2 no-scrollbar"
       >
         <Link to="/" className="hover:text-yellow-500 transition-colors flex items-center gap-2">
           <Home size={12} />
@@ -58,10 +58,10 @@ const PageHeader = ({ title, breadcrumbs = [], showBack = true }) => {
         )}
 
         <div>
-          <p className="text-yellow-500 text-[9px] font-black uppercase tracking-[0.6em] mb-3">
+          <p className="text-yellow-500 text-[9px] font-semibold uppercase tracking-[0.25em] mb-3">
             {breadcrumbs[breadcrumbs.length - 1]?.label || 'Section'}
           </p>
-          <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tighter leading-none uppercase">
+          <h1 className="type-display text-white">
             {title}
           </h1>
         </div>

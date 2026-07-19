@@ -75,14 +75,14 @@ const StatCard = ({ title, value, icon: Icon, color, trend }) => (
         <Icon size={20} className="text-white" />
       </div>
       {trend && (
-        <span className="flex items-center text-green-500 text-[10px] sm:text-xs font-bold">
+        <span className="flex items-center text-green-500 text-[10px] sm:text-xs font-semibold">
           <ArrowUpRight size={12} className="mr-0.5" /> {trend}
         </span>
       )}
     </div>
     <div>
-      <p className="text-[9px] sm:text-xs font-black text-gray-400 uppercase tracking-widest mb-1 truncate">{title}</p>
-      <h3 className="text-xl sm:text-3xl font-black text-white tracking-tight truncate">{value}</h3>
+      <p className="text-[9px] sm:text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1 truncate">{title}</p>
+      <h3 className="text-xl sm:text-3xl font-semibold text-white tracking-tight truncate">{value}</h3>
     </div>
   </div>
 );
@@ -310,7 +310,7 @@ const Dashboard = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <h2 className="text-2xl font-black text-white mb-2">Access Denied</h2>
+          <h2 className="text-2xl font-semibold text-white mb-2">Access Denied</h2>
           <p className="text-gray-500">You don't have permission to view this page.</p>
         </div>
       </div>
@@ -321,13 +321,13 @@ const Dashboard = () => {
     <div className="animate-fadeIn min-w-0 w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Dashboard Overview</h1>
+          <h1 className="text-3xl font-semibold text-white tracking-tight">Dashboard Overview</h1>
           <p className="text-gray-500 text-sm font-medium">Optimized business performance analytics</p>
         </div>
         <button
           onClick={() => loadDashboardData()}
           disabled={refreshing}
-          className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 disabled:bg-yellow-500/50 text-slate-950 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-yellow-500/10 active:scale-95 disabled:scale-100"
+          className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 disabled:bg-yellow-500/50 text-slate-950 px-5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-widest transition-all shadow-lg shadow-yellow-500/10 active:scale-95 disabled:scale-100"
         >
           {refreshing ? (
             <Loader2 size={14} className="animate-spin" />
@@ -355,7 +355,7 @@ const Dashboard = () => {
             <div className="flex items-center gap-3">
               <MessageSquareWarning size={20} className="text-red-400" />
               <div>
-                <p className="text-sm font-black text-red-400">{complaintCount} New Complaint{complaintCount > 1 ? 's' : ''} Awaiting Review</p>
+                <p className="text-sm font-semibold text-red-400">{complaintCount} New Complaint{complaintCount > 1 ? 's' : ''} Awaiting Review</p>
                 <p className="text-xs text-gray-500">Click to manage customer complaints</p>
               </div>
             </div>
@@ -369,17 +369,17 @@ const Dashboard = () => {
         <div className="lg:col-span-2 bg-gray-900 rounded-3xl p-4 sm:p-8 border border-yellow-900/10 shadow-sm min-w-0">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-xl font-black text-white uppercase tracking-widest">Growth Analytics</h2>
-              <p className="text-gray-400 text-xs font-bold mt-1 uppercase tracking-tighter">Revenue & Profit — last 7 days</p>
+              <h2 className="text-xl font-semibold text-white uppercase tracking-widest">Growth Analytics</h2>
+              <p className="text-gray-400 text-xs font-semibold mt-1 uppercase tracking-tighter">Revenue & Profit — last 7 days</p>
             </div>
             <div className="flex gap-2">
               <div className="flex items-center gap-2 bg-yellow-500/10 px-3 py-1 rounded-lg">
                 <div className="w-2 h-2 bg-yellow-500 rounded-full" />
-                <span className="text-[10px] font-black text-yellow-600 uppercase">Revenue</span>
+                <span className="text-[10px] font-semibold text-yellow-600 uppercase">Revenue</span>
               </div>
               <div className="flex items-center gap-2 bg-indigo-50 px-3 py-1 rounded-lg">
                 <div className="w-2 h-2 bg-indigo-500 rounded-full" />
-                <span className="text-[10px] font-black text-indigo-600 uppercase">Profit</span>
+                <span className="text-[10px] font-semibold text-indigo-600 uppercase">Profit</span>
               </div>
             </div>
           </div>
@@ -417,15 +417,15 @@ const Dashboard = () => {
             <div className="w-12 h-12 bg-gray-900/10 rounded-xl flex items-center justify-center mb-6 border border-white/10">
               <TrendingUp className="text-yellow-400" size={24} />
             </div>
-            <h3 className="text-2xl font-black tracking-tight mb-2">Target Achievement</h3>
+            <h3 className="text-2xl font-semibold tracking-tight mb-2">Target Achievement</h3>
             <p className="text-gray-400 text-sm font-medium">Monthly revenue target status</p>
           </div>
           <div className="space-y-6 mt-12">
             <div>
               <div className="flex justify-between items-end mb-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-yellow-400">Progress</span>
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-yellow-400">Progress</span>
                 {/* ✅ Derived from real sales data, not hardcoded */}
-                <span className="text-xl font-black">{targetPct}%</span>
+                <span className="text-xl font-semibold">{targetPct}%</span>
               </div>
               <div className="w-full bg-gray-900/10 h-3 rounded-full overflow-hidden p-0.5 border border-white/5">
                 <div
@@ -436,13 +436,13 @@ const Dashboard = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-gray-900/5 p-4 rounded-2xl border border-white/5">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Target</p>
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1">Target</p>
                 {/* ✅ Derived from MONTHLY_TARGET constant */}
-                <p className="font-bold text-lg">₹{(MONTHLY_TARGET / 1000).toFixed(0)}K</p>
+                <p className="font-semibold text-lg">₹{(MONTHLY_TARGET / 1000).toFixed(0)}K</p>
               </div>
               <div className="bg-gray-900/5 p-4 rounded-2xl border border-white/5">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Current</p>
-                <p className="font-bold text-lg text-yellow-400">{targetDisplay}</p>
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1">Current</p>
+                <p className="font-semibold text-lg text-yellow-400">{targetDisplay}</p>
               </div>
             </div>
           </div>
@@ -453,8 +453,8 @@ const Dashboard = () => {
         {/* Recent Orders Table */}
         <div className="bg-gray-900 rounded-2xl shadow-sm border border-yellow-900/10 lg:col-span-2 overflow-hidden">
           <div className="px-8 py-6 border-b border-yellow-900/10 flex justify-between items-center bg-slate-950/30">
-            <h2 className="text-lg font-black text-white uppercase tracking-widest">Recent Activity</h2>
-            <Link to="/admin/orders" className="text-yellow-600 hover:text-yellow-700 text-xs font-black uppercase tracking-widest">
+            <h2 className="text-lg font-semibold text-white uppercase tracking-widest">Recent Activity</h2>
+            <Link to="/admin/orders" className="text-yellow-600 hover:text-yellow-700 text-xs font-semibold uppercase tracking-widest">
               View All Orders
             </Link>
           </div>
@@ -463,10 +463,10 @@ const Dashboard = () => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-950/50 text-gray-400 text-[10px] uppercase tracking-[0.2em] border-b border-yellow-900/10">
-                  <th className="px-8 py-4 font-bold">Order ID</th>
-                  <th className="px-8 py-4 font-bold">Customer</th>
-                  <th className="px-8 py-4 font-bold">Status</th>
-                  <th className="px-8 py-4 font-bold text-right">Total</th>
+                  <th className="px-8 py-4 font-semibold">Order ID</th>
+                  <th className="px-8 py-4 font-semibold">Customer</th>
+                  <th className="px-8 py-4 font-semibold">Status</th>
+                  <th className="px-8 py-4 font-semibold text-right">Total</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-sm">
@@ -479,14 +479,14 @@ const Dashboard = () => {
                 ) : (
                   orderStats.recentOrders.map((order) => (
                     <tr key={order.id} className="hover:bg-slate-950/50 transition-colors group">
-                      <td className="px-8 py-5 font-black text-white tracking-tight">#{order.id.slice(-8).toUpperCase()}</td>
+                      <td className="px-8 py-5 font-semibold text-white tracking-tight">#{order.id.slice(-8).toUpperCase()}</td>
                       <td className="px-8 py-5 text-gray-400 font-medium">{order.customerName || 'Guest'}</td>
                       <td className="px-8 py-5">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${getStatusStyle(order.status)}`}>
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-tighter ${getStatusStyle(order.status)}`}>
                           {order.status}
                         </span>
                       </td>
-                      <td className="px-8 py-5 font-black text-white text-right">₹{Number(order.totalPrice).toLocaleString()}</td>
+                      <td className="px-8 py-5 font-semibold text-white text-right">₹{Number(order.totalPrice).toLocaleString()}</td>
                     </tr>
                   ))
                 )}
@@ -504,21 +504,21 @@ const Dashboard = () => {
               orderStats.recentOrders.map((order) => (
                 <div key={order.id} className="p-6 flex flex-col gap-3 hover:bg-slate-950/50 transition-all">
                   <div className="flex justify-between items-center">
-                    <span className="font-black text-white text-sm">#{order.id.slice(-8).toUpperCase()}</span>
+                    <span className="font-semibold text-white text-sm">#{order.id.slice(-8).toUpperCase()}</span>
                     <span className="text-[10px] font-medium text-gray-500">
                       {order.createdAt instanceof Date ? order.createdAt.toLocaleDateString('en-IN') : 'Recent'}
                     </span>
                   </div>
                   <div className="flex justify-between items-end">
                     <div>
-                      <p className="text-gray-400 text-xs font-bold">{order.customerName || 'Guest'}</p>
-                      <p className="text-[10px] text-gray-600 font-bold uppercase tracking-tighter mt-1">{order.paymentMethod || 'COD'}</p>
+                      <p className="text-gray-400 text-xs font-semibold">{order.customerName || 'Guest'}</p>
+                      <p className="text-[10px] text-gray-600 font-semibold uppercase tracking-tighter mt-1">{order.paymentMethod || 'COD'}</p>
                     </div>
                     <div className="text-right flex flex-col items-end gap-2">
-                      <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter w-fit ${getStatusStyle(order.status)}`}>
+                      <span className={`px-3 py-1 rounded-full text-[9px] font-semibold uppercase tracking-tighter w-fit ${getStatusStyle(order.status)}`}>
                         {order.status}
                       </span>
-                      <span className="font-black text-white text-base">₹{Number(order.totalPrice).toLocaleString()}</span>
+                      <span className="font-semibold text-white text-base">₹{Number(order.totalPrice).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -531,28 +531,28 @@ const Dashboard = () => {
         <div className="space-y-6">
           <div className="bg-gradient-to-br from-gray-900 to-slate-900 rounded-2xl shadow-xl p-8 text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-3xl -mr-16 -mt-16" />
-            <h2 className="text-xl font-black uppercase tracking-widest mb-6 relative z-10">Quick Actions</h2>
+            <h2 className="text-xl font-semibold uppercase tracking-widest mb-6 relative z-10">Quick Actions</h2>
             
             {/* Daily stats summary display */}
             <div className="space-y-3 mb-6 relative z-10 bg-black/40 p-4 rounded-2xl border border-yellow-500/10">
-              <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest mb-2 pb-1 border-b border-yellow-500/10">Daily Report Summary</p>
+              <p className="text-[10px] font-semibold text-yellow-500 uppercase tracking-widest mb-2 pb-1 border-b border-yellow-500/10">Daily Report Summary</p>
               <div className="flex justify-between items-center text-xs">
-                <span className="text-gray-400 font-bold uppercase tracking-wider">Orders:</span>
-                <span className="font-black text-white">{orderStats.todayOrders}</span>
+                <span className="text-gray-400 font-semibold uppercase tracking-wider">Orders:</span>
+                <span className="font-semibold text-white">{orderStats.todayOrders}</span>
               </div>
               <div className="flex justify-between items-center text-xs">
-                <span className="text-gray-400 font-bold uppercase tracking-wider">Sales:</span>
-                <span className="font-black text-white">₹{orderStats.todaySales.toLocaleString()}</span>
+                <span className="text-gray-400 font-semibold uppercase tracking-wider">Sales:</span>
+                <span className="font-semibold text-white">₹{orderStats.todaySales.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center text-xs">
-                <span className="text-gray-400 font-bold uppercase tracking-wider">Profit:</span>
-                <span className={`font-black ${orderStats.todayProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                <span className="text-gray-400 font-semibold uppercase tracking-wider">Profit:</span>
+                <span className={`font-semibold ${orderStats.todayProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   ₹{orderStats.todayProfit.toLocaleString()}
                 </span>
               </div>
               <div className="flex justify-between items-center text-xs">
-                <span className="text-gray-400 font-bold uppercase tracking-wider">Profit %:</span>
-                <span className={`font-black ${orderStats.todayProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                <span className="text-gray-400 font-semibold uppercase tracking-wider">Profit %:</span>
+                <span className={`font-semibold ${orderStats.todayProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {orderStats.todaySales > 0 ? ((orderStats.todayProfit / orderStats.todaySales) * 100).toFixed(1) : '0.0'}%
                 </span>
               </div>
@@ -560,11 +560,11 @@ const Dashboard = () => {
 
             <div className="space-y-4 relative z-10">
               <Link to="/admin/products" className="flex items-center justify-between w-full p-4 bg-gray-900/5 hover:bg-gray-900/10 border border-white/10 rounded-xl transition-all group">
-                <span className="font-bold text-sm tracking-wide">Manage Products</span>
+                <span className="font-semibold text-sm tracking-wide">Manage Products</span>
                 <ArrowUpRight size={18} className="text-yellow-400 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
               </Link>
               <Link to="/admin/orders" className="flex items-center justify-between w-full p-4 bg-gray-900/5 hover:bg-gray-900/10 border border-white/10 rounded-xl transition-all group">
-                <span className="font-bold text-sm tracking-wide">Process Orders</span>
+                <span className="font-semibold text-sm tracking-wide">Process Orders</span>
                 <ArrowUpRight size={18} className="text-yellow-400 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
               </Link>
               <button
@@ -574,7 +574,7 @@ const Dashboard = () => {
               >
                 <div className="flex items-center gap-3">
                   <span className="text-yellow-400 text-lg">📲</span>
-                  <span className="font-bold text-sm tracking-wide text-yellow-400">Send Daily Report</span>
+                  <span className="font-semibold text-sm tracking-wide text-yellow-400">Send Daily Report</span>
                 </div>
                 <ArrowUpRight size={18} className="text-yellow-400 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
               </button>
@@ -583,7 +583,7 @@ const Dashboard = () => {
 
           <div className="bg-gray-900 rounded-2xl border border-yellow-900/10 overflow-hidden shadow-sm">
             <div className="px-6 py-4 border-b border-yellow-900/10 bg-slate-950/30">
-              <h3 className="text-xs font-black text-white uppercase tracking-widest">Top Selling Products</h3>
+              <h3 className="text-xs font-semibold text-white uppercase tracking-widest">Top Selling Products</h3>
             </div>
             <div className="divide-y divide-yellow-900/10">
               {topProducts.map((product, idx) => (
@@ -597,13 +597,13 @@ const Dashboard = () => {
                       className="w-10 h-10 rounded-lg object-cover border border-yellow-900/20"
                     />
                     <div>
-                      <p className="text-xs font-bold text-white leading-tight">{product.name}</p>
-                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">{product.category}</p>
+                      <p className="text-xs font-semibold text-white leading-tight">{product.name}</p>
+                      <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-tighter">{product.category}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs font-black text-yellow-500">{product.soldCount || 0}</p>
-                    <p className="text-[8px] text-gray-600 font-black uppercase tracking-tighter">Sold</p>
+                    <p className="text-xs font-semibold text-yellow-500">{product.soldCount || 0}</p>
+                    <p className="text-[8px] text-gray-600 font-semibold uppercase tracking-tighter">Sold</p>
                   </div>
                 </div>
               ))}
@@ -614,14 +614,14 @@ const Dashboard = () => {
           <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-2xl overflow-hidden shadow-sm">
             <div className="px-6 py-4 border-b border-yellow-500/10 bg-yellow-500/5 flex items-center gap-3">
               <AlertTriangle size={16} className="text-yellow-500" />
-              <h3 className="text-xs font-black text-white uppercase tracking-widest">Low Stock Products</h3>
-              <span className="ml-auto text-[10px] font-black text-yellow-500 uppercase tracking-widest">
+              <h3 className="text-xs font-semibold text-white uppercase tracking-widest">Low Stock Products</h3>
+              <span className="ml-auto text-[10px] font-semibold text-yellow-500 uppercase tracking-widest">
                 {lowStockProducts.length} {lowStockProducts.length === 1 ? 'item' : 'items'}
               </span>
             </div>
             {lowStockProducts.length === 0 ? (
               <div className="p-6 text-center">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">No low stock products</p>
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">No low stock products</p>
               </div>
             ) : (
               <div className="divide-y divide-yellow-500/10">
@@ -637,13 +637,13 @@ const Dashboard = () => {
                           className="w-9 h-9 rounded-lg object-cover border border-yellow-500/20"
                         />
                         <div>
-                          <p className="text-xs font-bold text-white leading-tight truncate max-w-[140px]">{product.name}</p>
-                          <p className="text-[9px] text-gray-500 font-bold uppercase tracking-tighter">{product.category}</p>
+                          <p className="text-xs font-semibold text-white leading-tight truncate max-w-[140px]">{product.name}</p>
+                          <p className="text-[9px] text-gray-500 font-semibold uppercase tracking-tighter">{product.category}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-black text-yellow-500">{stock}</p>
-                        <p className="text-[8px] text-yellow-500/60 font-black uppercase tracking-tighter">Left</p>
+                        <p className="text-sm font-semibold text-yellow-500">{stock}</p>
+                        <p className="text-[8px] text-yellow-500/60 font-semibold uppercase tracking-tighter">Left</p>
                       </div>
                     </div>
                   );
@@ -656,14 +656,14 @@ const Dashboard = () => {
           <div className="bg-red-500/5 border border-red-500/20 rounded-2xl overflow-hidden shadow-sm">
             <div className="px-6 py-4 border-b border-red-500/10 bg-red-500/5 flex items-center gap-3">
               <AlertTriangle size={16} className="text-red-400" />
-              <h3 className="text-xs font-black text-white uppercase tracking-widest">Out of Stock Products</h3>
-              <span className="ml-auto text-[10px] font-black text-red-400 uppercase tracking-widest">
+              <h3 className="text-xs font-semibold text-white uppercase tracking-widest">Out of Stock Products</h3>
+              <span className="ml-auto text-[10px] font-semibold text-red-400 uppercase tracking-widest">
                 {outOfStockProducts.length} {outOfStockProducts.length === 1 ? 'item' : 'items'}
               </span>
             </div>
             {outOfStockProducts.length === 0 ? (
               <div className="p-6 text-center">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">No out of stock products</p>
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">No out of stock products</p>
               </div>
             ) : (
               <div className="divide-y divide-red-500/10">
@@ -679,13 +679,13 @@ const Dashboard = () => {
                           className="w-9 h-9 rounded-lg object-cover border border-red-500/20"
                         />
                         <div>
-                          <p className="text-xs font-bold text-white leading-tight truncate max-w-[140px]">{product.name}</p>
-                          <p className="text-[9px] text-gray-500 font-bold uppercase tracking-tighter">{product.category}</p>
+                          <p className="text-xs font-semibold text-white leading-tight truncate max-w-[140px]">{product.name}</p>
+                          <p className="text-[9px] text-gray-500 font-semibold uppercase tracking-tighter">{product.category}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-black text-red-400">{stock}</p>
-                        <p className="text-[8px] text-red-400/60 font-black uppercase tracking-tighter">Left</p>
+                        <p className="text-sm font-semibold text-red-400">{stock}</p>
+                        <p className="text-[8px] text-red-400/60 font-semibold uppercase tracking-tighter">Left</p>
                       </div>
                     </div>
                   );
@@ -695,7 +695,7 @@ const Dashboard = () => {
             <div className="p-4 border-t border-red-500/10 bg-red-500/5">
               <Link
                 to="/admin/products"
-                className="w-full flex items-center justify-center gap-2 py-2 border border-red-500/20 rounded-xl text-[9px] font-black uppercase tracking-widest text-red-400 hover:bg-red-500/10 transition-all"
+                className="w-full flex items-center justify-center gap-2 py-2 border border-red-500/20 rounded-xl text-[9px] font-semibold uppercase tracking-widest text-red-400 hover:bg-red-500/10 transition-all"
               >
                 Manage Stock <ArrowUpRight size={12} />
               </Link>
@@ -703,11 +703,11 @@ const Dashboard = () => {
           </div>
 
           <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-2xl p-6">
-            <h3 className="text-xs font-black text-yellow-600 uppercase tracking-[0.2em] mb-4">Stock Integrity</h3>
+            <h3 className="text-xs font-semibold text-yellow-600 uppercase tracking-[0.2em] mb-4">Stock Integrity</h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-500 font-medium">Active SKU's</span>
-                <span className="text-white font-black">{totalProducts}</span>
+                <span className="text-white font-semibold">{totalProducts}</span>
               </div>
               <div className="w-full bg-yellow-500/10 h-2 rounded-full overflow-hidden">
                 <div className="bg-yellow-500 h-full rounded-full" style={{ width: '100%' }} />
@@ -751,7 +751,7 @@ const Dashboard = () => {
                     }
                   }
                 }}
-                className="w-full mt-4 py-2 border border-yellow-600/30 rounded-xl text-[9px] font-black uppercase tracking-widest text-yellow-600 hover:bg-yellow-600/10 transition-all"
+                className="w-full mt-4 py-2 border border-yellow-600/30 rounded-xl text-[9px] font-semibold uppercase tracking-widest text-yellow-600 hover:bg-yellow-600/10 transition-all"
               >
                 Scan & Normalize Database
               </button>

@@ -441,7 +441,7 @@ const AddProduct = () => {
     <div className="max-w-4xl mx-auto min-w-0 w-full">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Add New Product</h1>
+          <h1 className="text-3xl font-semibold text-white tracking-tight">Add New Product</h1>
           <p className="text-sm text-gray-500 mt-1 font-medium">Upload an image or provide a URL</p>
         </div>
       </div>
@@ -452,13 +452,13 @@ const AddProduct = () => {
           {error && (
             <div className="bg-red-50 text-red-600 p-4 rounded-2xl flex items-center gap-3 border border-red-100">
               <AlertCircle size={20} aria-hidden="true" />
-              <p className="text-sm font-bold">{error}</p>
+              <p className="text-sm font-semibold">{error}</p>
             </div>
           )}
           {success && (
             <div className="bg-yellow-500/10 text-yellow-600 p-4 rounded-2xl flex items-center gap-3 border border-yellow-900/40">
               <CheckCircle size={20} aria-hidden="true" />
-              <p className="text-sm font-bold">{success}</p>
+              <p className="text-sm font-semibold">{success}</p>
             </div>
           )}
 
@@ -467,7 +467,7 @@ const AddProduct = () => {
             {/* Left Column: Details */}
             <div className="space-y-6">
               <div>
-                <label htmlFor="name" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                <label htmlFor="name" className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2 ml-1">
                   Product Title
                 </label>
                 <input
@@ -479,22 +479,22 @@ const AddProduct = () => {
                     : 'border-yellow-900/20 focus:ring-yellow-500/10 focus:border-yellow-500'
                     }`}
                 />
-                {errors.name && <p className="text-red-500 text-[10px] font-bold uppercase tracking-wider mt-1.5 ml-1">{errors.name}</p>}
+                {errors.name && <p className="text-red-500 text-[10px] font-semibold uppercase tracking-wider mt-1.5 ml-1">{errors.name}</p>}
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="price" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Price (₹)</label>
+                  <label htmlFor="price" className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2 ml-1">Price (₹)</label>
                   <input
                     id="price" type="number" name="price" autoComplete="off"
                     value={formData.price} onChange={handleInputChange} min="0" step="0.01" placeholder="0.00"
                     className={`w-full bg-slate-950 border rounded-2xl focus:ring-4 p-4 outline-none transition-all font-medium text-white ${errors.price ? 'border-red-500 focus:ring-red-500/10' : 'border-yellow-900/20 focus:ring-yellow-500/10 focus:border-yellow-500'
                       }`}
                   />
-                  {errors.price && <p className="text-red-500 text-[10px] font-bold uppercase tracking-wider mt-1.5 ml-1">{errors.price}</p>}
+                  {errors.price && <p className="text-red-500 text-[10px] font-semibold uppercase tracking-wider mt-1.5 ml-1">{errors.price}</p>}
                 </div>
                 <div>
-                  <label htmlFor="costPrice" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Cost Price (₹)</label>
+                  <label htmlFor="costPrice" className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2 ml-1">Cost Price (₹)</label>
                   <input
                     id="costPrice"
                     type="number"
@@ -506,10 +506,10 @@ const AddProduct = () => {
                     placeholder="0.00"
                     className={`w-full bg-slate-950 border rounded-2xl focus:ring-4 p-4 outline-none transition-all font-medium text-white ${errors.costPrice ? 'border-red-500 focus:ring-red-500/10' : 'border-yellow-900/20 focus:ring-yellow-500/10 focus:border-yellow-500'}`}
                   />
-                  {errors.costPrice && <p className="text-red-500 text-[10px] font-bold uppercase tracking-wider mt-1.5 ml-1">{errors.costPrice}</p>}
+                  {errors.costPrice && <p className="text-red-500 text-[10px] font-semibold uppercase tracking-wider mt-1.5 ml-1">{errors.costPrice}</p>}
                 </div>
                 <div>
-                  <label htmlFor="stock" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Stock Level</label>
+                  <label htmlFor="stock" className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2 ml-1">Stock Level</label>
                   <input
                     id="stock" type="number" name="stock" autoComplete="off"
                     value={hasVariants ? variants.reduce((sum, v) => sum + (formData.category === 'sarees' ? Number(v.stock || 0) : (v.enableSizes ? Object.values(v.sizes || {}).reduce((s, qty) => s + Number(qty), 0) : Number(v.stock || 0))), 0) : formData.stock}
@@ -517,11 +517,11 @@ const AddProduct = () => {
                     disabled={hasVariants}
                     className={`w-full bg-slate-950 border rounded-2xl focus:ring-4 p-4 outline-none transition-all font-medium text-white ${hasVariants ? 'opacity-50 cursor-not-allowed border-yellow-900/10' : (errors.stock ? 'border-red-500 focus:ring-red-500/10' : 'border-yellow-900/20 focus:ring-yellow-500/10 focus:border-yellow-500')}`}
                   />
-                  {errors.stock && !hasVariants && <p className="text-red-500 text-[10px] font-bold uppercase tracking-wider mt-1.5 ml-1">{errors.stock}</p>}
-                  {hasVariants && <p className="text-yellow-500/60 text-[9px] font-bold uppercase tracking-wider mt-1.5 ml-1">Managed via variants below</p>}
+                  {errors.stock && !hasVariants && <p className="text-red-500 text-[10px] font-semibold uppercase tracking-wider mt-1.5 ml-1">{errors.stock}</p>}
+                  {hasVariants && <p className="text-yellow-500/60 text-[9px] font-semibold uppercase tracking-wider mt-1.5 ml-1">Managed via variants below</p>}
                 </div>
                 <div>
-                  <label htmlFor="category" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Category</label>
+                  <label htmlFor="category" className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2 ml-1">Category</label>
                   <select
                     id="category" name="category"
                     value={formData.category} onChange={handleInputChange}
@@ -539,7 +539,7 @@ const AddProduct = () => {
               </div>
 
               <div>
-                <label htmlFor="description" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Description</label>
+                <label htmlFor="description" className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2 ml-1">Description</label>
                 <textarea
                   id="description" name="description" autoComplete="off"
                   value={formData.description} onChange={handleInputChange}
@@ -547,14 +547,14 @@ const AddProduct = () => {
                   className={`w-full bg-slate-950 border rounded-2xl focus:ring-4 p-4 outline-none transition-all font-medium text-white resize-none ${errors.description ? 'border-red-500 focus:ring-red-500/10' : 'border-yellow-900/20 focus:ring-yellow-500/10 focus:border-yellow-500'
                     }`}
                 />
-                {errors.description && <p className="text-red-500 text-[10px] font-bold uppercase tracking-wider mt-1.5 ml-1">{errors.description}</p>}
+                {errors.description && <p className="text-red-500 text-[10px] font-semibold uppercase tracking-wider mt-1.5 ml-1">{errors.description}</p>}
               </div>
             </div>
 
             {/* Right Column: Image & Preview */}
             <div className="space-y-6">
               <div>
-                <p className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                <p className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2 ml-1">
                   Product Image
                 </p>
 
@@ -572,7 +572,7 @@ const AddProduct = () => {
                     className="sr-only" // ✅ sr-only instead of opacity-0 — cleaner, no overlap issue
                   />
                   <FilePlus className={`w-8 h-8 mb-2 ${file ? 'text-yellow-600' : 'text-gray-400'}`} />
-                  <p className={`text-xs font-bold uppercase tracking-widest ${file ? 'text-yellow-700' : 'text-gray-500'}`}>
+                  <p className={`text-xs font-semibold uppercase tracking-widest ${file ? 'text-yellow-700' : 'text-gray-500'}`}>
                     {file ? file.name : 'Select Image File'}
                   </p>
                   <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-tighter">PNG, JPG, WEBP up to 5MB</p>
@@ -583,7 +583,7 @@ const AddProduct = () => {
                   <button
                     type="button"
                     onClick={handleFileClear}
-                    className="mt-2 text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 transition-colors"
+                    className="mt-2 text-[10px] font-semibold text-red-400 uppercase tracking-widest hover:text-red-300 transition-colors"
                   >
                     ✕ Remove file
                   </button>
@@ -591,7 +591,7 @@ const AddProduct = () => {
 
                 <div className="flex items-center gap-4 my-4">
                   <div className="h-[1px] flex-1 bg-gray-800" />
-                  <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">OR</span>
+                  <span className="text-[10px] font-semibold text-gray-300 uppercase tracking-[0.3em]">OR</span>
                   <div className="h-[1px] flex-1 bg-gray-800" />
                 </div>
 
@@ -612,12 +612,12 @@ const AddProduct = () => {
                       }`}
                   />
                 </div>
-                {errors.image && <p className="text-red-500 text-[10px] font-bold uppercase tracking-wider mt-1.5 ml-1">{errors.image}</p>}
+                {errors.image && <p className="text-red-500 text-[10px] font-semibold uppercase tracking-wider mt-1.5 ml-1">{errors.image}</p>}
               </div>
 
               {/* Live Preview */}
               <div>
-                <h3 className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Live Preview</h3>
+                <h3 className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2 ml-1">Live Preview</h3>
                 <div className="w-full bg-gray-900 rounded-3xl border border-yellow-900/10 shadow-xl overflow-hidden flex flex-col transition-all duration-300">
                   <div className="relative aspect-square overflow-hidden bg-slate-950 flex items-center justify-center">
                     {imagePreviewSrc ? (
@@ -631,7 +631,7 @@ const AddProduct = () => {
                     ) : (
                       <div className="flex flex-col items-center text-gray-400">
                         <ImageIcon size={48} className="mb-4 opacity-30" aria-hidden="true" />
-                        <p className="font-bold text-xs uppercase tracking-widest">Image Preview</p>
+                        <p className="font-semibold text-xs uppercase tracking-widest">Image Preview</p>
                       </div>
                     )}
                     {(() => {
@@ -642,13 +642,13 @@ const AddProduct = () => {
                       if (stockVal === null) return null;
                       if (stockVal <= 0) {
                         return (
-                          <div className="absolute top-4 right-4 bg-red-600 text-white text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-tighter">
+                          <div className="absolute top-4 right-4 bg-red-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full uppercase tracking-tighter">
                             Out of Stock
                           </div>
                         );
                       } else if (stockVal <= 5) {
                         return (
-                          <div className="absolute top-4 right-4 bg-red-500 text-white text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-tighter animate-pulse">
+                          <div className="absolute top-4 right-4 bg-red-500 text-white text-[10px] font-semibold px-2 py-1 rounded-full uppercase tracking-tighter animate-pulse">
                             Low Stock
                           </div>
                         );
@@ -658,8 +658,8 @@ const AddProduct = () => {
                   </div>
                   <div className="p-6">
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-lg font-black text-white line-clamp-1">{formData.name || 'Product Title'}</h3>
-                      <span className="bg-yellow-500/10 text-yellow-600 text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-widest">
+                      <h3 className="text-lg font-semibold text-white line-clamp-1">{formData.name || 'Product Title'}</h3>
+                      <span className="bg-yellow-500/10 text-yellow-600 text-[10px] font-semibold px-2 py-1 rounded-md uppercase tracking-widest">
                         {formData.category}
                       </span>
                     </div>
@@ -667,8 +667,8 @@ const AddProduct = () => {
                       {formData.description || 'Add a description to see how it looks here...'}
                     </p>
                     <div className="flex items-center justify-between mt-auto">
-                      <p className="text-2xl font-black text-orange-500">₹{formData.price || '0'}</p>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                      <p className="text-2xl font-semibold text-orange-500">₹{formData.price || '0'}</p>
+                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
                         Stock: <span className="text-white">
                           {hasVariants 
                             ? variants.reduce((sum, v) => sum + (formData.category === 'sarees' ? Number(v.stock || 0) : (v.enableSizes ? Object.values(v.sizes || {}).reduce((s, qty) => s + Number(qty), 0) : Number(v.stock || 0))), 0)
@@ -683,7 +683,7 @@ const AddProduct = () => {
 
               {/* ── Cloudinary Video Upload ──────────────────────────────── */}
               <div>
-                <p className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                <p className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2 ml-1">
                   Upload Product Video <span className="text-gray-600 font-medium normal-case tracking-normal">(Optional)</span>
                 </p>
 
@@ -691,7 +691,7 @@ const AddProduct = () => {
                 {formData.video && !videoFile && (
                   <div className="flex items-center gap-3 mb-3 p-3 bg-green-500/10 border border-green-500/20 rounded-xl">
                     <Video size={16} className="text-green-400 flex-shrink-0" />
-                    <p className="text-[10px] font-bold text-green-400 uppercase tracking-wider truncate flex-1">Video URL saved</p>
+                    <p className="text-[10px] font-semibold text-green-400 uppercase tracking-wider truncate flex-1">Video URL saved</p>
                     <button
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, video: '' }))}
@@ -726,7 +726,7 @@ const AddProduct = () => {
                     className="sr-only"
                   />
                   <Video className={`w-7 h-7 mb-2 ${videoFile ? 'text-yellow-500' : 'text-gray-400'}`} />
-                  <p className={`text-xs font-bold uppercase tracking-widest ${videoFile ? 'text-yellow-600' : 'text-gray-500'}`}>
+                  <p className={`text-xs font-semibold uppercase tracking-widest ${videoFile ? 'text-yellow-600' : 'text-gray-500'}`}>
                     {videoUploading ? 'Uploading to Cloudinary...' : videoFile ? videoFile.name : 'Select Product Video'}
                   </p>
                   <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-tighter">MP4, MOV, WEBM · Max 100 MB</p>
@@ -737,7 +737,7 @@ const AddProduct = () => {
                   <button
                     type="button"
                     onClick={() => setVideoFile(null)}
-                    className="mt-2 text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 transition-colors"
+                    className="mt-2 text-[10px] font-semibold text-red-400 uppercase tracking-widest hover:text-red-300 transition-colors"
                   >
                     ✕ Remove video file
                   </button>
@@ -745,7 +745,7 @@ const AddProduct = () => {
                 {videoUploading && (
                   <div className="mt-2 flex items-center gap-2 text-yellow-500">
                     <Loader2 size={14} className="animate-spin" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Uploading video...</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-widest">Uploading video...</span>
                   </div>
                 )}
               </div>
@@ -755,7 +755,7 @@ const AddProduct = () => {
           {/* Has Variants Toggle */}
           <div className="flex items-center justify-between p-4 sm:p-6 bg-slate-950/50 border border-yellow-900/10 rounded-2xl mb-8 gap-4">
             <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-black text-white uppercase tracking-wider">Product Variants</h3>
+              <h3 className="text-sm font-semibold text-white uppercase tracking-wider">Product Variants</h3>
               <p className="text-[10px] text-gray-500 font-medium mt-1">This product has different colors or sizes</p>
             </div>
             <label htmlFor="has-variants" className="toggle-wrap shrink-0" aria-label="Enable product variants">
@@ -774,23 +774,23 @@ const AddProduct = () => {
           {hasVariants && (
             <div className="space-y-6 sm:space-y-8 p-4 sm:p-8 bg-slate-950/30 border border-yellow-900/10 rounded-3xl mb-8">
               <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 pb-4 border-b border-yellow-900/10">
-                <h3 className="text-xs font-black text-white uppercase tracking-widest">Variant Manager</h3>
+                <h3 className="text-xs font-semibold text-white uppercase tracking-widest">Variant Manager</h3>
                 <button
                   type="button"
                   onClick={handleAddVariantColor}
-                  className="w-full sm:w-auto px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
+                  className="w-full sm:w-auto px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-[10px] font-semibold uppercase tracking-widest rounded-xl transition-all"
                 >
                   + Add Color
                 </button>
               </div>
 
               {errors.variants && (
-                <p className="text-red-500 text-[10px] font-bold uppercase tracking-wider">{errors.variants}</p>
+                <p className="text-red-500 text-[10px] font-semibold uppercase tracking-wider">{errors.variants}</p>
               )}
 
               {variants.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  <p className="text-[10px] font-black uppercase tracking-widest">No Color Variants Added</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest">No Color Variants Added</p>
                   <p className="text-[9px] mt-1 font-medium text-gray-600">Click "+ Add Color" to define product variants</p>
                 </div>
               ) : (
@@ -806,7 +806,7 @@ const AddProduct = () => {
                         <button
                           type="button"
                           onClick={() => handleRemoveVariantColor(colorIdx)}
-                          className="absolute top-4 right-4 text-[10px] font-black text-red-500 hover:text-red-400 uppercase tracking-widest transition-colors"
+                          className="absolute top-4 right-4 text-[10px] font-semibold text-red-500 hover:text-red-400 uppercase tracking-widest transition-colors"
                         >
                           ✕ Remove
                         </button>
@@ -816,7 +816,7 @@ const AddProduct = () => {
                           
                           {/* 1. Color Name */}
                           <div>
-                            <label htmlFor={`variant-color-name-${colorIdx}`} className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Color Name</label>
+                            <label htmlFor={`variant-color-name-${colorIdx}`} className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">Color Name</label>
                             <div className="flex flex-col sm:flex-row gap-3">
                               <input
                                 id={`variant-color-name-${colorIdx}`}
@@ -832,7 +832,7 @@ const AddProduct = () => {
                                 const hex = multi ? null : (v.colorCode || getColorCode(v.colorName));
                                 return (
                                   <div className="flex items-center justify-between sm:justify-start gap-2 bg-slate-950 p-2.5 rounded-xl border border-white/5 w-full sm:w-auto">
-                                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                                    <span className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest">
                                       {multi ? 'Multicolour' : 'Auto Color:'}
                                     </span>
                                     {multi ? (
@@ -856,7 +856,7 @@ const AddProduct = () => {
 
                           {/* 2. Upload Images (Primary File Upload box) */}
                           <div className="space-y-3">
-                            <p className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Upload Images</p>
+                            <p className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Upload Images</p>
                             <label 
                               htmlFor={`variant-file-upload-${colorIdx}`} 
                               className={`flex flex-col items-center justify-center w-full h-28 border border-dashed rounded-xl cursor-pointer transition-all ${
@@ -874,7 +874,7 @@ const AddProduct = () => {
                                 className="sr-only"
                               />
                               <UploadCloud className="w-6 h-6 mb-1 text-gray-400" />
-                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
                                 {uploadingVariantColorIdx === colorIdx ? 'Uploading to Cloudinary...' : 'Select Variant Image File'}
                               </span>
                               <span className="text-[8px] text-gray-600 uppercase tracking-tight mt-0.5">PNG, JPG, WEBP up to 5MB</span>
@@ -889,7 +889,7 @@ const AddProduct = () => {
                                     <button
                                       type="button"
                                       onClick={() => handleRemoveVariantImage(colorIdx, imgIdx)}
-                                      className="absolute inset-0 bg-red-600/80 text-white text-[9px] font-black uppercase tracking-wider flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"
+                                      className="absolute inset-0 bg-red-600/80 text-white text-[9px] font-semibold uppercase tracking-wider flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"
                                     >
                                       Remove
                                     </button>
@@ -903,7 +903,7 @@ const AddProduct = () => {
                           <div className="border-t border-white/5 pt-4">
                             {formData.category === 'sarees' ? (
                               <div className="bg-slate-950/40 p-4 rounded-xl border border-white/5 space-y-2">
-                                <label htmlFor={`variant-stock-${colorIdx}`} className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                <label htmlFor={`variant-stock-${colorIdx}`} className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
                                   Stock Quantity
                                 </label>
                                 <input
@@ -921,7 +921,7 @@ const AddProduct = () => {
                             ) : (
                               <div className="space-y-4">
                                 <div className="flex items-center justify-between gap-3">
-                                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider flex-1">Enable sizes (for clothing)</span>
+                                  <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider flex-1">Enable sizes (for clothing)</span>
                                   <label htmlFor={`variant-enable-sizes-${colorIdx}`} className="toggle-wrap shrink-0" aria-label="Enable size variants">
                                     <input 
                                       id={`variant-enable-sizes-${colorIdx}`}
@@ -937,7 +937,7 @@ const AddProduct = () => {
 
                                 {v.enableSizes ? (
                                   <div className="space-y-3 bg-slate-950/40 p-4 rounded-xl border border-white/5">
-                                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Add Sizes & Stock</p>
+                                    <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest">Add Sizes & Stock</p>
                                     <div className="flex flex-col sm:flex-row gap-2">
                                       <label htmlFor={`variant-size-${colorIdx}`} className="sr-only">Variant Size</label>
                                       <input
@@ -974,7 +974,7 @@ const AddProduct = () => {
                                             [colorIdx]: { size: '', stock: '' }
                                           }));
                                         }}
-                                        className="w-full sm:w-auto px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all"
+                                        className="w-full sm:w-auto px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-[10px] font-semibold uppercase tracking-widest rounded-lg transition-all"
                                       >
                                         + Add
                                       </button>
@@ -984,12 +984,12 @@ const AddProduct = () => {
                                       <div className="flex flex-wrap gap-2 pt-2">
                                         {Object.entries(v.sizes).map(([szName, szQty]) => (
                                           <div key={szName} className="flex items-center gap-2 px-3 py-1 bg-black/60 border border-yellow-500/20 rounded-full">
-                                            <span className="text-[10px] font-black text-white">{szName}</span>
-                                            <span className="text-[10px] font-bold text-yellow-500">{szQty}</span>
+                                            <span className="text-[10px] font-semibold text-white">{szName}</span>
+                                            <span className="text-[10px] font-semibold text-yellow-500">{szQty}</span>
                                             <button
                                               type="button"
                                               onClick={() => handleRemoveVariantSize(colorIdx, szName)}
-                                              className="text-red-500 hover:text-red-400 font-bold ml-1 text-xs"
+                                              className="text-red-500 hover:text-red-400 font-semibold ml-1 text-xs"
                                             >
                                               ✕
                                             </button>
@@ -1000,7 +1000,7 @@ const AddProduct = () => {
                                   </div>
                                 ) : (
                                   <div className="space-y-2 bg-slate-950/40 p-4 rounded-xl border border-white/5">
-                                    <label htmlFor={`variant-stock-${colorIdx}`} className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                    <label htmlFor={`variant-stock-${colorIdx}`} className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
                                       Stock Quantity
                                     </label>
                                     <input
@@ -1024,7 +1024,7 @@ const AddProduct = () => {
                             <button
                               type="button"
                               onClick={() => handleUpdateVariantColorField(colorIdx, 'showAdvanced', !v.showAdvanced)}
-                              className="text-[10px] font-black text-yellow-500/80 hover:text-yellow-500 uppercase tracking-widest flex items-center gap-1 transition-colors"
+                              className="text-[10px] font-semibold text-yellow-500/80 hover:text-yellow-500 uppercase tracking-widest flex items-center gap-1 transition-colors"
                             >
                               {v.showAdvanced ? 'Hide Advanced Settings ▴' : 'Show Advanced Settings ▾'}
                             </button>
@@ -1033,7 +1033,7 @@ const AddProduct = () => {
                               <div className="space-y-4 mt-4 p-4 bg-slate-950/50 border border-white/5 rounded-xl animate-fadeIn">
                                 {/* Custom HEX override */}
                                 <div>
-                                  <label htmlFor={`variant-color-code-${colorIdx}`} className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Color Code (Hex Override)</label>
+                                  <label htmlFor={`variant-color-code-${colorIdx}`} className="block text-[9px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Color Code (Hex Override)</label>
                                   <div className="flex gap-2">
                                     <input
                                       id={`variant-color-picker-${colorIdx}`}
@@ -1058,7 +1058,7 @@ const AddProduct = () => {
 
                                 {/* Price Difference */}
                                 <div>
-                                  <label htmlFor={`variant-price-diff-${colorIdx}`} className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Price Difference (Optional)</label>
+                                  <label htmlFor={`variant-price-diff-${colorIdx}`} className="block text-[9px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Price Difference (Optional)</label>
                                   <input
                                     id={`variant-price-diff-${colorIdx}`}
                                     name={`variantPriceDiff-${colorIdx}`}
@@ -1072,7 +1072,7 @@ const AddProduct = () => {
 
                                 {/* Image URL fallback */}
                                 <div>
-                                  <label htmlFor={`variant-image-url-${colorIdx}`} className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Or Paste Image URL</label>
+                                  <label htmlFor={`variant-image-url-${colorIdx}`} className="block text-[9px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Or Paste Image URL</label>
                                   <div className="flex flex-col sm:flex-row gap-2">
                                     <input
                                       id={`variant-image-url-${colorIdx}`}
@@ -1089,7 +1089,7 @@ const AddProduct = () => {
                                         handleAddVariantImageUrl(colorIdx, tempUrl);
                                         setTempUrls(prev => ({ ...prev, [colorIdx]: '' }));
                                       }}
-                                      className="w-full sm:w-auto px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white text-[9px] font-black uppercase tracking-widest rounded-lg transition-all"
+                                      className="w-full sm:w-auto px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white text-[9px] font-semibold uppercase tracking-widest rounded-lg transition-all"
                                     >
                                       Add URL
                                     </button>
@@ -1112,7 +1112,7 @@ const AddProduct = () => {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full text-white font-black py-4 rounded-2xl transition-all shadow-xl text-lg uppercase tracking-widest flex items-center justify-center ${loading
+              className={`w-full text-white font-semibold py-4 rounded-2xl transition-all shadow-xl text-lg uppercase tracking-widest flex items-center justify-center ${loading
                 ? 'bg-gray-600 cursor-not-allowed shadow-none'
                 : 'bg-yellow-600 hover:bg-yellow-500 shadow-yellow-600/20 active:scale-[0.98]'
                 }`}
