@@ -1469,87 +1469,126 @@ const ProductDetails = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
               {relatedProducts.map((rp) => {
                 const rpPrice = getEffectivePrice(rp, promoSettings);
+                const isOutOfStock = Number(rp.stock || 0) <= 0;
                 return (
                   <div
                     key={rp.id}
-                    onClick={() => navigate(`/product/${rp.id}`)}
-                    className="luxury-card p-4 rounded-[2.5rem] cursor-pointer group relative"
+                    className="luxury-card p-4 rounded-[2.5rem] group relative flex flex-col justify-between"
                   >
-                    <div className="aspect-square overflow-hidden rounded-[2rem] mb-6 relative">
-                      <LazyImage
-                        src={getOptimizedImage(rp.image, 'card')}
-                        alt={rp.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                        wrapperClass="w-full h-full"
-                      />
-                      {Number(rp.soldCount || 0) >= 50 && (
-                        <div className="absolute top-3 left-3 z-10 flex items-center gap-1 bg-yellow-500 text-black text-[8px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full shadow-lg shadow-yellow-500/30">
-                          🏆 Best Seller
-                        </div>
-                      )}
-                       {(() => {
-                        const stock = Number(rp.stock || 0);
-                        if (stock <= 0) {
-                          return (
-                            <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none bg-black/40">
-                              <span className="bg-red-600 text-white text-[8px] font-semibold px-3 py-1.5 rounded-full uppercase tracking-[0.2em] shadow-xl rotate-[-12deg]">
-                                Out of Stock
-                              </span>
-                            </div>
-                          );
-                        }
-                        if (stock === 1) {
-                          return (
-                            <div className="absolute bottom-3 left-3 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider">
-                              Only 1 Left
-                            </div>
-                          );
-                        }
-                        if (stock === 2) {
-                          return (
-                            <div className="absolute bottom-3 left-3 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider">
-                              Only 2 Left
-                            </div>
-                          );
-                        }
-                        if (stock === 3) {
-                          return (
-                            <div className="absolute bottom-3 left-3 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider">
-                              Only 3 Left
-                            </div>
-                          );
-                        }
-                        if (stock >= 4 && stock <= 10) {
-                          return (
-                            <div className="absolute bottom-3 left-3 z-10 bg-yellow-500 text-black text-[8px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider">
-                              Limited Stock
-                            </div>
-                          );
-                        }
-                        return null;
-                      })()}
-                    </div>
-                    <div className="px-2">
-                      <span className="text-[12px] font-semibold text-yellow-500 uppercase tracking-widest mb-2 block">{rp.category}</span>
-                      <h3 className="type-product-title text-[#F8F8F8] line-clamp-2 group-hover:text-yellow-500 transition-colors mb-2" style={{ textTransform: 'none' }}>
-                        {rp.name}
-                      </h3>
-                      {(() => {
-                        const rpOrigPrice = Number(rp.originalPrice ?? rp.price ?? 0);
-                        const rpDiscountPercent = rpOrigPrice > rpPrice ? Math.round(((rpOrigPrice - rpPrice) / rpOrigPrice) * 100) : 0;
-                        return (
-                          <div className="flex items-baseline gap-2 mt-1">
-                            <span className="type-price premium-gold-price text-[#FFD700] leading-none">₹{rpPrice.toLocaleString()}</span>
-                            {rpDiscountPercent > 0 && (
-                              <>
-                                <span className="text-xs text-gray-500 line-through font-normal">₹{rpOrigPrice.toLocaleString()}</span>
-                                <span className="text-xs text-green-500 font-semibold">{rpDiscountPercent}% OFF</span>
-                              </>
-                            )}
+                    <Link to={`/product/${rp.id}`} className="flex flex-col flex-1">
+                      <div className="aspect-square overflow-hidden rounded-[2rem] mb-6 relative">
+                        <LazyImage
+                          src={getOptimizedImage(rp.image, 'card')}
+                          alt={rp.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          wrapperClass="w-full h-full"
+                        />
+                        {Number(rp.soldCount || 0) >= 50 && (
+                          <div className="absolute top-3 left-3 z-10 flex items-center gap-1 bg-yellow-500 text-black text-[8px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full shadow-lg shadow-yellow-500/30">
+                            🏆 Best Seller
                           </div>
-                        );
-                      })()}
-                    </div>
+                        )}
+                        {(() => {
+                          const stock = Number(rp.stock || 0);
+                          if (stock <= 0) {
+                            return (
+                              <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none bg-black/40">
+                                <span className="bg-red-600 text-white text-[8px] font-semibold px-3 py-1.5 rounded-full uppercase tracking-[0.2em] shadow-xl rotate-[-12deg]">
+                                  Out of Stock
+                                </span>
+                              </div>
+                            );
+                          }
+                          if (stock === 1) {
+                            return (
+                              <div className="absolute bottom-3 left-3 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                                Only 1 Left
+                              </div>
+                            );
+                          }
+                          if (stock === 2) {
+                            return (
+                              <div className="absolute bottom-3 left-3 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                                Only 2 Left
+                              </div>
+                            );
+                          }
+                          if (stock === 3) {
+                            return (
+                              <div className="absolute bottom-3 left-3 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                                Only 3 Left
+                              </div>
+                            );
+                          }
+                          if (stock >= 4 && stock <= 10) {
+                            return (
+                              <div className="absolute bottom-3 left-3 z-10 bg-yellow-500 text-black text-[8px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                                Limited Stock
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
+                      <div className="px-2 mb-4">
+                        <span className="text-[12px] font-semibold text-yellow-500 uppercase tracking-widest mb-2 block">{rp.category}</span>
+                        <h3 className="type-product-title text-[#F8F8F8] line-clamp-2 group-hover:text-yellow-500 transition-colors mb-2" style={{ textTransform: 'none' }}>
+                          {rp.name}
+                        </h3>
+                        {(() => {
+                          const rpOrigPrice = Number(rp.originalPrice ?? rp.price ?? 0);
+                          const rpDiscountPercent = rpOrigPrice > rpPrice ? Math.round(((rpOrigPrice - rpPrice) / rpOrigPrice) * 100) : 0;
+                          return (
+                            <div className="flex items-baseline gap-2 mt-1">
+                              <span className="type-price premium-gold-price text-[#FFD700] leading-none">₹{rpPrice.toLocaleString()}</span>
+                              {rpDiscountPercent > 0 && (
+                                <>
+                                  <span className="text-xs text-gray-500 line-through font-normal">₹{rpOrigPrice.toLocaleString()}</span>
+                                  <span className="text-xs text-green-500 font-semibold">{rpDiscountPercent}% OFF</span>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </Link>
+
+                    {/* Add to Cart button for related products */}
+                    <button
+                      type="button"
+                      disabled={isOutOfStock}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        let defaultColor = '';
+                        let defaultSize = '';
+                        if (rp.variants && rp.variants.length > 0) {
+                          defaultColor = rp.variants[0]?.colorName || rp.variants[0]?.color || '';
+                          if (rp.variants[0]?.sizes) {
+                            const sizesKeys = Object.keys(rp.variants[0].sizes);
+                            if (sizesKeys.length > 0) defaultSize = sizesKeys[0];
+                          }
+                        } else {
+                          if (rp.colors && rp.colors.length > 0) {
+                            defaultColor = typeof rp.colors[0] === 'object' ? rp.colors[0].name : rp.colors[0];
+                          }
+                          if (rp.sizes && rp.sizes.length > 0) {
+                            defaultSize = typeof rp.sizes[0] === 'object' ? rp.sizes[0].name : rp.sizes[0];
+                          }
+                        }
+
+                        addToCart(rp, defaultColor, defaultSize, 1);
+                        toast.success('Added to Cart 🛒');
+                      }}
+                      className={`w-full py-3 rounded-2xl text-[10px] font-bold uppercase tracking-[0.15em] transition-all ${
+                        isOutOfStock
+                          ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                          : 'bg-yellow-500 text-black hover:bg-yellow-400 active:scale-95'
+                      }`}
+                    >
+                      {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+                    </button>
                   </div>
                 );
               })}

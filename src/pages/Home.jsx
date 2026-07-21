@@ -9,6 +9,7 @@ import { getFeaturedProducts, getProductsByIds, getProductById, getCategories } 
 import LazyImage from '../components/LazyImage';
 import { useInView } from 'react-intersection-observer'; // FIX 1: use the canonical hook directly
 import { useWishlist } from '../context/WishlistContext';
+import { useCart } from '../context/CartContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePromo } from '../context/PromoContext';
@@ -284,6 +285,9 @@ const CountdownTimer = ({ expiryDate }) => {
 ───────────────────────────────────────────────────────────────── */
 const ProductCard = ({ product, delay = 0, promoSettings }) => {
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const { addToCart } = useCart();
+  const { showToast } = useNotification();
+  const [addingToCart, setAddingToCart] = useState(false);
   const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.1 });
   const { settings } = useSiteSettings();
 
@@ -292,6 +296,34 @@ const ProductCard = ({ product, delay = 0, promoSettings }) => {
     e.stopPropagation();
     toggleWishlist(product);
   }, [product, toggleWishlist]);
+
+  const handleAddToCart = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    let defaultColor = '';
+    let defaultSize = '';
+    if (product.variants && product.variants.length > 0) {
+      defaultColor = product.variants[0]?.colorName || product.variants[0]?.color || '';
+      if (product.variants[0]?.sizes) {
+        const sizesKeys = Object.keys(product.variants[0].sizes);
+        if (sizesKeys.length > 0) defaultSize = sizesKeys[0];
+      }
+    } else {
+      if (product.colors && product.colors.length > 0) {
+        defaultColor = typeof product.colors[0] === 'object' ? product.colors[0].name : product.colors[0];
+      }
+      if (product.sizes && product.sizes.length > 0) {
+        defaultSize = typeof product.sizes[0] === 'object' ? product.sizes[0].name : product.sizes[0];
+      }
+    }
+
+    addToCart(product, defaultColor, defaultSize, 1);
+    showToast('Added to Cart 🛒', 'success');
+
+    setAddingToCart(true);
+    setTimeout(() => setAddingToCart(false), 1500);
+  }, [product, addToCart, showToast]);
 
   const effPrice = getEffectivePrice(product, promoSettings);
   const origPrice = Number(product.originalPrice ?? product.price ?? 0);
@@ -313,6 +345,7 @@ const ProductCard = ({ product, delay = 0, promoSettings }) => {
     >
       {showWishlist && (
         <button
+          type="button"
           onClick={handleWishlist}
           className={`absolute top-2.5 right-2.5 z-10 w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-colors ${
             isInWishlist(product.id)
@@ -396,12 +429,6 @@ const ProductCard = ({ product, delay = 0, promoSettings }) => {
           <h3 className="type-product-title text-[#F8F8F8] line-clamp-2 group-hover:text-yellow-500 transition-colors" style={{ textTransform: 'none' }}>
             {product.name}
           </h3>
-          
-          {showQuickView && (
-            <div className="text-yellow-500 text-[10px] font-semibold mt-1">
-              Quick View
-            </div>
-          )}
 
           {showRating && (
             <div className="flex items-center gap-1.5 my-1">
@@ -423,6 +450,41 @@ const ProductCard = ({ product, delay = 0, promoSettings }) => {
           </div>
         </div>
       </Link>
+
+      {/* ── Add to Cart / Out of Stock button ── */}
+      {Number(product.stock || 0) <= 0 ? (
+        <button
+          type="button"
+          disabled
+          className="w-full py-3 bg-gray-800 text-gray-500 text-[10px] font-bold uppercase tracking-[0.15em] cursor-not-allowed flex items-center justify-center gap-2 border-t border-white/5"
+          aria-label="Out of stock"
+        >
+          Out of Stock
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={handleAddToCart}
+          className={`w-full py-3 text-[10px] font-bold uppercase tracking-[0.15em] flex items-center justify-center gap-2 transition-all duration-200 active:scale-95 border-t ${
+            addingToCart
+              ? 'bg-green-500 text-black border-t-green-600'
+              : 'bg-yellow-500 text-black hover:bg-yellow-400 border-t-yellow-600'
+          }`}
+          aria-label="Add to cart"
+        >
+          {addingToCart ? (
+            <>
+              <Check size={12} className="flex-shrink-0" />
+              Added!
+            </>
+          ) : (
+            <>
+              <ShoppingCart size={12} className="flex-shrink-0" />
+              Add to Cart
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 };
