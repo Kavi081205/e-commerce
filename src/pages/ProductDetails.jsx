@@ -1475,7 +1475,11 @@ const ProductDetails = () => {
                     key={rp.id}
                     className="luxury-card p-4 rounded-[2.5rem] group relative flex flex-col justify-between"
                   >
-                    <Link to={`/product/${rp.id}`} className="flex flex-col flex-1">
+                    <Link
+                      to={`/product/${rp.id}`}
+                      onClick={() => console.log("PRODUCT CARD CLICKED", rp.id)}
+                      className="flex flex-col flex-1"
+                    >
                       <div className="aspect-square overflow-hidden rounded-[2rem] mb-6 relative">
                         <LazyImage
                           src={getOptimizedImage(rp.image, 'card')}
@@ -1560,6 +1564,11 @@ const ProductDetails = () => {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        if (e.nativeEvent?.stopImmediatePropagation) {
+                          e.nativeEvent.stopImmediatePropagation();
+                        }
+
+                        console.log("ADD TO CART CLICKED", rp.id);
 
                         let defaultColor = '';
                         let defaultSize = '';

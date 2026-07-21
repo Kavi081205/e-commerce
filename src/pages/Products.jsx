@@ -162,7 +162,12 @@ const Products = () => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
+      if (e.nativeEvent?.stopImmediatePropagation) {
+        e.nativeEvent.stopImmediatePropagation();
+      }
     }
+
+    console.log("ADD TO CART CLICKED", product.id);
 
     let defaultColor = '';
     let defaultSize = '';
@@ -508,105 +513,117 @@ const Products = () => {
                           </button>
                         )}
 
-                        <Link to={`/product/${product.id}`} className="flex flex-col">
-                          <div className="overflow-hidden aspect-square relative bg-black">
-                            <LazyImage
-                              src={getOptimizedImage(product.image, idx < 4 ? 'card' : 'mobile')}
-                              srcSet={
-                                product.image && product.image.includes('/upload/')
-                                  ? `${getOptimizedImage(product.image, 'mobile')} 200w, ${getOptimizedImage(product.image, 'card')} 400w`
-                                  : undefined
-                              }
-                              sizes="(max-width: 640px) 200px, 400px"
-                              alt={product.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                              wrapperClass="w-full h-full"
-                              priority={idx < 4}
-                            />
-                            {showStock && (
-                              <>
-                                {Number(product.soldCount || 0) >= 50 && (
-                                  <div className="absolute top-1.5 left-1.5 z-10 bg-yellow-500 text-black text-[6px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded shadow">
-                                    🏆 Best Seller
-                                  </div>
-                                )}
-                                {(() => {
-                                  const stock = Number(product.stock || 0);
-                                  if (stock <= 0) {
-                                    return (
-                                      <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/50">
-                                        <span className="bg-red-600 text-white text-[8px] font-semibold px-2.5 py-1 rounded uppercase tracking-wider rotate-[-10deg]">
-                                          Out of Stock
-                                        </span>
-                                      </div>
-                                    );
-                                  }
-                                  if (stock === 1) {
-                                    return (
-                                      <div className="absolute bottom-1.5 left-1.5 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
-                                        Only 1 Left
-                                      </div>
-                                    );
-                                  }
-                                  if (stock === 2) {
-                                    return (
-                                      <div className="absolute bottom-1.5 left-1.5 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
-                                        Only 2 Left
-                                      </div>
-                                    );
-                                  }
-                                  if (stock === 3) {
-                                    return (
-                                      <div className="absolute bottom-1.5 left-1.5 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
-                                        Only 3 Left
-                                      </div>
-                                    );
-                                  }
-                                  if (stock >= 4 && stock <= 10) {
-                                    return (
-                                      <div className="absolute bottom-1.5 left-1.5 z-10 bg-yellow-500 text-black text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
-                                        Limited Stock
-                                      </div>
-                                    );
-                                  }
-                                  return null;
-                                })()}
-                              </>
-                            )}
+                        {/* 1. Product Image Link */}
+                        <Link
+                          to={`/product/${product.id}`}
+                          onClick={() => console.log("PRODUCT CARD CLICKED", product.id)}
+                          className="block overflow-hidden aspect-square relative bg-black"
+                        >
+                          <LazyImage
+                            src={getOptimizedImage(product.image, idx < 4 ? 'card' : 'mobile')}
+                            srcSet={
+                              product.image && product.image.includes('/upload/')
+                                ? `${getOptimizedImage(product.image, 'mobile')} 200w, ${getOptimizedImage(product.image, 'card')} 400w`
+                                : undefined
+                            }
+                            sizes="(max-width: 640px) 200px, 400px"
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            wrapperClass="w-full h-full"
+                            priority={idx < 4}
+                          />
+                          {showStock && (
+                            <>
+                              {Number(product.soldCount || 0) >= 50 && (
+                                <div className="absolute top-1.5 left-1.5 z-10 bg-yellow-500 text-black text-[6px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded shadow">
+                                  🏆 Best Seller
+                                </div>
+                              )}
+                              {(() => {
+                                const stock = Number(product.stock || 0);
+                                if (stock <= 0) {
+                                  return (
+                                    <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/50">
+                                      <span className="bg-red-600 text-white text-[8px] font-semibold px-2.5 py-1 rounded uppercase tracking-wider rotate-[-10deg]">
+                                        Out of Stock
+                                      </span>
+                                    </div>
+                                  );
+                                }
+                                if (stock === 1) {
+                                  return (
+                                    <div className="absolute bottom-1.5 left-1.5 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
+                                      Only 1 Left
+                                    </div>
+                                  );
+                                }
+                                if (stock === 2) {
+                                  return (
+                                    <div className="absolute bottom-1.5 left-1.5 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
+                                      Only 2 Left
+                                    </div>
+                                  );
+                                }
+                                if (stock === 3) {
+                                  return (
+                                    <div className="absolute bottom-1.5 left-1.5 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
+                                      Only 3 Left
+                                    </div>
+                                  );
+                                }
+                                if (stock >= 4 && stock <= 10) {
+                                  return (
+                                    <div className="absolute bottom-1.5 left-1.5 z-10 bg-yellow-500 text-black text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
+                                      Limited Stock
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
+                            </>
+                          )}
 
-                            {showQuickView && (
-                              <div className="absolute bottom-2 inset-x-2 bg-black/70 backdrop-blur-sm py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-10">
-                                <span className="text-[8px] font-semibold tracking-widest uppercase text-yellow-500">Quick View</span>
-                              </div>
-                            )}
-                          </div>
+                          {showQuickView && (
+                            <div className="absolute bottom-2 inset-x-2 bg-black/70 backdrop-blur-sm py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-10">
+                              <span className="text-[8px] font-semibold tracking-widest uppercase text-yellow-500">Quick View</span>
+                            </div>
+                          )}
+                        </Link>
 
-                          <div className="p-2 flex-grow flex flex-col gap-2 bg-black/10 text-left">
-                            <span className="text-[12px] font-semibold text-yellow-500 uppercase tracking-widest">{product.category}</span>
+                        {/* Card Details */}
+                        <div className="p-2 flex-grow flex flex-col gap-2 bg-black/10 text-left">
+                          <span className="text-[12px] font-semibold text-yellow-500 uppercase tracking-widest">{product.category}</span>
+                          
+                          {/* 2. Product Title Link */}
+                          <Link
+                            to={`/product/${product.id}`}
+                            onClick={() => console.log("PRODUCT CARD CLICKED", product.id)}
+                            className="block"
+                          >
                             <h3 className="type-product-title text-[#F8F8F8] line-clamp-2 group-hover:text-yellow-500 transition-colors" style={{ textTransform: 'none' }}>
                               {product.name}
                             </h3>
-                            
-                            {showRating && (
-                              <div className="flex items-center gap-1 my-0.5">
-                                <ProductRating productId={product.id} compact={true} />
-                              </div>
-                            )}
-
-                            <div className="mt-auto pt-1.5 border-t border-white/5 flex flex-wrap items-baseline gap-2">
-                              <span className="type-price premium-gold-price text-[#FFD700] leading-none">₹{effPrice.toLocaleString()}</span>
-                              {showDiscount && discountPercent > 0 && (
-                                <>
-                                  <span className="text-xs text-gray-500 line-through font-normal">₹{origPrice.toLocaleString()}</span>
-                                  <span className="text-xs text-green-500 font-semibold">{discountPercent}% off</span>
-                                </>
-                              )}
-                              {!showDiscount && discountPercent > 0 && (
-                                <span className="text-xs text-gray-500 line-through font-normal">₹{origPrice.toLocaleString()}</span>
-                              )}
+                          </Link>
+                          
+                          {showRating && (
+                            <div className="flex items-center gap-1 my-0.5">
+                              <ProductRating productId={product.id} compact={true} />
                             </div>
+                          )}
+
+                          <div className="mt-auto pt-1.5 border-t border-white/5 flex flex-wrap items-baseline gap-2">
+                            <span className="type-price premium-gold-price text-[#FFD700] leading-none">₹{effPrice.toLocaleString()}</span>
+                            {showDiscount && discountPercent > 0 && (
+                              <>
+                                <span className="text-xs text-gray-500 line-through font-normal">₹{origPrice.toLocaleString()}</span>
+                                <span className="text-xs text-green-500 font-semibold">{discountPercent}% off</span>
+                              </>
+                            )}
+                            {!showDiscount && discountPercent > 0 && (
+                              <span className="text-xs text-gray-500 line-through font-normal">₹{origPrice.toLocaleString()}</span>
+                            )}
                           </div>
-                        </Link>
+                        </div>
 
                         {/* ── Add to Cart / Out of Stock button ── */}
                         {Number(product.stock || 0) <= 0 ? (
