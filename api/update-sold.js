@@ -17,14 +17,35 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { productId, soldCount, sold } = req.body;
+    const { productId, soldCount, sold, isSold } = req.body;
     console.log('[Backend] Update sold request body:', req.body);
 
     if (!productId || typeof productId !== 'string' || productId.trim() === '') {
       return res.status(400).json({ success: false, message: 'Invalid or missing Product ID' });
     }
 
-    // Determine the raw value, supporting both field names
+    // Handle boolean toggle (e.g. { productId, sold: true/false } or { productId, isSold: true/false })
+    if (typeof sold === 'boolean' || typeof isSold === 'boolean') {
+      const isSoldBool = typeof sold === 'boolean' ? sold : isSold;
+      console.log(`[Backend] Updating sold boolean status for product ${productId} to ${isSoldBool}`);
+
+      const docRef = doc(db, 'products', productId);
+      await updateDoc(docRef, {
+        sold: isSoldBool,
+        isSold: isSoldBool,
+        updatedAt: serverTimestamp()
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: `Product sold status updated to ${isSoldBool ? 'SOLD OUT' : 'AVAILABLE'}.`,
+        productId,
+        sold: isSoldBool,
+        isSold: isSoldBool
+      });
+    }
+
+    // Determine the raw numeric value, supporting both field names
     const rawVal = soldCount !== undefined ? soldCount : sold;
 
     if (rawVal === undefined || rawVal === null || isNaN(rawVal)) {
@@ -40,7 +61,6 @@ export default async function handler(req, res) {
 
     const docRef = doc(db, 'products', productId);
     await updateDoc(docRef, {
-      sold: numericVal,
       soldCount: numericVal,
       updatedAt: serverTimestamp()
     });

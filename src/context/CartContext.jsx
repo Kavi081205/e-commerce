@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, useCallback, useMemo } from 'react';
 import { usePromo } from './PromoContext';
 import { getEffectivePrice } from '../utils/pricing';
+import { isProductSold } from '../utils/productUtils';
 import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -128,6 +129,10 @@ export const CartProvider = ({ children }) => {
     let productId = product?.id || product?.productId || product?.docId || product?._id || product?.uid;
     if (!productId) {
       console.error('[CartContext] addToCart called with a product missing an id:', product);
+      return;
+    }
+    if (isProductSold(product)) {
+      console.warn('[CartContext] Cannot add sold product to cart:', product);
       return;
     }
     

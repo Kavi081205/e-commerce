@@ -15,6 +15,7 @@ import { Helmet } from 'react-helmet-async';
 import { logProductView } from '../utils/analytics';
 import LazyImage from '../components/LazyImage';
 import NotFound from './NotFound';
+import { isProductSold } from '../utils/productUtils';
 import {
   collection,
   addDoc,
@@ -510,7 +511,7 @@ const ProductDetails = () => {
   }, [product?.id]);
 
   const isButtonDisabled = () => {
-    if (added) return true;
+    if (added || isProductSold(product)) return true;
     const hasVars = product?.variants && product.variants.length > 0;
     if (hasVars) {
       if (selectedColor) {
@@ -522,6 +523,7 @@ const ProductDetails = () => {
   };
 
   const isBuyNowDisabled = () => {
+    if (isProductSold(product)) return true;
     const hasVars = product?.variants && product.variants.length > 0;
     if (hasVars) {
       if (selectedColor) {
@@ -538,6 +540,10 @@ const ProductDetails = () => {
       e.stopPropagation();
     }
     if (!product || added) return;
+    if (isProductSold(product)) {
+      toast.error("This product is sold out and unavailable.");
+      return;
+    }
     if (product.variants && product.variants.length > 0 && !selectedColor) {
       toast.error("Please select a color first!");
       return;
@@ -556,6 +562,10 @@ const ProductDetails = () => {
 
   const handleBuyNow = () => {
     if (!product) return;
+    if (isProductSold(product)) {
+      toast.error("This product is sold out and unavailable.");
+      return;
+    }
     if (product.variants && product.variants.length > 0 && !selectedColor) {
       toast.error("Please select a color first!");
       return;
@@ -1301,23 +1311,23 @@ const ProductDetails = () => {
                   disabled={isButtonDisabled()}
                   className={`flex-1 flex justify-center items-center py-4 rounded-2xl text-[15px] font-semibold uppercase tracking-wider transition-all duration-500 ${added
                       ? 'bg-white text-black font-semibold'
-                      : selectedVariantStock === 0 && selectedColor
-                        ? 'bg-gray-900 text-gray-700 cursor-not-allowed'
+                      : (isProductSold(product) || (selectedVariantStock === 0 && selectedColor))
+                        ? 'bg-gray-900 text-gray-700 cursor-not-allowed border border-white/5'
                         : 'bg-transparent border border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/5'
                     }`}
                 >
-                  {added ? 'Secured in Cart' : (product.variants && product.variants.length > 0 && !selectedColor) ? 'SELECT COLOR' : 'ADD TO CART'}
+                  {added ? 'Secured in Cart' : isProductSold(product) ? 'SOLD OUT' : (product.variants && product.variants.length > 0 && !selectedColor) ? 'SELECT COLOR' : 'ADD TO CART'}
                 </button>
                 <button
                   type="button"
                   onClick={handleBuyNow}
                   disabled={isBuyNowDisabled()}
-                  className={`flex-1 flex justify-center items-center py-4 rounded-2xl text-[15px] font-semibold uppercase tracking-wider transition-all duration-500 ${selectedVariantStock === 0 && selectedColor
-                      ? 'bg-gray-900 text-gray-700 cursor-not-allowed'
+                  className={`flex-1 flex justify-center items-center py-4 rounded-2xl text-[15px] font-semibold uppercase tracking-wider transition-all duration-500 ${(isProductSold(product) || (selectedVariantStock === 0 && selectedColor))
+                      ? 'bg-gray-900 text-gray-700 cursor-not-allowed border border-white/5'
                       : 'bg-yellow-500 text-black shadow-2xl hover:scale-105 active:scale-95'
                     }`}
                 >
-                  {(product.variants && product.variants.length > 0 && !selectedColor) ? 'SELECT COLOR' : 'BUY NOW'}
+                  {isProductSold(product) ? 'SOLD OUT' : (product.variants && product.variants.length > 0 && !selectedColor) ? 'SELECT COLOR' : 'BUY NOW'}
                 </button>
               </div>
             </div>
@@ -1979,23 +1989,23 @@ const ProductDetails = () => {
           disabled={isButtonDisabled()}
           className={`flex-1 py-4 rounded-xl text-[15px] font-semibold uppercase tracking-wider transition-all duration-300 ${added
               ? 'bg-white text-black font-semibold'
-              : selectedVariantStock === 0 && selectedColor
+              : (isProductSold(product) || (selectedVariantStock === 0 && selectedColor))
                 ? 'bg-gray-900 text-gray-700 cursor-not-allowed border border-white/5'
                 : 'bg-transparent border border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/5'
             }`}
         >
-          {added ? 'Secured in Cart' : (product.variants && product.variants.length > 0 && !selectedColor) ? 'SELECT COLOR' : 'ADD TO CART'}
+          {added ? 'Secured in Cart' : isProductSold(product) ? 'SOLD OUT' : (product.variants && product.variants.length > 0 && !selectedColor) ? 'SELECT COLOR' : 'ADD TO CART'}
         </button>
         <button
           type="button"
           onClick={handleBuyNow}
           disabled={isBuyNowDisabled()}
-          className={`flex-1 py-4 rounded-xl text-[15px] font-semibold uppercase tracking-wider transition-all duration-300 ${selectedVariantStock === 0 && selectedColor
+          className={`flex-1 py-4 rounded-xl text-[15px] font-semibold uppercase tracking-wider transition-all duration-300 ${(isProductSold(product) || (selectedVariantStock === 0 && selectedColor))
               ? 'bg-gray-900 text-gray-700 cursor-not-allowed border border-white/5'
               : 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/10 active:scale-95'
             }`}
         >
-          {(product.variants && product.variants.length > 0 && !selectedColor) ? 'SELECT COLOR' : 'BUY NOW'}
+          {isProductSold(product) ? 'SOLD OUT' : (product.variants && product.variants.length > 0 && !selectedColor) ? 'SELECT COLOR' : 'BUY NOW'}
         </button>
       </div>
     </div>

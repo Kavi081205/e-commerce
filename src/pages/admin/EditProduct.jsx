@@ -58,6 +58,7 @@ const EditProduct = () => {
     costPrice: '',
     image: '',
     video: '',
+    sold: false,
   });
 
   // Read-only: soldCount from Firestore (never edited by admin)
@@ -278,6 +279,7 @@ const EditProduct = () => {
             video: data.video || '',
             description: data.description || '',
             costPrice: fetchedCost !== '' ? String(fetchedCost) : '',
+            sold: data.sold === true || data.isSold === true || data.isSoldOut === true || (typeof data.sold === 'string' && data.sold.toLowerCase() === 'true'),
           });
         } else {
           setError("Product not found");
@@ -456,12 +458,15 @@ const EditProduct = () => {
         description: formData.description || "No description",
         image: imageUrl || "",
         variants: hasVariants ? preparedVariants : [],
-        hasVariants: hasVariants
+        hasVariants: hasVariants,
+        sold: Boolean(formData.sold),
+        isSold: Boolean(formData.sold)
       });
 
       // Show success feedback
       setIsSaving(false);
       setSuccess("Product updated successfully!");
+      window.dispatchEvent(new Event('products-updated'));
       
       // Force a small delay so UI "feels" fresh and listener has time to sync
       setTimeout(() => {

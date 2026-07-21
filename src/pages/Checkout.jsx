@@ -19,6 +19,7 @@ import { db } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { validatePhone, validatePincode, validateName } from '../utils/security';
 import { getProductById } from '../firebase/services';
+import { isProductSold } from '../utils/productUtils';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
@@ -616,10 +617,15 @@ const Checkout = () => {
           );
           if (productDoc.exists()) {
             const productData = productDoc.data();
-            validItems.push({
-              ...item,
-              costPrice: Number(productData.costPrice ?? productData.cost ?? productData.price ?? 0)
-            });
+            if (isProductSold(productData)) {
+              console.warn(`Product ${productId} is sold out according to Firestore.`);
+              invalidProductIds.push(item.id);
+            } else {
+              validItems.push({
+                ...item,
+                costPrice: Number(productData.costPrice ?? productData.cost ?? productData.price ?? 0)
+              });
+            }
           } else {
             invalidProductIds.push(item.id);
           }

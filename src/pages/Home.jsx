@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { ArrowRight, Star, Truck, ShieldCheck, Loader2, Heart, Gift, Zap, Sparkles, Copy, Check, Calendar, ShoppingCart } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, query, orderBy, limit, doc, where, getDoc, getDocs, getCountFromServer } from 'firebase/firestore';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getFeaturedProducts, getProductsByIds, getProductById, getCategories } from '../firebase/services';
 import LazyImage from '../components/LazyImage';
 import { useInView } from 'react-intersection-observer'; // FIX 1: use the canonical hook directly
@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePromo } from '../context/PromoContext';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
+import { isProductSold } from '../utils/productUtils';
 import { getEffectivePrice } from '../utils/pricing';
 import { getOptimizedImage, getHDImage } from '../utils/cloudinary';
 import ProductRating from '../components/ProductRating';
@@ -379,52 +380,62 @@ const ProductCard = ({ product, delay = 0, promoSettings }) => {
         />
         {showStock && (
           <>
-            {Number(product.soldCount || 0) >= 50 && (
-              <div className="absolute top-2 left-2 z-10 bg-yellow-500 text-black text-[7px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded shadow">
-                🏆 Best Seller
+            {isProductSold(product) ? (
+              <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/60">
+                <span className="bg-red-600 text-white text-[9px] font-bold px-3 py-1.5 rounded uppercase tracking-widest shadow-xl rotate-[-10deg]">
+                  SOLD OUT
+                </span>
               </div>
+            ) : (
+              <>
+                {Number(product.soldCount || 0) >= 50 && (
+                  <div className="absolute top-2 left-2 z-10 bg-yellow-500 text-black text-[7px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded shadow">
+                    🏆 Best Seller
+                  </div>
+                )}
+                {(() => {
+                  const stock = Number(product.stock || 0);
+                  if (stock <= 0) {
+                    return (
+                      <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/50">
+                        <span className="bg-red-600 text-white text-[8px] font-semibold px-2.5 py-1 rounded uppercase tracking-wider rotate-[-10deg]">
+                          Out of Stock
+                        </span>
+                      </div>
+                    );
+                  }
+                  if (stock === 1) {
+                    return (
+                      <div className="absolute bottom-2 left-2 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
+                        Only 1 Left
+                      </div>
+                    );
+                  }
+                  if (stock === 2) {
+                    return (
+                      <div className="absolute bottom-2 left-2 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
+                        Only 2 Left
+                      </div>
+                    );
+                  }
+                  if (stock === 3) {
+                    return (
+                      <div className="absolute bottom-2 left-2 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
+                        Only 3 Left
+                      </div>
+                    );
+                  }
+                  if (stock >= 4 && stock <= 10) {
+                    return (
+                      <div className="absolute bottom-2 left-2 z-10 bg-yellow-500 text-black text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
+                        Limited Stock
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+              </>
             )}
-            {(() => {
-              const stock = Number(product.stock || 0);
-              if (stock <= 0) {
-                return (
-                  <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/50">
-                    <span className="bg-red-600 text-white text-[8px] font-semibold px-2.5 py-1 rounded uppercase tracking-wider rotate-[-10deg]">
-                      Out of Stock
-                    </span>
-                  </div>
-                );
-              }
-              if (stock === 1) {
-                return (
-                  <div className="absolute bottom-2 left-2 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
-                    Only 1 Left
-                  </div>
-                );
-              }
-              if (stock === 2) {
-                return (
-                  <div className="absolute bottom-2 left-2 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
-                    Only 2 Left
-                  </div>
-                );
-              }
-              if (stock === 3) {
-                return (
-                  <div className="absolute bottom-2 left-2 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
-                    Only 3 Left
-                  </div>
-                );
-              }
-              if (stock >= 4 && stock <= 10) {
-                return (
-                  <div className="absolute bottom-2 left-2 z-10 bg-yellow-500 text-black text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
-                    Limited Stock
-                  </div>
-                );
-              }
-              return null;
-            })()}
           </>
         )}
 
@@ -470,15 +481,15 @@ const ProductCard = ({ product, delay = 0, promoSettings }) => {
         </div>
       </div>
 
-      {/* ── Add to Cart / Out of Stock button ── */}
-      {Number(product.stock || 0) <= 0 ? (
+      {/* ── Add to Cart / Out of Stock / SOLD OUT button ── */}
+      {isProductSold(product) || Number(product.stock || 0) <= 0 ? (
         <button
           type="button"
           disabled
           className="w-full py-3 bg-gray-800 text-gray-500 text-[10px] font-bold uppercase tracking-[0.15em] cursor-not-allowed flex items-center justify-center gap-2 border-t border-white/5"
-          aria-label="Out of stock"
+          aria-label="Sold out"
         >
-          Out of Stock
+          {isProductSold(product) ? 'SOLD OUT' : 'Out of Stock'}
         </button>
       ) : (
         <button
@@ -732,8 +743,18 @@ const WelcomeOfferBanner = ({ welcomeOffer }) => {
 ───────────────────────────────────────────────────────────────── */
 const Home = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { settings, welcomeOffer } = useSiteSettings();
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    const handleProductsUpdated = () => {
+      queryClient.invalidateQueries({ queryKey: ['featuredProducts'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    };
+    window.addEventListener('products-updated', handleProductsUpdated);
+    return () => window.removeEventListener('products-updated', handleProductsUpdated);
+  }, [queryClient]);
 
   const { promoSettings } = usePromo();
   const { categories, catLoading, productCounts } = useDynamicCategories();

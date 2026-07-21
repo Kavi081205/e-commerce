@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import { getOptimizedImage } from '../utils/cloudinary';
 import { usePromo } from '../context/PromoContext';
 import { getEffectivePrice } from '../utils/pricing';
+import { isProductSold } from '../utils/productUtils';
 
 const Wishlist = () => {
   const { wishlistItems, removeFromWishlist, loading } = useWishlist();
@@ -106,19 +107,29 @@ const Wishlist = () => {
                     })()}
 
                     <div className="flex gap-3">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          addToCart(item);
-                          removeFromWishlist(item.id);
-                          showToast('Added to Cart 🛒', 'success');
-                        }}
-                        className="flex-1 bg-white text-black font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 text-[15px] tracking-wider hover:bg-yellow-500 transition-all"
-                      >
-                        <ShoppingCart size={14} /> Add to Cart
-                      </button>
+                      {isProductSold(item) ? (
+                        <button
+                          type="button"
+                          disabled
+                          className="flex-1 bg-gray-800 text-gray-500 font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 text-[15px] tracking-wider cursor-not-allowed"
+                        >
+                          SOLD OUT
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            addToCart(item);
+                            removeFromWishlist(item.id);
+                            showToast('Added to Cart 🛒', 'success');
+                          }}
+                          className="flex-1 bg-white text-black font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 text-[15px] tracking-wider hover:bg-yellow-500 transition-all"
+                        >
+                          <ShoppingCart size={14} /> Add to Cart
+                        </button>
+                      )}
                       <Link
                         to={`/product/${item.id}`}
                         className="w-12 h-12 bg-gray-900/50 border border-yellow-900/10 text-yellow-500 rounded-2xl flex items-center justify-center hover:bg-yellow-500 hover:text-black transition-all"

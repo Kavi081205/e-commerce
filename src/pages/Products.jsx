@@ -21,6 +21,7 @@ import { ProductSkeleton } from '../components/Skeleton';
 import ProductRating from '../components/ProductRating';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getCategories } from '../firebase/services';
+import { isProductSold, isProductUnavailable } from '../utils/productUtils';
 
 const PRODUCTS_PER_PAGE = 20;
 
@@ -93,6 +94,14 @@ const Products = () => {
   const [retryTrigger, setRetryTrigger] = useState(0);
 
   const refetch = () => setRetryTrigger(prev => prev + 1);
+
+  useEffect(() => {
+    const handleProductsUpdated = () => {
+      refetch();
+    };
+    window.addEventListener('products-updated', handleProductsUpdated);
+    return () => window.removeEventListener('products-updated', handleProductsUpdated);
+  }, []);
 
   const cursor = currentPageIndex === 0 ? null : pageCursors[currentPageIndex - 1];
 
@@ -534,52 +543,62 @@ const Products = () => {
                           />
                           {showStock && (
                             <>
-                              {Number(product.soldCount || 0) >= 50 && (
-                                <div className="absolute top-1.5 left-1.5 z-10 bg-yellow-500 text-black text-[6px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded shadow">
-                                  🏆 Best Seller
+                              {isProductSold(product) ? (
+                                <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/60">
+                                  <span className="bg-red-600 text-white text-[9px] font-bold px-3 py-1.5 rounded uppercase tracking-widest shadow-xl rotate-[-10deg]">
+                                    SOLD OUT
+                                  </span>
                                 </div>
+                              ) : (
+                                <>
+                                  {Number(product.soldCount || 0) >= 50 && (
+                                    <div className="absolute top-1.5 left-1.5 z-10 bg-yellow-500 text-black text-[6px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded shadow">
+                                      🏆 Best Seller
+                                    </div>
+                                  )}
+                                  {(() => {
+                                    const stock = Number(product.stock || 0);
+                                    if (stock <= 0) {
+                                      return (
+                                        <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/50">
+                                          <span className="bg-red-600 text-white text-[8px] font-semibold px-2.5 py-1 rounded uppercase tracking-wider rotate-[-10deg]">
+                                            Out of Stock
+                                          </span>
+                                        </div>
+                                      );
+                                    }
+                                    if (stock === 1) {
+                                      return (
+                                        <div className="absolute bottom-1.5 left-1.5 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
+                                          Only 1 Left
+                                        </div>
+                                      );
+                                    }
+                                    if (stock === 2) {
+                                      return (
+                                        <div className="absolute bottom-1.5 left-1.5 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
+                                          Only 2 Left
+                                        </div>
+                                      );
+                                    }
+                                    if (stock === 3) {
+                                      return (
+                                        <div className="absolute bottom-1.5 left-1.5 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
+                                          Only 3 Left
+                                        </div>
+                                      );
+                                    }
+                                    if (stock >= 4 && stock <= 10) {
+                                      return (
+                                        <div className="absolute bottom-1.5 left-1.5 z-10 bg-yellow-500 text-black text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
+                                          Limited Stock
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  })()}
+                                </>
                               )}
-                              {(() => {
-                                const stock = Number(product.stock || 0);
-                                if (stock <= 0) {
-                                  return (
-                                    <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/50">
-                                      <span className="bg-red-600 text-white text-[8px] font-semibold px-2.5 py-1 rounded uppercase tracking-wider rotate-[-10deg]">
-                                        Out of Stock
-                                      </span>
-                                    </div>
-                                  );
-                                }
-                                if (stock === 1) {
-                                  return (
-                                    <div className="absolute bottom-1.5 left-1.5 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
-                                      Only 1 Left
-                                    </div>
-                                  );
-                                }
-                                if (stock === 2) {
-                                  return (
-                                    <div className="absolute bottom-1.5 left-1.5 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
-                                      Only 2 Left
-                                    </div>
-                                  );
-                                }
-                                if (stock === 3) {
-                                  return (
-                                    <div className="absolute bottom-1.5 left-1.5 z-10 bg-orange-600 text-white text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
-                                      Only 3 Left
-                                    </div>
-                                  );
-                                }
-                                if (stock >= 4 && stock <= 10) {
-                                  return (
-                                    <div className="absolute bottom-1.5 left-1.5 z-10 bg-yellow-500 text-black text-[8px] font-semibold px-2 py-0.5 rounded shadow uppercase tracking-wider">
-                                      Limited Stock
-                                    </div>
-                                  );
-                                }
-                                return null;
-                              })()}
                             </>
                           )}
 
@@ -625,14 +644,15 @@ const Products = () => {
                           </div>
                         </div>
 
-                        {/* ── Add to Cart / Out of Stock button ── */}
-                        {Number(product.stock || 0) <= 0 ? (
+                        {/* ── Add to Cart / Out of Stock / SOLD OUT button ── */}
+                        {isProductSold(product) || Number(product.stock || 0) <= 0 ? (
                           <button
+                            type="button"
                             disabled
                             className="w-full py-3 bg-gray-800 text-gray-500 text-[10px] font-bold uppercase tracking-[0.15em] cursor-not-allowed flex items-center justify-center gap-2 border-t border-white/5"
-                            aria-label="Out of stock"
+                            aria-label="Sold out"
                           >
-                            Out of Stock
+                            {isProductSold(product) ? 'SOLD OUT' : 'Out of Stock'}
                           </button>
                         ) : (
                           <button

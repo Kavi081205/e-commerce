@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { deleteProduct } from '../../firebase/services';
 import { getOptimizedImage } from '../../utils/cloudinary';
 import { useNotification } from '../../context/NotificationContext';
+import { isProductSold } from '../../utils/productUtils';
 
 // ✅ Single source of truth for low-stock threshold
 const LOW_STOCK_THRESHOLD = 10;
@@ -81,6 +82,7 @@ const ProductsManage = () => {
       const data = await response.json();
       if (data.success) {
         showToast('Sold count updated successfully.', 'success');
+        window.dispatchEvent(new Event('products-updated'));
         await fetchProducts();
       } else {
         throw new Error(data.message || 'Failed to update sold count');
@@ -93,6 +95,34 @@ const ProductsManage = () => {
       if (originalProd) {
         setSoldInputs(prev => ({ ...prev, [productId]: originalProd.soldCount || 0 }));
       }
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handleToggleSoldStatus = async (product) => {
+    const isCurrentlySold = isProductSold(product);
+    const newSoldStatus = !isCurrentlySold;
+
+    setUpdatingId(product.id);
+    try {
+      const response = await fetch('/api/update-sold', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: product.id, sold: newSoldStatus }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || 'Failed to update sold status');
+      }
+
+      showToast(`Product marked as ${newSoldStatus ? 'SOLD OUT' : 'AVAILABLE'}`, 'success');
+      window.dispatchEvent(new Event('products-updated'));
+      await fetchProducts();
+    } catch (err) {
+      console.error('Error toggling sold status:', err);
+      showToast(err.message || 'Failed to update status', 'error');
     } finally {
       setUpdatingId(null);
     }
@@ -272,13 +302,29 @@ const ProductsManage = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex flex-col gap-1">
-                          <span className={`text-sm font-semibold uppercase tracking-tight ${stockColor}`}>
-                            {product.stock} Units
+                        <div className="flex flex-col gap-1.5 items-start">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleSoldStatus(product)}
+                            disabled={updatingId === product.id}
+                            className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border flex items-center gap-1.5 ${
+                              isProductSold(product)
+                                ? 'bg-red-500/20 text-red-400 border-red-500/40 hover:bg-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]'
+                                : 'bg-green-500/10 text-green-400 border-green-500/30 hover:bg-green-500/20'
+                            }`}
+                            title="Click to toggle Sold Out status"
+                          >
+                            {updatingId === product.id ? (
+                              <Loader2 size={10} className="animate-spin" />
+                            ) : isProductSold(product) ? (
+                              <>🔴 SOLD OUT</>
+                            ) : (
+                              <>🟢 AVAILABLE</>
+                            )}
+                          </button>
+                          <span className={`text-xs font-semibold uppercase tracking-tight ${stockColor}`}>
+                            {product.stock} Units ({stockStatus})
                           </span>
-                          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
-                            {stockStatus}
-                          </p>
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -387,6 +433,18 @@ const ProductsManage = () => {
                         <span className="bg-yellow-500/10 text-yellow-600 px-2.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-widest border border-yellow-900/40">
                           {product.category}
                         </span>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSoldStatus(product)}
+                          disabled={updatingId === product.id}
+                          className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider transition-all border ${
+                            isProductSold(product)
+                              ? 'bg-red-500/20 text-red-400 border-red-500/40'
+                              : 'bg-green-500/10 text-green-400 border-green-500/30'
+                          }`}
+                        >
+                          {updatingId === product.id ? '...' : isProductSold(product) ? '🔴 SOLD OUT' : '🟢 AVAILABLE'}
+                        </button>
                       </div>
                     </div>
                   </div>

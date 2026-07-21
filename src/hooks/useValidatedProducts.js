@@ -115,7 +115,9 @@ export const useValidatedProducts = (storageKey, rawItems, getItemId = (item) =>
             originalPrice: freshData.originalPrice ?? item.originalPrice,
             image:         freshData.image         ?? item.image,
             stock:         freshData.stock         ?? item.stock,
-            soldCount:     freshData.soldCount      ?? item.soldCount,
+            sold:          freshData.sold          ?? item.sold,
+            isSold:        freshData.isSold        ?? item.isSold,
+            soldCount:     freshData.soldCount     ?? item.soldCount,
             category:      freshData.category      ?? item.category,
           };
         })
