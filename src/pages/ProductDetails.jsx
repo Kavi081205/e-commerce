@@ -27,7 +27,8 @@ import {
   doc,
   updateDoc,
   getDocs,
-  getDoc
+  getDoc,
+  onSnapshot
 } from 'firebase/firestore';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=800&q=80';
@@ -82,55 +83,46 @@ const ProductDetails = () => {
   const [matchingOrder, setMatchingOrder] = useState(null);
 
   useEffect(() => {
-    let isMounted = true;
-
-    setProduct(null); // Reset product state immediately when id changes to update immediately when navigating
+    setProduct(null); // Reset product state immediately when id changes
     setLoading(true);
     setIsError(false);
     setError(null);
 
-    const fetchProduct = async () => {
-      try {
-        const productRef = doc(db, 'products', id);
-        const docSnap = await getDoc(productRef);
-        if (!isMounted) return;
+    const productRef = doc(db, 'products', id);
 
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (
-            data.deleted === true ||
-            data.isActive === false ||
-            data.hidden === true ||
-            data.visibility === false ||
-            data.status === 'inactive' ||
-            data.status === 'deleted'
-          ) {
-            setProduct(null);
-            setIsError(true);
-            setError(new Error("Product not found"));
-          } else {
-            setProduct({ id: docSnap.id, ...data });
-          }
-        } else {
+    const unsubscribe = onSnapshot(productRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (
+          data.deleted === true ||
+          data.isActive === false ||
+          data.hidden === true ||
+          data.visibility === false ||
+          data.status === 'inactive' ||
+          data.status === 'deleted'
+        ) {
           setProduct(null);
           setIsError(true);
           setError(new Error("Product not found"));
+        } else {
+          setProduct({ id: docSnap.id, ...data });
+          setIsError(false);
+          setError(null);
         }
-      } catch (err) {
-        if (!isMounted) return;
-        console.error("Error getting product details:", err);
+      } else {
+        setProduct(null);
         setIsError(true);
-        setError(err);
-      } finally {
-        if (isMounted) setLoading(false);
+        setError(new Error("Product not found"));
       }
-    };
+      setLoading(false);
+    }, (err) => {
+      console.error("Real-time listener error for product details:", err);
+      setIsError(true);
+      setError(err);
+      setLoading(false);
+    });
 
-    fetchProduct();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => unsubscribe();
   }, [id]);
 
   const [added, setAdded] = useState(false);
@@ -465,42 +457,31 @@ const ProductDetails = () => {
       return;
     }
 
-    let isMounted = true;
+    const q = query(
+      collection(db, 'products'),
+      where('category', '==', product.category),
+      limit(10)
+    );
 
-    const fetchRelated = async () => {
-      try {
-        const q = query(
-          collection(db, 'products'),
-          where('category', '==', product.category),
-          limit(10) // fetch more to account for filters
-        );
-        const snapshot = await getDocs(q);
-        if (!isMounted) return;
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const list = snapshot.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(p => {
+          if (p.id === id) return false;
+          if (p.deleted === true) return false;
+          if (p.isActive === false) return false;
+          if (p.hidden === true) return false;
+          if (p.visibility === false) return false;
+          if (p.status === 'inactive' || p.status === 'deleted') return false;
+          return true;
+        })
+        .slice(0, 4);
+      setRelatedProducts(list);
+    }, (err) => {
+      console.error("Error in real-time related products listener:", err);
+    });
 
-        const list = snapshot.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .filter(p => {
-            if (p.id === id) return false;
-            if (p.deleted === true) return false;
-            if (p.isActive === false) return false;
-            if (p.hidden === true) return false;
-            if (p.visibility === false) return false;
-            if (p.status === 'inactive' || p.status === 'deleted') return false;
-            return true;
-          })
-          .slice(0, 4);
-        setRelatedProducts(list);
-      } catch (err) {
-        if (!isMounted) return;
-        console.error("Error getting related products:", err);
-      }
-    };
-
-    fetchRelated();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => unsubscribe();
   }, [product?.category, id]);
 
   // ── Analytics: fire view_item once when product data loads ────────────────

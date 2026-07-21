@@ -176,9 +176,11 @@ export const addProduct = async (productData) => {
       ...productData,
       createdAt: serverTimestamp()
     });
-    // Invalidate list caches
-    invalidateCache('products_list_');
-    invalidateCache('featured_products_');
+    // Invalidate all product caches
+    invalidateCache();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('products-updated'));
+    }
     return docRef.id;
   } catch (error) {
     console.error("Error adding product:", error);
@@ -193,10 +195,11 @@ export const updateProduct = async (id, productData) => {
       ...productData,
       updatedAt: serverTimestamp()
     });
-    // Invalidate caches
-    invalidateCache(`product_${id}`);
-    invalidateCache('products_list_');
-    invalidateCache('featured_products_');
+    // Invalidate all product caches
+    invalidateCache();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('products-updated'));
+    }
   } catch (error) {
     console.error("Error updating product:", error);
     throw error;
@@ -209,10 +212,11 @@ export const uploadVideo = cloudinaryVideoUpload;
 export const deleteProduct = async (id) => {
   try {
     await deleteDoc(doc(db, 'products', id));
-    // Invalidate caches
-    invalidateCache(`product_${id}`);
-    invalidateCache('products_list_');
-    invalidateCache('featured_products_');
+    // Invalidate all product caches
+    invalidateCache();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('products-updated'));
+    }
   } catch (error) {
     console.error("Error deleting product:", error);
     throw error;

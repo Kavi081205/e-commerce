@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { ArrowRight, Star, Truck, ShieldCheck, Loader2, Heart, Gift, Zap, Sparkles, Copy, Check, Calendar, ShoppingCart } from 'lucide-react';
 import { db } from '../firebase';
-import { collection, query, orderBy, limit, doc, where, getDoc, getDocs, getCountFromServer } from 'firebase/firestore';
+import { collection, query, orderBy, limit, doc, where, getDoc, getDocs, getCountFromServer, onSnapshot } from 'firebase/firestore';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getFeaturedProducts, getProductsByIds, getProductById, getCategories } from '../firebase/services';
 import LazyImage from '../components/LazyImage';
@@ -778,7 +778,7 @@ const Home = () => {
   const bannerIds = promoSettings?.bannerProductIds || [];
   const bannerIdsKey = JSON.stringify(bannerIds);
 
-  // Fetch banner products (cached)
+  // Fetch banner products
   const { data: bannerProducts = [], isLoading: bannerLoading } = useQuery({
     queryKey: ['bannerProducts', bannerIdsKey],
     queryFn: async () => {
@@ -786,17 +786,31 @@ const Home = () => {
       return await getProductsByIds(bannerIds);
     },
     enabled: bannerIds.length > 0,
-    staleTime: 1000 * 60 * 5 // 5 minutes cache
+    staleTime: 0
   });
 
-  // Fetch featured products (New Arrivals - cached)
-  const { data: featuredProducts = [], isLoading: featuredLoading } = useQuery({
-    queryKey: ['featuredProducts'],
-    queryFn: async () => {
-      return await getFeaturedProducts(8);
-    },
-    staleTime: 1000 * 60 * 5 // 5 minutes cache
-  });
+  // Real-time listener for featured products (New Arrivals)
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
+
+  useEffect(() => {
+    const q = query(
+      collection(db, 'products'),
+      orderBy('createdAt', 'desc'),
+      limit(8)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const prods = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      setFeaturedProducts(prods);
+      setFeaturedLoading(false);
+    }, (err) => {
+      console.error("Error in real-time featured products listener:", err);
+      setFeaturedLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const products = featuredProducts;
   const loading = featuredLoading;

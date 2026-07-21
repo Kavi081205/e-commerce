@@ -80,6 +80,16 @@ export const useValidatedProducts = (storageKey, rawItems, getItemId = (item) =>
   const [validItems, setValidItems] = useState([]);
   const [loading, setLoading]       = useState(rawItems.length > 0);
 
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  useEffect(() => {
+    const handleProductsUpdated = () => {
+      setRefreshTrigger(prev => prev + 1);
+    };
+    window.addEventListener('products-updated', handleProductsUpdated);
+    return () => window.removeEventListener('products-updated', handleProductsUpdated);
+  }, []);
+
   useEffect(() => {
     // Nothing to validate
     if (!rawItems || rawItems.length === 0) {
@@ -151,7 +161,7 @@ export const useValidatedProducts = (storageKey, rawItems, getItemId = (item) =>
     validate();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storageKey, rawItems.length]);
+  }, [storageKey, rawItems.length, refreshTrigger]);
 
   return { validItems, loading };
 };

@@ -100,7 +100,7 @@ export const CartProvider = ({ children }) => {
             continue;
           }
 
-          // Valid — update volatile fields
+          // Valid — update volatile fields including sold status
           validItems.push({
             ...item,
             name:          data.name          ?? item.name,
@@ -108,9 +108,11 @@ export const CartProvider = ({ children }) => {
             originalPrice: data.originalPrice ?? item.originalPrice,
             image:         data.image         ?? item.image,
             stock:         data.stock         ?? item.stock,
+            sold:          data.sold          ?? item.sold,
+            isSold:        data.isSold        ?? item.isSold,
           });
         } catch (err) {
-          console.error(`[Cart Startup Validation] Network error for ${productId} — keeping item:`, err);
+          console.error(`[Cart Validation] Network error for ${productId} — keeping item:`, err);
           // Keep item on network/permission error — don't aggressively remove
           validItems.push(item);
         }
@@ -122,6 +124,12 @@ export const CartProvider = ({ children }) => {
     };
 
     validateAndCleanupCart();
+
+    const handleProductsUpdated = () => {
+      validateAndCleanupCart();
+    };
+    window.addEventListener('products-updated', handleProductsUpdated);
+    return () => window.removeEventListener('products-updated', handleProductsUpdated);
   }, []);
 
 

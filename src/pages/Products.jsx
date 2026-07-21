@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { db } from '../firebase';
-import { collection, query, where, orderBy, limit, startAfter, getDocs } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, startAfter, getDocs, onSnapshot } from 'firebase/firestore';
 import { useQuery } from '@tanstack/react-query';
 import { useWishlist } from '../context/WishlistContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
@@ -129,23 +129,20 @@ const Products = () => {
 
     const q = query(collection(db, 'products'), ...constraints);
 
-    const fetchProducts = async () => {
-      try {
-        const snapshot = await getDocs(q);
-        const productsList = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
-        const lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const productsList = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+      const lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
 
-        setProductsData({ products: productsList, lastDoc });
-        setIsLoading(false);
-      } catch (err) {
-        console.error('Firestore products query error:', err.code, err.message);
-        setIsError(true);
-        setError(err);
-        setIsLoading(false);
-      }
-    };
+      setProductsData({ products: productsList, lastDoc });
+      setIsLoading(false);
+    }, (err) => {
+      console.error('Firestore products query error:', err.code, err.message);
+      setIsError(true);
+      setError(err);
+      setIsLoading(false);
+    });
 
-    fetchProducts();
+    return () => unsubscribe();
   }, [filter, currentPageIndex, retryTrigger]);
 
   // Keep track of the page boundaries for back-paging
