@@ -414,14 +414,17 @@ const Checkout = () => {
       setAddresses(updatedAddresses);
 
       if (updatedAddresses.length === 0) {
-        // No addresses left — show empty state
+        // No addresses left — reset selection and open the add-address form
+        // so the user can immediately add a new one without extra taps.
         setSelectedAddressId(null);
-        setShowNewAddressForm(false);
-      } else if (selectedAddressId === id) {
-        setSelectedAddressId(updatedAddresses[0].id);
+        setShowNewAddressForm(true);
+        showToast('Address deleted. Please add a new delivery address.', 'info');
+      } else {
+        if (selectedAddressId === id) {
+          setSelectedAddressId(updatedAddresses[0].id);
+        }
+        showToast('Address deleted successfully.', 'success');
       }
-
-      showToast('Address deleted successfully.', 'success');
     } catch (error) {
       showToast('Error deleting address', 'error');
     } finally {

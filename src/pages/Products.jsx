@@ -599,11 +599,11 @@ const Products = () => {
                           </div>
                         </Link>
 
-                        {/* ── Quick Add to Cart button ── */}
+                        {/* ── Add to Cart / Out of Stock button ── */}
                         {Number(product.stock || 0) <= 0 ? (
                           <button
                             disabled
-                            className="w-full py-2.5 bg-gray-800/60 text-gray-600 text-[9px] font-semibold uppercase tracking-[0.18em] cursor-not-allowed border-t border-white/5 flex items-center justify-center gap-1.5"
+                            className="w-full py-3 bg-gray-800 text-gray-500 text-[10px] font-bold uppercase tracking-[0.15em] cursor-not-allowed flex items-center justify-center gap-2 border-t border-white/5"
                             aria-label="Out of stock"
                           >
                             Out of Stock
@@ -611,21 +611,21 @@ const Products = () => {
                         ) : (
                           <button
                             onClick={e => handleQuickAdd(e, product)}
-                            className={`w-full py-2.5 text-[9px] font-semibold uppercase tracking-[0.18em] border-t border-yellow-900/20 flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 ${
+                            className={`w-full py-3 text-[10px] font-bold uppercase tracking-[0.15em] flex items-center justify-center gap-2 transition-all duration-200 active:scale-95 border-t ${
                               addingToCart.has(product.id)
-                                ? 'bg-green-500/15 text-green-400 border-t-green-500/20'
-                                : 'bg-yellow-500/8 text-yellow-500 hover:bg-yellow-500/15'
+                                ? 'bg-green-500 text-black border-t-green-600'
+                                : 'bg-yellow-500 text-black hover:bg-yellow-400 border-t-yellow-600'
                             }`}
                             aria-label="Add to cart"
                           >
                             {addingToCart.has(product.id) ? (
                               <>
-                                <Check size={11} className="flex-shrink-0" />
+                                <Check size={12} className="flex-shrink-0" />
                                 Added!
                               </>
                             ) : (
                               <>
-                                <ShoppingCart size={11} className="flex-shrink-0" />
+                                <ShoppingCart size={12} className="flex-shrink-0" />
                                 Add to Cart
                               </>
                             )}
