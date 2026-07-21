@@ -3,13 +3,16 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, limit, startAfter, getDocs } from 'firebase/firestore';
+import { useQuery } from '@tanstack/react-query';
 import { useWishlist } from '../context/WishlistContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 import {
   Search, Filter, SlidersHorizontal,
   Heart, AlertCircle, Loader2, ArrowRight,
-  ChevronDown, Check
+  ChevronDown, Check, ShoppingCart
 } from 'lucide-react';
+import { useCart } from '../context/CartContext';
+import { useNotification } from '../context/NotificationContext';
 import { usePromo } from '../context/PromoContext';
 import { getEffectivePrice } from '../utils/pricing';
 import { getOptimizedImage, getHDImage } from '../utils/cloudinary';
@@ -29,20 +32,14 @@ const Products = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const urlCategory = searchParams.get('category');
   const [filter, setFilter] = useState(urlCategory || 'all');
-  const [categories, setCategories] = useState([]);
 
-  // Load categories once (static admin data — no real-time needed)
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const data = await getCategories();
-        setCategories(data);
-      } catch (err) {
-        console.error('Categories load error:', err);
-      }
-    };
-    fetchCategories();
-  }, []);
+  // Load categories via React Query — cached 10 min, serves instantly on revisit
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: getCategories,
+    staleTime: 1000 * 60 * 10, // 10 minutes — categories rarely change
+    gcTime: 1000 * 60 * 30,    // keep in memory 30 minutes
+  });
 
   // Sync URL category query param with filter state
   useEffect(() => {
@@ -155,6 +152,39 @@ const Products = () => {
 
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { promoSettings } = usePromo();
+  const { addToCart } = useCart();
+  const { showToast } = useNotification();
+
+  // Track which product IDs are in the brief "Added ✓" feedback state
+  const [addingToCart, setAddingToCart] = useState(new Set());
+
+  const handleQuickAdd = (e, product) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const hasVariants =
+      (product.variants && product.variants.length > 0) ||
+      (product.colors && product.colors.length > 0) ||
+      (product.sizes && product.sizes.length > 0);
+
+    if (hasVariants) {
+      // Redirect to product page so user can pick their variant
+      window.location.href = `/product/${product.id}`;
+      return;
+    }
+
+    addToCart(product);
+    showToast('Added to Cart 🛒', 'success');
+
+    setAddingToCart(prev => new Set(prev).add(product.id));
+    setTimeout(() => {
+      setAddingToCart(prev => {
+        const next = new Set(prev);
+        next.delete(product.id);
+        return next;
+      });
+    }, 1500);
+  };
 
   /* ─────────────────────────────────────────────────────────────────────────
      Filter change handler – URL sync + state reset
@@ -399,11 +429,11 @@ const Products = () => {
               </div>
             </div>
 
-            {/* Loading skeleton */}
+            {/* Loading skeleton — uses ProductSkeleton for premium consistent UX */}
             {isLoading ? (
               <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
                 {[...Array(8)].map((_, i) => (
-                  <div key={`product-skeleton-${i}`} className="animate-pulse bg-gray-900/50 h-[260px] rounded-2xl border border-white/5" />
+                  <ProductSkeleton key={`product-skeleton-${i}`} />
                 ))}
               </div>
 
@@ -453,7 +483,7 @@ const Products = () => {
                     return (
                       <div
                         key={product.id}
-                        className="bg-gray-900/40 rounded-2xl border border-yellow-900/10 overflow-hidden hover:border-yellow-500/30 transition-all flex flex-col h-full relative group"
+                        className="bg-gray-900/40 rounded-2xl border border-yellow-900/10 overflow-hidden hover:border-yellow-500/30 transition-all flex flex-col relative group"
                       >
                         {showWishlist && (
                           <button
@@ -469,13 +499,20 @@ const Products = () => {
                           </button>
                         )}
 
-                        <Link to={`/product/${product.id}`} className="flex flex-col h-full">
+                        <Link to={`/product/${product.id}`} className="flex flex-col">
                           <div className="overflow-hidden aspect-square relative bg-black">
                             <LazyImage
-                              src={getOptimizedImage(product.image, 'card')}
+                              src={getOptimizedImage(product.image, idx < 4 ? 'card' : 'mobile')}
+                              srcSet={
+                                product.image && product.image.includes('/upload/')
+                                  ? `${getOptimizedImage(product.image, 'mobile')} 200w, ${getOptimizedImage(product.image, 'card')} 400w`
+                                  : undefined
+                              }
+                              sizes="(max-width: 640px) 200px, 400px"
                               alt={product.name}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               wrapperClass="w-full h-full"
+                              priority={idx < 4}
                             />
                             {showStock && (
                               <>
@@ -561,6 +598,39 @@ const Products = () => {
                             </div>
                           </div>
                         </Link>
+
+                        {/* ── Quick Add to Cart button ── */}
+                        {Number(product.stock || 0) <= 0 ? (
+                          <button
+                            disabled
+                            className="w-full py-2.5 bg-gray-800/60 text-gray-600 text-[9px] font-semibold uppercase tracking-[0.18em] cursor-not-allowed border-t border-white/5 flex items-center justify-center gap-1.5"
+                            aria-label="Out of stock"
+                          >
+                            Out of Stock
+                          </button>
+                        ) : (
+                          <button
+                            onClick={e => handleQuickAdd(e, product)}
+                            className={`w-full py-2.5 text-[9px] font-semibold uppercase tracking-[0.18em] border-t border-yellow-900/20 flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 ${
+                              addingToCart.has(product.id)
+                                ? 'bg-green-500/15 text-green-400 border-t-green-500/20'
+                                : 'bg-yellow-500/8 text-yellow-500 hover:bg-yellow-500/15'
+                            }`}
+                            aria-label="Add to cart"
+                          >
+                            {addingToCart.has(product.id) ? (
+                              <>
+                                <Check size={11} className="flex-shrink-0" />
+                                Added!
+                              </>
+                            ) : (
+                              <>
+                                <ShoppingCart size={11} className="flex-shrink-0" />
+                                Add to Cart
+                              </>
+                            )}
+                          </button>
+                        )}
                       </div>
                     );
                   })}

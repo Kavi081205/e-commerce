@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { lazyWithRetry } from './utils/lazyWithRetry';
+import { useServiceWorker } from './hooks/useServiceWorker';
 
 // UX Screens
 import LoadingScreen from './components/LoadingScreen';
@@ -78,6 +79,9 @@ const AdminRoute = ({ children }) => {
 function App() {
   const authLoading = false;
 
+  // ── Service Worker: detect new deployment and prompt user to refresh ───────
+  const { updateAvailable, applyUpdate } = useServiceWorker();
+
   // Capture once on mount — avoids re-evaluating shouldShowSplash on re-renders
   const showSplash = useRef(shouldShowSplash()).current;
 
@@ -108,6 +112,51 @@ function App() {
     <NotificationProvider>
       <SiteSettingsProvider>
         <WishlistProvider>
+
+        {/* ── New deployment update banner ───────────────────────────────── */}
+        {updateAvailable && (
+          <div
+            role="alert"
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              zIndex: 99999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              padding: '12px 16px',
+              background: 'linear-gradient(90deg, #1a1200 0%, #2a1d00 100%)',
+              borderBottom: '1px solid rgba(234,179,8,0.3)',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
+            }}
+          >
+            <span style={{ color: '#fbbf24', fontSize: '12px', fontWeight: 600, letterSpacing: '0.05em' }}>
+              🚀 A new version is available!
+            </span>
+            <button
+              onClick={applyUpdate}
+              style={{
+                background: '#eab308',
+                color: '#000',
+                border: 'none',
+                borderRadius: '9999px',
+                padding: '6px 16px',
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              Update Now
+            </button>
+          </div>
+        )}
+
         {phase === 'loading' && <LoadingScreen onDone={handleLoadingDone} />}
         {phase === 'splash' && <SplashScreen onDone={handleSplashDone} />}
 

@@ -20,13 +20,17 @@ export const getOptimizedImage = (url, type = 'best', fallback = '') => {
 
   const presets = {
     // Full-width hero banners — max quality, fill 1400 px wide
-    hero:      'f_auto,q_100,w_1400,c_fill,g_auto',
+    hero:        'f_auto,q_100,w_1400,c_fill,g_auto',
     // Product detail view — best quality, constrain to 800 px (never upscale)
-    best:      'f_auto,q_auto:best,w_800,c_limit',
+    best:        'f_auto,q_auto:best,w_800,c_limit',
     // Square thumbnails for cards — auto quality, smart-crop to 300×300
-    thumbnail: 'f_auto,q_auto,w_300,h_300,c_fill,g_auto',
-    // Square grid cards — auto quality, smart-crop to 400×400
-    card:      'f_auto,q_auto,w_400,h_400,c_fill,g_auto'
+    thumbnail:   'f_auto,q_auto,w_300,h_300,c_fill,g_auto',
+    // Square grid cards — auto quality, smart-crop to 400×400 (desktop)
+    card:        'f_auto,q_auto,w_400,h_400,c_fill,g_auto',
+    // Mobile 2-col grid cards — 200×200 (each card is ~180px on a 390px screen)
+    mobile:      'f_auto,q_auto,w_200,h_200,c_fill,g_auto',
+    // Mobile single-col or wide card view — 360×360
+    mobileLarge: 'f_auto,q_auto,w_360,h_360,c_fill,g_auto',
   };
 
   const transform = presets[type] ?? presets.best;

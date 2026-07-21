@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Heart, ChevronLeft, ChevronRight, Shuffle, Share2, Clipboard, 
-  Calendar, Loader2, Bookmark, X, Sparkles, BookOpen
+  Calendar, Loader2, Bookmark, X, Sparkles, BookOpen, RefreshCcw
 } from 'lucide-react';
 import { useNotification } from '../context/NotificationContext';
 
@@ -12,6 +12,8 @@ export default function DailyNotes() {
   const [kurals, setKurals] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [activeShareCard, setActiveShareCard] = useState(null);
   const [isSavedDrawerOpen, setIsSavedDrawerOpen] = useState(false);
   const [dayTrigger, setDayTrigger] = useState(0);
@@ -41,9 +43,22 @@ export default function DailyNotes() {
 
   // Fetch all kurals
   useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
     fetch('/kurals.json')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status} — ${res.statusText}`);
+        }
+        return res.json();
+      })
       .then(data => {
+        if (cancelled) return;
+        if (!Array.isArray(data)) {
+          throw new Error('Unexpected data format received from server.');
+        }
         setKurals(data);
         setLoading(false);
 
@@ -54,10 +69,16 @@ export default function DailyNotes() {
         setCurrentIndex(defaultIndex);
       })
       .catch(err => {
-        console.error('Failed to load Kurals:', err);
+        if (cancelled) return;
+        if (import.meta.env.DEV) {
+          console.error('[DailyNotes] Failed to load Kurals:', err);
+        }
+        setError('Unable to load Daily Notes. Please try again later.');
         setLoading(false);
       });
-  }, []);
+
+    return () => { cancelled = true; };
+  }, [retryCount]);
 
   // Midnight trigger setup to auto-update index if open past midnight
   useEffect(() => {
@@ -197,6 +218,22 @@ export default function DailyNotes() {
           <div className="flex flex-col items-center justify-center py-20 bg-slate-950/40 border border-yellow-900/15 rounded-3xl min-h-[350px]">
             <Loader2 size={32} className="animate-spin text-yellow-500 mb-2" />
             <p className="text-xs text-gray-500 font-semibold uppercase tracking-widest">Loading Wisdom...</p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-20 bg-slate-950/40 border border-red-900/20 rounded-3xl min-h-[350px] text-center px-6">
+            <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-5">
+              <BookOpen size={28} className="text-red-400" />
+            </div>
+            <p className="text-white font-semibold text-sm mb-2 uppercase tracking-wider">Unable to Load Daily Notes</p>
+            <p className="text-gray-500 text-xs font-medium leading-relaxed max-w-sm mb-6">
+              {error}
+            </p>
+            <button
+              onClick={() => setRetryCount(c => c + 1)}
+              className="flex items-center gap-2 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 border border-yellow-500/20 px-5 py-2.5 rounded-full text-[10px] font-semibold uppercase tracking-widest transition-all active:scale-95"
+            >
+              <RefreshCcw size={12} /> Try Again
+            </button>
           </div>
         ) : currentKural ? (
           <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-black border border-yellow-900/15 rounded-[2.2rem] p-6 sm:p-10 relative shadow-2xl overflow-hidden">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { Loader2, ShieldCheck, MapPin, Plus, Home, Briefcase, Trash2, Smartphone, Tag, X, ChevronRight, CreditCard, Package, CheckCircle2, Edit2 } from 'lucide-react';
@@ -74,6 +74,18 @@ const Checkout = () => {
     pincode: '',
     type: 'Home'
   });
+
+  // Per-field inline error messages for the new address form
+  const [formErrors, setFormErrors] = useState({});
+
+  // Refs for scroll-to + focus on first invalid field
+  const fieldRefs = {
+    name:    useRef(null),
+    phone:   useRef(null),
+    address: useRef(null),
+    city:    useRef(null),
+    pincode: useRef(null),
+  };
 
   const activeAddress = showNewAddressForm ? formData : addresses.find(a => a.id === selectedAddressId);
   const activePhone = activeAddress?.phone;
@@ -302,23 +314,54 @@ const Checkout = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear the error for this field as the user types
+    if (formErrors[name]) {
+      setFormErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  /**
+   * Validates the new-address form fields.
+   * Returns true when all fields are valid.
+   * On failure, sets per-field errors, highlights borders, and
+   * scrolls + focuses the first invalid field.
+   */
+  const validateAddressForm = () => {
+    const errors = {};
+
+    const nameCheck    = validateName(formData.name);
+    const phoneCheck   = validatePhone(formData.phone);
+    const pincodeCheck = validatePincode(formData.pincode);
+
+    if (!nameCheck.valid)    errors.name    = 'Please enter your full name.';
+    if (!phoneCheck.valid)   errors.phone   = 'Please enter your phone number.';
+    if (!formData.address || formData.address.trim().length < 1)
+                             errors.address = 'Please enter your address.';
+    if (!formData.city || formData.city.trim().length < 1)
+                             errors.city    = 'Please enter your city.';
+    if (!pincodeCheck.valid) errors.pincode = 'Please enter a valid 6-digit pincode.';
+
+    if (Object.keys(errors).length === 0) return true;
+
+    setFormErrors(errors);
+
+    // Scroll to + focus the first invalid field
+    const fieldOrder = ['name', 'phone', 'address', 'city', 'pincode'];
+    for (const field of fieldOrder) {
+      if (errors[field] && fieldRefs[field]?.current) {
+        fieldRefs[field].current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        fieldRefs[field].current.focus();
+        break;
+      }
+    }
+
+    return false;
   };
 
   const handleAddNewAddress = async (e) => {
     e.preventDefault();
 
-    // ── Validate form fields before saving ──────────────────────────────────
-    const nameCheck    = validateName(formData.name);
-    const phoneCheck   = validatePhone(formData.phone);
-    const pincodeCheck = validatePincode(formData.pincode);
-
-    if (!nameCheck.valid) { showToast(nameCheck.message, 'error'); return; }
-    if (!phoneCheck.valid) { showToast(phoneCheck.message, 'error'); return; }
-    if (!formData.address || formData.address.trim().length < 5) {
-      showToast('Please enter a complete street address (min 5 characters)', 'error');
-      return;
-    }
-    if (!pincodeCheck.valid) { showToast(pincodeCheck.message, 'error'); return; }
+    if (!validateAddressForm()) return;
 
     const newAddress = { ...formData, id: Date.now().toString() };
     const updatedAddresses = [...addresses, newAddress];
@@ -330,6 +373,7 @@ const Checkout = () => {
       setSelectedAddressId(newAddress.id);
       setShowNewAddressForm(false);
       setFormData({ name: '', phone: '', address: '', city: '', pincode: '', type: 'Home' });
+      setFormErrors({});
       showToast("Address added successfully!", "success");
     } catch (error) {
       showToast("Failed to save address", "error");
@@ -337,10 +381,8 @@ const Checkout = () => {
   };
 
   const handleDeleteAddress = (id) => {
-    if (addresses.length <= 1) {
-      showToast("At least one address is required", "error");
-      return;
-    }
+    // Always open the confirmation dialog — no pre-emptive blocking.
+    // A special warning is shown inside the modal when it's the only address.
     setAddressToDelete(id);
   };
 
@@ -349,40 +391,39 @@ const Checkout = () => {
     setIsDeleting(true);
     const id = addressToDelete;
 
-    if (addresses.length <= 1) {
-      showToast("At least one address is required", "error");
-      setIsDeleting(false);
-      setAddressToDelete(null);
-      return;
-    }
-
     const updatedAddresses = addresses.filter(a => a.id !== id);
     try {
-      const storedDefaultId = localStorage.getItem('guest_defaultAddressId');
-      const nextDefaultId = storedDefaultId === id
-        ? (updatedAddresses[0]?.id || null)
-        : storedDefaultId;
-
-      localStorage.setItem('guest_addresses', JSON.stringify(updatedAddresses));
-      if (nextDefaultId) {
-        localStorage.setItem('guest_defaultAddressId', nextDefaultId);
-      } else {
+      if (updatedAddresses.length === 0) {
+        // Deleting the only address — clear everything
+        localStorage.removeItem('guest_addresses');
         localStorage.removeItem('guest_defaultAddressId');
+      } else {
+        const storedDefaultId = localStorage.getItem('guest_defaultAddressId');
+        const nextDefaultId = storedDefaultId === id
+          ? (updatedAddresses[0]?.id || null)
+          : storedDefaultId;
+
+        localStorage.setItem('guest_addresses', JSON.stringify(updatedAddresses));
+        if (nextDefaultId) {
+          localStorage.setItem('guest_defaultAddressId', nextDefaultId);
+        } else {
+          localStorage.removeItem('guest_defaultAddressId');
+        }
       }
 
       setAddresses(updatedAddresses);
 
-      if (selectedAddressId === id) {
-        if (updatedAddresses.length > 0) {
-          setSelectedAddressId(updatedAddresses[0].id);
-        } else {
-          setSelectedAddressId(null);
-          setShowNewAddressForm(true);
-        }
+      if (updatedAddresses.length === 0) {
+        // No addresses left — show empty state
+        setSelectedAddressId(null);
+        setShowNewAddressForm(false);
+      } else if (selectedAddressId === id) {
+        setSelectedAddressId(updatedAddresses[0].id);
       }
-      showToast("Address deleted successfully", "success");
+
+      showToast('Address deleted successfully.', 'success');
     } catch (error) {
-      showToast("Error deleting address", "error");
+      showToast('Error deleting address', 'error');
     } finally {
       setIsDeleting(false);
       setAddressToDelete(null);
@@ -393,6 +434,7 @@ const Checkout = () => {
     const code = e.target.value.replace(/\D/g, '');
     if (code.length <= 6) {
       setFormData(prev => ({ ...prev, pincode: code }));
+      if (formErrors.pincode) setFormErrors(prev => ({ ...prev, pincode: '' }));
       if (code.length === 6) {
         try {
           const response = await fetch(`https://api.apibharat.com/v1/pincode/${code}`, {
@@ -548,21 +590,6 @@ const Checkout = () => {
 
     setLoading(true);
     const activeAddress = showNewAddressForm ? formData : addresses.find(a => a.id === selectedAddressId);
-
-    if (!activeAddress || !activeAddress.name || !activeAddress.address) {
-      showToast("Please complete the address form", "error");
-      setLoading(false);
-      return;
-    }
-
-    // ── Validate active address fields ────────────────────────────────────────
-    const nameCheck    = validateName(activeAddress.name);
-    const phoneCheck   = validatePhone(activeAddress.phone);
-    const pincodeCheck = validatePincode(activeAddress.pincode);
-
-    if (!nameCheck.valid)    { showToast(nameCheck.message,    'error'); setLoading(false); return; }
-    if (!phoneCheck.valid)   { showToast(phoneCheck.message,   'error'); setLoading(false); return; }
-    if (!pincodeCheck.valid) { showToast(pincodeCheck.message, 'error'); setLoading(false); return; }
 
     try {
       const activeItems = buyNowItem ? [buyNowItem] : cart;
@@ -1036,33 +1063,38 @@ const Checkout = () => {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                           <label htmlFor="address-name" className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest">Full Name</label>
-                          <input id="address-name" name="name" placeholder="Full Name" required autoComplete="name"
+                          <input ref={fieldRefs.name} id="address-name" name="name" placeholder="Full Name" autoComplete="name"
                             value={formData.name} onChange={handleChange}
-                            className="w-full bg-black/60 border border-yellow-900/20 rounded-xl px-3.5 py-3 text-white text-xs outline-none focus:border-yellow-500 transition-all" />
+                            className={`w-full bg-black/60 border rounded-xl px-3.5 py-3 text-white text-xs outline-none focus:border-yellow-500 transition-all ${formErrors.name ? 'border-red-500' : 'border-yellow-900/20'}`} />
+                          {formErrors.name && <p className="text-red-400 text-[9px] font-semibold mt-1">{formErrors.name}</p>}
                         </div>
                         <div className="space-y-1.5">
                           <label htmlFor="address-phone" className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest">Phone</label>
-                          <input id="address-phone" name="phone" placeholder="Phone Number" required autoComplete="tel"
+                          <input ref={fieldRefs.phone} id="address-phone" name="phone" placeholder="Phone Number" autoComplete="tel"
                             value={formData.phone} onChange={handleChange}
-                            className="w-full bg-black/60 border border-yellow-900/20 rounded-xl px-3.5 py-3 text-white text-xs outline-none focus:border-yellow-500 transition-all" />
+                            className={`w-full bg-black/60 border rounded-xl px-3.5 py-3 text-white text-xs outline-none focus:border-yellow-500 transition-all ${formErrors.phone ? 'border-red-500' : 'border-yellow-900/20'}`} />
+                          {formErrors.phone && <p className="text-red-400 text-[9px] font-semibold mt-1">{formErrors.phone}</p>}
                         </div>
                         <div className="col-span-2 space-y-1.5">
                           <label htmlFor="address-street" className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest">Street / Area</label>
-                          <textarea id="address-street" name="address" placeholder="Door No, Street, Landmark" required autoComplete="street-address"
+                          <textarea ref={fieldRefs.address} id="address-street" name="address" placeholder="Door No, Street, Landmark" autoComplete="street-address"
                             value={formData.address} onChange={handleChange} rows="2"
-                            className="w-full bg-black/60 border border-yellow-900/20 rounded-xl px-3.5 py-3 text-white text-xs outline-none focus:border-yellow-500 transition-all resize-none" />
+                            className={`w-full bg-black/60 border rounded-xl px-3.5 py-3 text-white text-xs outline-none focus:border-yellow-500 transition-all resize-none ${formErrors.address ? 'border-red-500' : 'border-yellow-900/20'}`} />
+                          {formErrors.address && <p className="text-red-400 text-[9px] font-semibold mt-1">{formErrors.address}</p>}
                         </div>
                         <div className="space-y-1.5">
                           <label htmlFor="address-city" className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest">City / District</label>
-                          <input id="address-city" name="city" placeholder="City" required autoComplete="address-level2"
+                          <input ref={fieldRefs.city} id="address-city" name="city" placeholder="City" autoComplete="address-level2"
                             value={formData.city} onChange={handleChange}
-                            className="w-full bg-black/60 border border-yellow-900/20 rounded-xl px-3.5 py-3 text-white text-xs outline-none focus:border-yellow-500 transition-all" />
+                            className={`w-full bg-black/60 border rounded-xl px-3.5 py-3 text-white text-xs outline-none focus:border-yellow-500 transition-all ${formErrors.city ? 'border-red-500' : 'border-yellow-900/20'}`} />
+                          {formErrors.city && <p className="text-red-400 text-[9px] font-semibold mt-1">{formErrors.city}</p>}
                         </div>
                         <div className="space-y-1.5">
                           <label htmlFor="address-pincode" className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest">Pincode</label>
-                          <input id="address-pincode" name="pincode" placeholder="6-Digit Pincode" required autoComplete="postal-code"
+                          <input ref={fieldRefs.pincode} id="address-pincode" name="pincode" placeholder="6-Digit Pincode" autoComplete="postal-code"
                             value={formData.pincode} onChange={handlePincodeChange} maxLength="6"
-                            className="w-full bg-black/60 border border-yellow-900/20 rounded-xl px-3.5 py-3 text-white text-xs outline-none focus:border-yellow-500 transition-all" />
+                            className={`w-full bg-black/60 border rounded-xl px-3.5 py-3 text-white text-xs outline-none focus:border-yellow-500 transition-all ${formErrors.pincode ? 'border-red-500' : 'border-yellow-900/20'}`} />
+                          {formErrors.pincode && <p className="text-red-400 text-[9px] font-semibold mt-1">{formErrors.pincode}</p>}
                         </div>
                       </div>
                       <button type="submit" className="w-full bg-yellow-500 text-black font-semibold py-3.5 rounded-xl uppercase tracking-[0.2em] text-[10px] shadow-lg shadow-yellow-500/15 active:scale-95 transition-all">
@@ -1103,10 +1135,11 @@ const Checkout = () => {
                       {addresses.length === 0 && (
                         <div className="text-center py-16 flex flex-col items-center">
                           <MapPin size={36} className="text-gray-800 mb-4" />
-                          <p className="text-gray-600 font-semibold uppercase tracking-widest text-[9px] mb-4">No saved addresses</p>
+                          <p className="text-gray-600 font-semibold uppercase tracking-widest text-[9px] mb-1">No delivery address found.</p>
+                          <p className="text-gray-700 text-[8px] mb-5">Add a new address to continue.</p>
                           <button onClick={() => setShowNewAddressForm(true)}
-                            className="bg-yellow-500 text-black px-5 py-2.5 rounded-full text-[9px] font-semibold uppercase tracking-widest transition-all active:scale-95">
-                            Add Address
+                            className="bg-yellow-500 text-black px-6 py-3 rounded-full text-[10px] font-semibold uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-yellow-500/20 flex items-center gap-2">
+                            <Plus size={13} /> Add New Address
                           </button>
                         </div>
                       )}
@@ -1447,9 +1480,30 @@ const Checkout = () => {
                     showToast('Please select or add a delivery address', 'error');
                     return;
                   }
+                  // If the new-address form is open, validate it before proceeding
+                  if (showNewAddressForm) {
+                    if (!validateAddressForm()) return;
+                    // Auto-save the address and advance
+                    const newAddress = { ...formData, id: Date.now().toString() };
+                    const updatedAddresses = [...addresses, newAddress];
+                    try {
+                      localStorage.setItem('guest_addresses', JSON.stringify(updatedAddresses));
+                      localStorage.setItem('guest_defaultAddressId', newAddress.id);
+                      setAddresses(updatedAddresses);
+                      setSelectedAddressId(newAddress.id);
+                      setShowNewAddressForm(false);
+                      setFormData({ name: '', phone: '', address: '', city: '', pincode: '', type: 'Home' });
+                      setFormErrors({});
+                    } catch (_) {}
+                  }
                   setCheckoutStep(2);
                 }}
-                className="w-full h-[54px] rounded-[14px] bg-yellow-500 text-black font-semibold text-sm uppercase tracking-wider shadow-[0_0_22px_rgba(255,196,0,0.4)] hover:brightness-110 active:scale-[0.97] transition-all flex items-center justify-center gap-2">
+                disabled={addresses.length === 0 && !showNewAddressForm}
+                className={`w-full h-[54px] rounded-[14px] font-semibold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                  addresses.length === 0 && !showNewAddressForm
+                    ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                    : 'bg-yellow-500 text-black shadow-[0_0_22px_rgba(255,196,0,0.4)] hover:brightness-110 active:scale-[0.97]'
+                }`}>
                 Continue <ChevronRight size={18} />
               </button>
             )}
@@ -1505,9 +1559,12 @@ const Checkout = () => {
                 <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto shadow-2xl">
                   <Trash2 size={28} />
                 </div>
-                <h3 className="text-lg font-semibold text-white uppercase tracking-wider">Confirm Deletion</h3>
-                <p className="text-xs text-gray-400 font-semibold leading-relaxed uppercase tracking-widest">
-                  Are you sure you want to delete this address?
+                <h3 className="text-lg font-semibold text-white uppercase tracking-wider">Delete Address?</h3>
+                <p className="text-xs text-gray-400 font-semibold leading-relaxed tracking-wide">
+                  {addresses.length <= 1
+                    ? 'This is your only saved delivery address.\nIf you delete it, you must add a new address before checkout.'
+                    : 'Are you sure you want to delete this address?'
+                  }
                 </p>
               </div>
 

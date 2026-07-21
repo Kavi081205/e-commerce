@@ -5,6 +5,18 @@
       "destination": "/api/index.js"
     },
     {
+      "source": "/kurals.json",
+      "destination": "/kurals.json"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/sitemap.xml"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "/robots.txt"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
@@ -44,6 +56,40 @@
         {
           "key": "Content-Security-Policy",
           "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://www.google.com https://www.googletagmanager.com https://checkout.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https: https://firebasestorage.googleapis.com https://res.cloudinary.com https://lh3.googleusercontent.com https://e-commerce-smkp-traders.vercel.app; media-src 'self' https://res.cloudinary.com blob:; connect-src 'self' https://api.cloudinary.com https://*.googleapis.com https://*.firebase.com https://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.google-analytics.com wss://*.firebaseio.com https://api.razorpay.com https://lumberjack.razorpay.com; frame-src https://smkptraders.page.link https://aurex-ecommerce.firebaseapp.com https://checkout.razorpay.com https://api.razorpay.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"
+        }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "Pragma",
+          "value": "no-cache"
+        },
+        {
+          "key": "Expires",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "Pragma",
+          "value": "no-cache"
+        },
+        {
+          "key": "Expires",
+          "value": "0"
         }
       ]
     },
