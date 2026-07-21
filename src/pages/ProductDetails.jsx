@@ -532,7 +532,11 @@ const ProductDetails = () => {
     return Number(product?.stock || 0) === 0;
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (!product || added) return;
     if (product.variants && product.variants.length > 0 && !selectedColor) {
       toast.error("Please select a color first!");
@@ -543,6 +547,7 @@ const ProductDetails = () => {
       return;
     }
     addToCart(product, selectedColorName, selectedSize, quantity);
+    toast.success("Added to Cart 🛒");
     setAdded(true);
     setTimeout(() => {
       setAdded(false);
@@ -1753,34 +1758,7 @@ const ProductDetails = () => {
         </div>
       </div>
 
-      {/* Mobile Sticky CTA Footer */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-gray-950 border-t border-yellow-900/20 p-3 flex gap-3 shadow-2xl">
-        <button
-          type="button"
-          onClick={handleAddToCart}
-          disabled={isButtonDisabled()}
-          className={`flex-1 flex justify-center items-center py-4 rounded-xl text-[10px] font-semibold uppercase tracking-widest transition-all duration-300 ${added
-              ? 'bg-white text-black border border-white'
-              : selectedVariantStock === 0 && selectedColor
-                ? 'bg-gray-900 text-gray-700 border border-gray-900 cursor-not-allowed'
-                : 'bg-black border border-yellow-500/30 text-yellow-500 active:bg-yellow-500/5'
-            }`}
-        >
-          {added ? 'In Cart' : (product.variants && product.variants.length > 0 && !selectedColor) ? 'SELECT COLOR' : 'ADD TO CART'}
-        </button>
 
-        <button
-          type="button"
-          onClick={handleBuyNow}
-          disabled={isBuyNowDisabled()}
-          className={`flex-1 flex justify-center items-center py-4 rounded-xl text-[10px] font-semibold uppercase tracking-widest transition-all duration-300 ${selectedVariantStock === 0 && selectedColor
-              ? 'bg-gray-900 text-gray-700 cursor-not-allowed'
-              : 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/10 active:bg-yellow-400'
-            }`}
-        >
-          {(product.variants && product.variants.length > 0 && !selectedColor) ? 'SELECT COLOR' : 'BUY NOW'}
-        </button>
-      </div>
 
       {/* ── Video Modal ──────────────────────────────────────────────── */}
       {videoModalOpen && (

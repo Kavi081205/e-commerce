@@ -1,8 +1,9 @@
 import React from 'react';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
+import { useNotification } from '../context/NotificationContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, ShoppingCart, Trash2, ArrowRight } from 'lucide-react'; // removed unused PackageSearch
+import { Heart, ShoppingCart, Trash2, ArrowRight } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import { Link } from 'react-router-dom';
 import { getOptimizedImage } from '../utils/cloudinary';
@@ -12,6 +13,7 @@ import { getEffectivePrice } from '../utils/pricing';
 const Wishlist = () => {
   const { wishlistItems, removeFromWishlist, loading } = useWishlist();
   const { addToCart } = useCart();
+  const { showToast } = useNotification();
   const { promoSettings } = usePromo();
 
   if (loading) {
@@ -105,9 +107,13 @@ const Wishlist = () => {
 
                     <div className="flex gap-3">
                       <button
-                        onClick={() => {
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
                           addToCart(item);
                           removeFromWishlist(item.id);
+                          showToast('Added to Cart 🛒', 'success');
                         }}
                         className="flex-1 bg-white text-black font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 text-[15px] tracking-wider hover:bg-yellow-500 transition-all"
                       >

@@ -159,21 +159,30 @@ const Products = () => {
   const [addingToCart, setAddingToCart] = useState(new Set());
 
   const handleQuickAdd = (e, product) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const hasVariants =
-      (product.variants && product.variants.length > 0) ||
-      (product.colors && product.colors.length > 0) ||
-      (product.sizes && product.sizes.length > 0);
-
-    if (hasVariants) {
-      // Redirect to product page so user can pick their variant
-      window.location.href = `/product/${product.id}`;
-      return;
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
     }
 
-    addToCart(product);
+    let defaultColor = '';
+    let defaultSize = '';
+
+    if (product.variants && product.variants.length > 0) {
+      defaultColor = product.variants[0]?.colorName || product.variants[0]?.color || '';
+      if (product.variants[0]?.sizes) {
+        const sizesKeys = Object.keys(product.variants[0].sizes);
+        if (sizesKeys.length > 0) defaultSize = sizesKeys[0];
+      }
+    } else {
+      if (product.colors && product.colors.length > 0) {
+        defaultColor = typeof product.colors[0] === 'object' ? product.colors[0].name : product.colors[0];
+      }
+      if (product.sizes && product.sizes.length > 0) {
+        defaultSize = typeof product.sizes[0] === 'object' ? product.sizes[0].name : product.sizes[0];
+      }
+    }
+
+    addToCart(product, defaultColor, defaultSize, 1);
     showToast('Added to Cart 🛒', 'success');
 
     setAddingToCart(prev => new Set(prev).add(product.id));
