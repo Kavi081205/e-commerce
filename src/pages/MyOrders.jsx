@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, AlertCircle, CheckCircle2, Truck, Clock, ChevronDown, ChevronUp, ShoppingBag, MessageSquarePlus } from 'lucide-react';
+import { Package, AlertCircle, CheckCircle2, Truck, Clock, ChevronDown, ChevronUp, ShoppingBag, MessageSquarePlus, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ComplaintForm from '../components/ComplaintForm';
 import { useNotification } from '../context/NotificationContext';
+import { generateInvoice } from '../utils/invoiceGenerator';
 
 const STATUS_CONFIG = {
   delivered: { label: 'Delivered', color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/30', icon: CheckCircle2 },
@@ -199,10 +200,20 @@ export default function MyOrders() {
                           </div>
                         )}
 
-                        {/* Summary */}
-                        <div className="flex items-center justify-between bg-gray-800/40 rounded-xl p-3">
-                          <div className="text-xs text-gray-500">Total</div>
-                          <div className="font-semibold text-yellow-400">₹{(order.totalPrice || 0).toLocaleString()}</div>
+                        {/* Summary & Invoice Download */}
+                        <div className="flex items-center justify-between bg-gray-800/40 rounded-xl p-3 flex-wrap gap-2">
+                          <div>
+                            <span className="text-xs text-gray-500 block">Total Amount</span>
+                            <span className="font-semibold text-yellow-400">₹{(order.totalPrice || 0).toLocaleString()}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => generateInvoice(order)}
+                            className="flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 transition-all rounded-xl px-4 py-2 text-xs font-semibold"
+                          >
+                            <Download size={14} />
+                            Download GST Invoice
+                          </button>
                         </div>
 
                         {/* Raise Complaint — only for delivered orders */}

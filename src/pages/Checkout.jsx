@@ -784,25 +784,46 @@ const Checkout = () => {
           clearCart();
         }
 
-        const itemsList = payloadData.items.map(item => `- ${item.name} (x${item.quantity})`).join('\n');
-        const message = `NEW ORDER RECEIVED!\n\n` +
-          `Customer: ${payloadData.name}\n` +
-          `Contact: ${payloadData.phone}\n\n` +
-          `Products:\n${itemsList}\n\n` +
-          `Total Amount: Rs.${payloadData.totalPrice}\n` +
-          `Delivery Address: ${payloadData.address}, ${payloadData.city} - ${payloadData.pincode}\n\n` +
-          `Payment Mode: ${payloadData.paymentMethod} (${payloadData.paymentStatus})\n\n` +
-          `Please process this order. Thank you!`;
+        // Trigger WhatsApp Notification Backend Service
+        try {
+          console.log(`[Checkout] Triggering WhatsApp Notification Service for Order #${finalOrderId}...`);
+          const waPayload = {
+            orderId: finalOrderId,
+            customerName: payloadData.name,
+            phone: payloadData.phone,
+            items: payloadData.items,
+            totalPrice: payloadData.totalPrice,
+            address: payloadData.address,
+            city: payloadData.city,
+            pincode: payloadData.pincode,
+            paymentMethod: payloadData.paymentMethod,
+            paymentStatus: payloadData.paymentStatus
+          };
 
-        const adminPhone = "919677417185";
-        const whatsappUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`;
+          console.log(`[Checkout] WhatsApp Payload:`, waPayload);
+
+          const waRes = await fetch(`${API_BASE}/api/send-whatsapp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(waPayload)
+          });
+
+          const waStatus = waRes.status;
+          const waData = await waRes.json().catch(() => ({}));
+
+          console.log(`[Checkout] WhatsApp API Response Status: ${waStatus}`, waData);
+
+          if (waRes.ok && waData.success) {
+            console.log("WhatsApp notification sent successfully.");
+          } else {
+            console.error(`[Checkout] WhatsApp notification error (HTTP ${waStatus}):`, waData.error || waData);
+          }
+        } catch (waErr) {
+          console.error("[Checkout] Failed to invoke WhatsApp Notification API:", waErr);
+        }
 
         setPlacedOrder({ id: finalOrderId, total: payloadData.totalPrice });
         setShowSuccess(true);
-
-        setTimeout(() => {
-          window.open(whatsappUrl, "_blank");
-        }, 500);
 
         showToast("Order placed successfully!", "success");
       };

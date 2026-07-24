@@ -6,6 +6,7 @@ import ordersHandler from './orders.js';
 import complaintsHandler from './complaints.js';
 import updateSoldHandler from './update-sold.js';
 import validateCouponHandler from './validate-coupon.js';
+import sendWhatsAppNotificationHandler from './send-whatsapp.js';
 
 dotenv.config();
 
@@ -52,6 +53,7 @@ app.get('/api/orders', ordersHandler);
 app.get('/api/complaints', complaintsHandler);
 app.post('/api/update-sold', updateSoldHandler);
 app.post('/api/validate-coupon', validateCouponHandler);
+app.post('/api/send-whatsapp', sendWhatsAppNotificationHandler);
 
 // Export for Vite dev server middleware and Vercel serverless integration
 export default app;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { ShoppingCart, Check, Loader2, AlertCircle, Star, Play, X, Minus, Plus, Phone, Gift } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
